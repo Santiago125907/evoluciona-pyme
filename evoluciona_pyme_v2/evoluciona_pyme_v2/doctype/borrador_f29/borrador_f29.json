@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:id_documento",
+ "creation": "2025-10-25 15:42:46.807846",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "encabezado_section",
+  "cliente",
+  "id_documento",
+  "declaracion_mensual_vinculada",
+  "column_break_wgxr",
+  "mes",
+  "column_break_ggnf",
+  "ano",
+  "vista_html_section",
+  "vista_f29",
+  "html_renderizado",
+  "seccion_subtotales",
+  "postergar_iva_periodo",
+  "subtotal_debitos",
+  "subtotal_creditos",
+  "postergacion_del_periodo",
+  "subtotal_otros_impuestos",
+  "impuesto_determinado",
+  "remanente_mes_siguiente",
+  "total_a_pagar_f29",
+  "subtotal_postergacion_iva",
+  "postergacion_vencida",
+  "seccion_datos_backend",
+  "tabla_debitos",
+  "tabla_creditos",
+  "tabla_impuestos"
+ ],
+ "fields": [
+  {
+   "fieldname": "encabezado_section",
+   "fieldtype": "Section Break",
+   "label": "Encabezado"
+  },
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "CLIENTE",
+   "options": "Ficha_Cliente",
+   "reqd": 1
+  },
+  {
+   "fieldname": "id_documento",
+   "fieldtype": "Data",
+   "label": "ID del Documento",
+   "unique": 1
+  },
+  {
+   "fieldname": "declaracion_mensual_vinculada",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "DECLARACION_MENSUAL_VINCULADA",
+   "options": "Declaracion_Mensual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wgxr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mes",
+   "fieldtype": "Select",
+   "label": "MES",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"
+  },
+  {
+   "fieldname": "column_break_ggnf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ano",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "A\u00d1O",
+   "options": "2025\n2026\n2027",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vista_html_section",
+   "fieldtype": "Section Break",
+   "label": "Formulario 29"
+  },
+  {
+   "fieldname": "vista_f29",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "html_renderizado",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "HTML Storage",
+   "print_hide": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "seccion_subtotales",
+   "fieldtype": "Section Break",
+   "label": "seccion_subtotales"
+  },
+  {
+   "bold": 1,
+   "default": "0",
+   "description": "Marcar para postergar el IVA determinado por 2 meses",
+   "fieldname": "postergar_iva_periodo",
+   "fieldtype": "Check",
+   "label": "Postergar IVA de este Per\u00edodo"
+  },
+  {
+   "fieldname": "subtotal_debitos",
+   "fieldtype": "Currency",
+   "label": "Subtotal debitos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subtotal_creditos",
+   "fieldtype": "Currency",
+   "label": "Subtotal creditos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "postergacion_del_periodo",
+   "fieldtype": "Currency",
+   "label": "Postergacion del Periodo"
+  },
+  {
+   "fieldname": "subtotal_otros_impuestos",
+   "fieldtype": "Currency",
+   "label": "subtotal otros impuestos",
+   "read_only": 1
+  },
+  {
+   "fieldname": "impuesto_determinado",
+   "fieldtype": "Currency",
+   "label": "Impuesto determinado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remanente_mes_siguiente",
+   "fieldtype": "Currency",
+   "label": "Remanente mes siguiente",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_a_pagar_f29",
+   "fieldtype": "Currency",
+   "label": "TOTA F29 A PAGAR",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subtotal_postergacion_iva",
+   "fieldtype": "Currency",
+   "label": "postergacion iva",
+   "read_only": 1
+  },
+  {
+   "fieldname": "postergacion_vencida",
+   "fieldtype": "Currency",
+   "label": "postergacion vencida",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:1",
+   "fieldname": "seccion_datos_backend",
+   "fieldtype": "Section Break",
+   "label": "Datos Backend (Tablas)"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "tabla_debitos",
+   "fieldtype": "Table",
+   "label": "lineas_f29",
+   "options": "Linea_F29_Debito"
+  },
+  {
+   "fieldname": "tabla_creditos",
+   "fieldtype": "Table",
+   "label": "Tabla de Cr\u00e9ditos",
+   "options": "Linea_F29_Credito"
+  },
+  {
+   "fieldname": "tabla_impuestos",
+   "fieldtype": "Table",
+   "label": "Tabla de Impuestos",
+   "options": "Linea_F29_Impuesto"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:34.052535",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Borrador_F29",
+ "naming_rule": "By fieldname",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-04 21:09:49.436955",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre_servicio",
+  "valor_mensual",
+  "mes_inicio",
+  "ano_inicio",
+  "tipo_duracion",
+  "cuotas_totales"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre_servicio",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Servicio Adicional",
+   "options": "Catalogo_Servicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valor_mensual",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Valor Adicional ($)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mes_inicio",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mes de Inicio",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ano_inicio",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "A\u00f1o de Inicio",
+   "reqd": 1
+  },
+  {
+   "default": "Infinito",
+   "fieldname": "tipo_duracion",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Duraci\u00f3n",
+   "options": "Infinito\nCuotas Limitadas",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.tipo_duracion=='Cuotas Limitadas'",
+   "fieldname": "cuotas_totales",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Cant. de Cuotas"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:37.225207",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Servicio_Adicional_Cliente",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

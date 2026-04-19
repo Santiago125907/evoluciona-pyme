@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-08 23:14:38.949610",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "fuente_doctype",
+  "fuente_campo_a_sumar",
+  "filtro_tipo"
+ ],
+ "fields": [
+  {
+   "fieldname": "fuente_doctype",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Fuente de Datos",
+   "options": "Libro_de_Egresos_Cliente\nLibro_de_Ingresos_Cliente\nRegistro_de_Remuneraciones",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fuente_campo_a_sumar",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Campo a Sumar",
+   "reqd": 1
+  },
+  {
+   "fieldname": "filtro_tipo",
+   "fieldtype": "Data",
+   "label": "Filtro (Tipo Doc/Egreso)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:34.788481",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Mapeo_Calculo_Detalle",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

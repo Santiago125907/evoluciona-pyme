@@ -1,7 +1,7 @@
 app_name = "evoluciona_pyme_v2"
 app_title = "Evoluciona Pyme V2"
 app_publisher = "Santiago Romero"
-app_description = "Sistema de Contabilidad y Clientes"
+app_description = "Sistema de Contabilidad y Gestión de Clientes para Evoluciona Pyme"
 app_email = "sromero1808@gmail.com"
 app_license = "mit"
 
@@ -148,23 +148,15 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"evoluciona_pyme_v2.tasks.all"
-# 	],
-# 	"daily": [
-# 		"evoluciona_pyme_v2.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"evoluciona_pyme_v2.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"evoluciona_pyme_v2.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"evoluciona_pyme_v2.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	# "all": ["evoluciona_pyme_v2.tasks.all"],
+	# "daily": ["evoluciona_pyme_v2.tasks.daily"],
+	# "hourly": ["evoluciona_pyme_v2.tasks.hourly"],
+	# "weekly": ["evoluciona_pyme_v2.tasks.weekly"],
+	"monthly": [
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.crear_tareas_mensuales"
+	],
+}
 
 # Testing
 # -------
@@ -245,5 +237,10 @@ app_license = "mit"
 # Translation
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
-
+fixtures = [
+	{"dt": "DocType", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
+	{"dt": "Server Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
+	{"dt": "Client Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
+	{"dt": "Workspace", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
+	{"dt": "Web Page", "filters": [["name", "in", ["portal-login", "portal-del-cliente"]]]},
+]

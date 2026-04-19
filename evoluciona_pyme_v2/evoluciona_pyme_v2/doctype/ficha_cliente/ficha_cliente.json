@@ -1,0 +1,387 @@
+{
+ "actions": [],
+ "autoname": "field:rut_cliente",
+ "creation": "2025-10-19 22:05:51.168692",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "informaci\u00f3n_principal_section",
+  "razon_social",
+  "rut_cliente",
+  "contacto_principal_nombre",
+  "contacto_principal_email",
+  "contacto_principal_whatsapp",
+  "abreviatura_cliente",
+  "column_break_deet",
+  "estado_cliente",
+  "giro",
+  "direccion_fiscal",
+  "comuna",
+  "ciudad",
+  "drive_folder_id",
+  "drive_folder_url",
+  "erut_archivo",
+  "portal_section",
+  "habilitar_portal",
+  "usuario_portal_vinculado",
+  "password_portal_hint",
+  "column_break_xsyq",
+  "estado_portal",
+  "fecha_creacion_portal",
+  "informaci\u00f3n_tributaria_y_operativa_section",
+  "tipo_contabilidad",
+  "tasa_ppm",
+  "column_break_oibf",
+  "regimen_tributario",
+  "credenciales_section",
+  "credenciales_sii_column",
+  "clave_sii",
+  "credenciales_previred_column",
+  "rut_usuario",
+  "clave_previred",
+  "credenciales_dt_column",
+  "rur_usuario",
+  "clave_dt",
+  "panel_de_control_mensual_tab",
+  "panel_control_mensual",
+  "facturaci\u00f3n_y_cobranza_tab",
+  "panel_facturacion_cobranza",
+  "condiciones_del_servicio_tab",
+  "seccion_cobros",
+  "plan_contable",
+  "monto_por_empleado",
+  "column_break_mjdj",
+  "tipo_cobro_rrhh",
+  "seccion_adicionales",
+  "servicios_adicionales",
+  "tab_5_tab",
+  "descuento_cliente_item",
+  "descuentos_cliente"
+ ],
+ "fields": [
+  {
+   "fieldname": "informaci\u00f3n_principal_section",
+   "fieldtype": "Section Break",
+   "label": "Informaci\u00f3n Principal"
+  },
+  {
+   "description": "Nombre de empresa",
+   "fieldname": "razon_social",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Raz\u00f3n Social",
+   "no_copy": 1,
+   "reqd": 1
+  },
+  {
+   "description": "12345678-9",
+   "fieldname": "rut_cliente",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "RUT Cliente",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "contacto_principal_nombre",
+   "fieldtype": "Data",
+   "label": "Nombre Contacto Principal"
+  },
+  {
+   "fieldname": "contacto_principal_email",
+   "fieldtype": "Data",
+   "label": "Email Contacto Principal"
+  },
+  {
+   "description": "+56912345678",
+   "fieldname": "contacto_principal_whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp Contacto Principal"
+  },
+  {
+   "fieldname": "abreviatura_cliente",
+   "fieldtype": "Data",
+   "label": "Abreviatura Cliente",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_deet",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Activo",
+   "fieldname": "estado_cliente",
+   "fieldtype": "Select",
+   "ignore_user_permissions": 1,
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Estado Cliente",
+   "options": "Activo\nInactivo\nPotencial",
+   "reqd": 1
+  },
+  {
+   "fieldname": "giro",
+   "fieldtype": "Data",
+   "label": "Giro"
+  },
+  {
+   "fieldname": "direccion_fiscal",
+   "fieldtype": "Data",
+   "label": "Direcci\u00f3n Fiscal"
+  },
+  {
+   "fieldname": "comuna",
+   "fieldtype": "Data",
+   "label": "Comuna"
+  },
+  {
+   "fieldname": "ciudad",
+   "fieldtype": "Data",
+   "label": "Ciudad"
+  },
+  {
+   "fieldname": "drive_folder_id",
+   "fieldtype": "Data",
+   "label": "drive_folder_id"
+  },
+  {
+   "fieldname": "drive_folder_url",
+   "fieldtype": "Data",
+   "label": "drive_folder_url"
+  },
+  {
+   "fieldname": "erut_archivo",
+   "fieldtype": "Attach",
+   "label": "ERUT"
+  },
+  {
+   "fieldname": "portal_section",
+   "fieldtype": "Section Break",
+   "label": "Portal"
+  },
+  {
+   "bold": 1,
+   "default": "0",
+   "fieldname": "habilitar_portal",
+   "fieldtype": "Check",
+   "label": "Habilitar Acceso Portal"
+  },
+  {
+   "depends_on": "eval:doc.habilitar_portal==1",
+   "description": "Email del usuario vinculado al portal",
+   "fieldname": "usuario_portal_vinculado",
+   "fieldtype": "Data",
+   "label": "Usuario Portal"
+  },
+  {
+   "description": "RUT sin puntos usado como contrase\u00f1a",
+   "fieldname": "password_portal_hint",
+   "fieldtype": "Data",
+   "label": "Contrase\u00f1a Inicial",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xsyq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "No Configurado",
+   "depends_on": "eval:doc.habilitar_portal==1",
+   "fieldname": "estado_portal",
+   "fieldtype": "Select",
+   "label": "Estado Portal",
+   "options": "No Configurado\nActivo\nDeshabilitado"
+  },
+  {
+   "depends_on": "eval:doc.estado_portal=='Activo'",
+   "fieldname": "fecha_creacion_portal",
+   "fieldtype": "Datetime",
+   "label": "Fecha Creaci\u00f3n Portal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "informaci\u00f3n_tributaria_y_operativa_section",
+   "fieldtype": "Section Break",
+   "label": "Informaci\u00f3n Tributaria y Operativa"
+  },
+  {
+   "fieldname": "tipo_contabilidad",
+   "fieldtype": "Select",
+   "label": "Tipo de Contabilidad",
+   "options": "Simplificada\nCompleta B\u00e1sica"
+  },
+  {
+   "description": "Tasa de PPM para el c\u00e1lculo mensual",
+   "fieldname": "tasa_ppm",
+   "fieldtype": "Percent",
+   "label": "Tasa PPM (%)"
+  },
+  {
+   "fieldname": "column_break_oibf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "regimen_tributario",
+   "fieldtype": "Select",
+   "label": "R\u00e9gimen Tributario",
+   "options": "Pro Pyme General\nPro Pyme Transparente\nRenta Presunta\nGeneral (Semi Integrado)"
+  },
+  {
+   "fieldname": "credenciales_section",
+   "fieldtype": "Section Break",
+   "label": "Credenciales"
+  },
+  {
+   "fieldname": "credenciales_sii_column",
+   "fieldtype": "Column Break",
+   "label": "Credenciales SII"
+  },
+  {
+   "fieldname": "clave_sii",
+   "fieldtype": "Data",
+   "label": "Clave SII"
+  },
+  {
+   "fieldname": "credenciales_previred_column",
+   "fieldtype": "Column Break",
+   "label": "Credenciales Previred"
+  },
+  {
+   "fieldname": "rut_usuario",
+   "fieldtype": "Data",
+   "label": "Rut Usuario"
+  },
+  {
+   "fieldname": "clave_previred",
+   "fieldtype": "Password",
+   "label": "Clave Previred"
+  },
+  {
+   "fieldname": "credenciales_dt_column",
+   "fieldtype": "Column Break",
+   "label": "Credenciales DT"
+  },
+  {
+   "fieldname": "rur_usuario",
+   "fieldtype": "Data",
+   "label": "Rur Usuario"
+  },
+  {
+   "fieldname": "clave_dt",
+   "fieldtype": "Password",
+   "label": "Clave DT"
+  },
+  {
+   "fieldname": "panel_de_control_mensual_tab",
+   "fieldtype": "Tab Break",
+   "label": "Panel de Control Mensual"
+  },
+  {
+   "fieldname": "panel_control_mensual",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "facturaci\u00f3n_y_cobranza_tab",
+   "fieldtype": "Tab Break",
+   "label": "Facturaci\u00f3n y Cobranza"
+  },
+  {
+   "fieldname": "panel_facturacion_cobranza",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "condiciones_del_servicio_tab",
+   "fieldtype": "Tab Break",
+   "label": " Condiciones del Servicio"
+  },
+  {
+   "fieldname": "seccion_cobros",
+   "fieldtype": "Section Break",
+   "label": "Planes y Cobranza Mensual"
+  },
+  {
+   "fieldname": "plan_contable",
+   "fieldtype": "Link",
+   "label": "Plan Contable (Por Tramos)",
+   "options": "Plan_Contable"
+  },
+  {
+   "fieldname": "monto_por_empleado",
+   "fieldtype": "Currency",
+   "label": "Monto por Empleado"
+  },
+  {
+   "fieldname": "column_break_mjdj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Variable",
+   "fieldname": "tipo_cobro_rrhh",
+   "fieldtype": "Select",
+   "label": "Seleccionar Modalidad de Cobro RRHH",
+   "options": "Variable\nFijo"
+  },
+  {
+   "fieldname": "seccion_adicionales",
+   "fieldtype": "Section Break",
+   "label": "Servicios Adicionales Fijos"
+  },
+  {
+   "fieldname": "servicios_adicionales",
+   "fieldtype": "Table",
+   "label": "Servicios Recurrentes Adicionales",
+   "options": "Servicio_Adicional_Cliente"
+  },
+  {
+   "fieldname": "tab_5_tab",
+   "fieldtype": "Tab Break",
+   "label": "Descuentos y Promociones"
+  },
+  {
+   "fieldname": "descuento_cliente_item",
+   "fieldtype": "Section Break",
+   "label": "Descuento_Cliente_Item"
+  },
+  {
+   "fieldname": "descuentos_cliente",
+   "fieldtype": "Table",
+   "options": "Descuento_Cliente_Item"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:33.008888",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Ficha_Cliente",
+ "naming_rule": "By fieldname",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "role": "Customer"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "search_fields": "razon_social,rut_cliente",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

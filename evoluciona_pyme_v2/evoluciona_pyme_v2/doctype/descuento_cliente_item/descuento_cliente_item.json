@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-17 12:59:04.474815",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "descripcion",
+  "tipo_descuento",
+  "valor",
+  "mes_inicio",
+  "mes_fin",
+  "activo"
+ ],
+ "fields": [
+  {
+   "description": "Descuento fidelidad",
+   "fieldname": "descripcion",
+   "fieldtype": "Data",
+   "label": "descripcion"
+  },
+  {
+   "fieldname": "tipo_descuento",
+   "fieldtype": "Select",
+   "label": "tipo descuento",
+   "options": "Porcentaje\nMonto Fijo"
+  },
+  {
+   "description": "Ej: 10 para 10%, o 50000 para $50.000",
+   "fieldname": "valor",
+   "fieldtype": "Float",
+   "label": "valor"
+  },
+  {
+   "fieldname": "mes_inicio",
+   "fieldtype": "Date",
+   "label": "Mes inicio"
+  },
+  {
+   "fieldname": "mes_fin",
+   "fieldtype": "Date",
+   "label": "Mes fin"
+  },
+  {
+   "default": "0",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "label": "activo"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:36.011259",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Descuento_Cliente_Item",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

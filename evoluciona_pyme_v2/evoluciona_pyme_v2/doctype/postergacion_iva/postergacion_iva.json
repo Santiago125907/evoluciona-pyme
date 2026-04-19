@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-20 19:35:31.072271",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "id_postergacion",
+  "column_break_bxit",
+  "cliente",
+  "column_break_wshu",
+  "per\u00edodo_postergado_section",
+  "mes_origen",
+  "column_break_hpwk",
+  "ano_origen",
+  "column_break_wero",
+  "monto_postergado",
+  "montos_y_fechas_section",
+  "mes_f29_pagado",
+  "column_break_jlku",
+  "ano_f29_pagado",
+  "column_break_frxh",
+  "fecha_vencimiento",
+  "notas_section",
+  "notas"
+ ],
+ "fields": [
+  {
+   "bold": 1,
+   "fieldname": "id_postergacion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ID Postergaci\u00f3n",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bxit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cliente",
+   "options": "Ficha_Cliente"
+  },
+  {
+   "fieldname": "column_break_wshu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "per\u00edodo_postergado_section",
+   "fieldtype": "Section Break",
+   "label": "Per\u00edodo Postergado"
+  },
+  {
+   "fieldname": "mes_origen",
+   "fieldtype": "Int",
+   "label": "Mes Origen"
+  },
+  {
+   "fieldname": "column_break_hpwk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ano_origen",
+   "fieldtype": "Int",
+   "label": "A\u00f1o Origen"
+  },
+  {
+   "fieldname": "column_break_wero",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "fieldname": "monto_postergado",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Monto Postergado",
+   "precision": "0"
+  },
+  {
+   "fieldname": "montos_y_fechas_section",
+   "fieldtype": "Section Break",
+   "label": "Montos y Fechas"
+  },
+  {
+   "fieldname": "mes_f29_pagado",
+   "fieldtype": "Int",
+   "label": "Mes  f29 asignado"
+  },
+  {
+   "fieldname": "column_break_jlku",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ano_f29_pagado",
+   "fieldtype": "Int",
+   "label": "A\u00f1o Origen C"
+  },
+  {
+   "fieldname": "column_break_frxh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "description": "Se calcula autom\u00e1ticamente (d\u00eda 20 + 2 meses)",
+   "fieldname": "fecha_vencimiento",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de Vencimiento"
+  },
+  {
+   "fieldname": "notas_section",
+   "fieldtype": "Section Break",
+   "label": "notas"
+  },
+  {
+   "fieldname": "notas",
+   "fieldtype": "Small Text",
+   "label": "Notas",
+   "options": "Observaciones adicionales"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:36.521278",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Postergacion_IVA",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

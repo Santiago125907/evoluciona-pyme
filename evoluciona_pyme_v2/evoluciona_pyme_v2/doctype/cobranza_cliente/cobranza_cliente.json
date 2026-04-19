@@ -1,0 +1,340 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:id_cobranza",
+ "creation": "2025-11-17 13:21:03.697823",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "id_cobranza",
+  "cliente",
+  "column_break_izym",
+  "periodo_mes",
+  "periodo_ano",
+  "estado_cobranza",
+  "section_break_bsyb",
+  "monto_base",
+  "numero_empleados",
+  "monto_rrhh",
+  "subtotal",
+  "total_descuentos",
+  "monto_a_cobrar",
+  "descuentos_aplicados_section",
+  "descuentos_aplicados",
+  "fechas_y_vencimientos_section",
+  "fecha_emision",
+  "fecha_vencimiento",
+  "column_break_xgew",
+  "dias_para_vencer",
+  "facturaci\u00f3n_section",
+  "factura_generada",
+  "factura_vinculada",
+  "folio_factura",
+  "pdf_factura_url",
+  "pdf_factura_drive_id",
+  "pdf_factura_drive_url",
+  "column_break_wchv",
+  "fecha_facturacio",
+  "numero_factura",
+  "section_break_dafq",
+  "fecha_pago",
+  "monto_pagado",
+  "column_break_hjzx",
+  "metodo_pago",
+  "comprobante_pago",
+  "comunicaciones_section",
+  "emails_enviados",
+  "ultimo_email",
+  "column_break_zzea",
+  "whatsapps_enviados",
+  "ultimo_whatsapp",
+  "notas_y_observaciones_section",
+  "notas_cobranza",
+  "monto_adicionales"
+ ],
+ "fields": [
+  {
+   "fieldname": "id_cobranza",
+   "fieldtype": "Data",
+   "label": "ID Cobranza",
+   "unique": 1
+  },
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "label": "Cliente",
+   "options": "Ficha_Cliente"
+  },
+  {
+   "fieldname": "column_break_izym",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "periodo_mes",
+   "fieldtype": "Int",
+   "label": "Mes"
+  },
+  {
+   "fieldname": "periodo_ano",
+   "fieldtype": "Int",
+   "label": "A\u00f1o",
+   "read_only": 1
+  },
+  {
+   "default": "Por Cobrar",
+   "fieldname": "estado_cobranza",
+   "fieldtype": "Select",
+   "label": "Estado Cobranza",
+   "options": "Por Cobrar\nFacturado\nPagado\nVencido\nAnulado"
+  },
+  {
+   "fieldname": "section_break_bsyb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "monto_base",
+   "fieldtype": "Currency",
+   "label": "Monto Base Plan"
+  },
+  {
+   "fieldname": "numero_empleados",
+   "fieldtype": "Int",
+   "label": "N\u00famero de Empleados",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "monto_rrhh",
+   "fieldtype": "Currency",
+   "label": "Monto Variable RRHH",
+   "read_only": 1
+  },
+  {
+   "description": "\"Base + RRHH\"",
+   "fieldname": "subtotal",
+   "fieldtype": "Currency",
+   "label": "Subtotal"
+  },
+  {
+   "fieldname": "total_descuentos",
+   "fieldtype": "Currency",
+   "label": "Total Descuentos"
+  },
+  {
+   "bold": 1,
+   "fieldname": "monto_a_cobrar",
+   "fieldtype": "Currency",
+   "label": "Monto a Cobrar"
+  },
+  {
+   "fieldname": "descuentos_aplicados_section",
+   "fieldtype": "Section Break",
+   "label": "Descuentos Aplicados"
+  },
+  {
+   "fieldname": "descuentos_aplicados",
+   "fieldtype": "Table",
+   "label": "Descuentos Aplicados",
+   "options": "Detalle_Descuento_Cobranza"
+  },
+  {
+   "fieldname": "fechas_y_vencimientos_section",
+   "fieldtype": "Section Break",
+   "label": "Fechas y Vencimientos"
+  },
+  {
+   "default": "Today",
+   "fieldname": "fecha_emision",
+   "fieldtype": "Date",
+   "label": "Fecha Emisi\u00f3n"
+  },
+  {
+   "fieldname": "fecha_vencimiento",
+   "fieldtype": "Date",
+   "label": "Fecha Vencimiento"
+  },
+  {
+   "fieldname": "column_break_xgew",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Positivo: d\u00edas restantes / Negativo: d\u00edas vencido\"",
+   "fieldname": "dias_para_vencer",
+   "fieldtype": "Int",
+   "label": "D\u00edas para Vencer"
+  },
+  {
+   "fieldname": "facturaci\u00f3n_section",
+   "fieldtype": "Section Break",
+   "label": "Facturaci\u00f3n"
+  },
+  {
+   "default": "0",
+   "fieldname": "factura_generada",
+   "fieldtype": "Check",
+   "label": "Factura Generada",
+   "options": "0"
+  },
+  {
+   "depends_on": "eval:doc.factura_generada == 1",
+   "fieldname": "factura_vinculada",
+   "fieldtype": "Link",
+   "label": "Factura Vinculada",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "folio_factura",
+   "fieldtype": "Data",
+   "label": "Folio Factura"
+  },
+  {
+   "fieldname": "pdf_factura_url",
+   "fieldtype": "Data",
+   "label": "PDF Factura URL"
+  },
+  {
+   "fieldname": "pdf_factura_drive_id",
+   "fieldtype": "Data",
+   "label": "PDF Drive File ID"
+  },
+  {
+   "fieldname": "pdf_factura_drive_url",
+   "fieldtype": "Data",
+   "label": "PDF Drive URL"
+  },
+  {
+   "fieldname": "column_break_wchv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fecha_facturacio",
+   "fieldtype": "Date",
+   "label": "Fecha Facturaci\u00f3n",
+   "read_only": 1
+  },
+  {
+   "fieldname": "numero_factura",
+   "fieldtype": "Data",
+   "label": "N\u00famero Factura"
+  },
+  {
+   "fieldname": "section_break_dafq",
+   "fieldtype": "Section Break",
+   "label": "PAGOS"
+  },
+  {
+   "depends_on": "eval:doc.estado_cobranza == \"Pagado\"",
+   "fieldname": "fecha_pago",
+   "fieldtype": "Date",
+   "label": "Fecha de Pago"
+  },
+  {
+   "depends_on": "eval:doc.estado_cobranza == \"Pagado\"",
+   "fieldname": "monto_pagado",
+   "fieldtype": "Currency",
+   "label": "monto_pagado"
+  },
+  {
+   "fieldname": "column_break_hjzx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "metodo_pago",
+   "fieldtype": "Select",
+   "label": "M\u00e9todo de Pago",
+   "options": "Transferencia\nEfectivo\nCheque        Tarjeta\nOtro"
+  },
+  {
+   "depends_on": "eval:doc.estado_cobranza == \"Pagado\"",
+   "fieldname": "comprobante_pago",
+   "fieldtype": "Attach",
+   "label": "Comprobante de Pago"
+  },
+  {
+   "fieldname": "comunicaciones_section",
+   "fieldtype": "Section Break",
+   "label": "Comunicaciones"
+  },
+  {
+   "default": "0",
+   "fieldname": "emails_enviados",
+   "fieldtype": "Int",
+   "label": "Emails Enviados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultimo_email",
+   "fieldtype": "Datetime",
+   "label": "\u00daltimo Email",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zzea",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "whatsapps_enviados",
+   "fieldtype": "Int",
+   "label": "WhatsApps Enviados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultimo_whatsapp",
+   "fieldtype": "Datetime",
+   "label": "\u00daltimo WhatsApp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notas_y_observaciones_section",
+   "fieldtype": "Section Break",
+   "label": "Notas y Observaciones"
+  },
+  {
+   "fieldname": "notas_cobranza",
+   "fieldtype": "Text",
+   "label": "Notas de Cobranza"
+  },
+  {
+   "fieldname": "monto_adicionales",
+   "fieldtype": "Currency",
+   "label": "Monto Adicionales y Cuotas",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-16 06:42:36.155067",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Cobranza_Cliente",
+ "naming_rule": "By fieldname",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Customer"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

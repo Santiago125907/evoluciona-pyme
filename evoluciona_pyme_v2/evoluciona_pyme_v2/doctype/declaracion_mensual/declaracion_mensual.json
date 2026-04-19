@@ -1,0 +1,325 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:id_documento",
+ "creation": "2025-10-25 11:18:12.698212",
+ "default_print_format": "Informe_Mensual_Cliente",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "informaci\u00f3n_principal_section",
+  "cliente",
+  "ano",
+  "mes",
+  "estado",
+  "id_documento",
+  "column_break_pivz",
+  "pdf_link_cliente",
+  "pdf_drive_file_id",
+  "totales_consolidados_section",
+  "total_f29_a_pagar",
+  "total_previred_a_pagar",
+  "column_break_rqia",
+  "fecha_vencimiento_f29",
+  "fecha_vencimiento_previred",
+  "documentos_de_trabajo_vinculados_section",
+  "borrador_f29_vinculado",
+  "checklist_de_validaci\u00f3n_manua_section",
+  "check_gasto_rem_cargado",
+  "check_previred_cuadrado",
+  "check_f29_cuadrado",
+  "postegar_pago_iva",
+  "postergaci\u00f3n_de_iva_section",
+  "monto_iva_postergar",
+  "column_break_dkfk",
+  "fecha_vencimiento_postergacion",
+  "column_break_muye",
+  "postergacion_vinculada",
+  "control_de_env\u00edos_section",
+  "pdf_generado",
+  "pdf_generado_flag",
+  "emails_enviados",
+  "whatsapps_enviados",
+  "column_break_clvd",
+  "fecha_pdf_generado",
+  "fecha_ultimo_email",
+  "fecha_ultimo_whatsapp",
+  "section_break_suxq",
+  "cobranza_vinculada",
+  "analisis_y_recomendaciones_section",
+  "insights_generados",
+  "analisis_ia_texto"
+ ],
+ "fields": [
+  {
+   "fieldname": "informaci\u00f3n_principal_section",
+   "fieldtype": "Section Break",
+   "label": "Informaci\u00f3n Principal"
+  },
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "CLIENTE",
+   "options": "Ficha_Cliente",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ano",
+   "fieldtype": "Select",
+   "label": "A\u00d1O",
+   "options": "2025\n2026\n2027"
+  },
+  {
+   "fieldname": "mes",
+   "fieldtype": "Select",
+   "label": "MES",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"
+  },
+  {
+   "default": "Borrador",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "ESTADO",
+   "options": "Borrador\nEn Validaci\u00f3n\nListo\nEnviado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "id_documento",
+   "fieldtype": "Data",
+   "label": "ID del Documento",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_pivz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pdf_link_cliente",
+   "fieldtype": "Data",
+   "label": "pdf_link_cliente"
+  },
+  {
+   "fieldname": "pdf_drive_file_id",
+   "fieldtype": "Data",
+   "label": "pdf_drive_file_id"
+  },
+  {
+   "fieldname": "totales_consolidados_section",
+   "fieldtype": "Section Break",
+   "label": "Totales Consolidados\""
+  },
+  {
+   "fieldname": "total_f29_a_pagar",
+   "fieldtype": "Currency",
+   "label": "TOTAL_A_PAGAR_F29",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_previred_a_pagar",
+   "fieldtype": "Currency",
+   "label": "TOTAL_A_PAGAR_PREVIRED"
+  },
+  {
+   "fieldname": "column_break_rqia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fecha_vencimiento_f29",
+   "fieldtype": "Date",
+   "label": "fecha_vencimiento_f29"
+  },
+  {
+   "fieldname": "fecha_vencimiento_previred",
+   "fieldtype": "Date",
+   "label": "fecha_vencimiento_previred"
+  },
+  {
+   "fieldname": "documentos_de_trabajo_vinculados_section",
+   "fieldtype": "Section Break",
+   "label": "Documentos de Trabajo Vinculados"
+  },
+  {
+   "fieldname": "borrador_f29_vinculado",
+   "fieldtype": "Link",
+   "label": "BORRADOR_F29_VINCULADO",
+   "options": "Borrador_F29"
+  },
+  {
+   "fieldname": "checklist_de_validaci\u00f3n_manua_section",
+   "fieldtype": "Section Break",
+   "label": "Checklist de Validaci\u00f3n Manua"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_gasto_rem_cargado",
+   "fieldtype": "Check",
+   "label": "GASTO_RRHH_VALIDADO"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_previred_cuadrado",
+   "fieldtype": "Check",
+   "label": "PREVIRED_VALIDADO"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_f29_cuadrado",
+   "fieldtype": "Check",
+   "label": "F29_VALIDADO_VS_SII"
+  },
+  {
+   "default": "0",
+   "description": "Marcar para postergar el IVA determinado por 2 meses",
+   "fieldname": "postegar_pago_iva",
+   "fieldtype": "Check",
+   "label": "Postergar Pago de IVA"
+  },
+  {
+   "fieldname": "postergaci\u00f3n_de_iva_section",
+   "fieldtype": "Section Break",
+   "label": "Postergaci\u00f3n de IVA"
+  },
+  {
+   "fieldname": "monto_iva_postergar",
+   "fieldtype": "Currency",
+   "label": "Monto a Postergar",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dkfk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Fecha de vencimiento de la postergaci\u00f3n (2 meses despu\u00e9s)",
+   "fieldname": "fecha_vencimiento_postergacion",
+   "fieldtype": "Date",
+   "label": "Vence en",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_muye",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "postergacion_vinculada",
+   "fieldtype": "Link",
+   "label": "Registro de Postergaci\u00f3n",
+   "options": "Postergacion_IVA",
+   "read_only": 1
+  },
+  {
+   "fieldname": "control_de_env\u00edos_section",
+   "fieldtype": "Section Break",
+   "label": "Control de Env\u00edos"
+  },
+  {
+   "fieldname": "pdf_generado",
+   "fieldtype": "Attach",
+   "label": "PDF del Informe"
+  },
+  {
+   "default": "0",
+   "fieldname": "pdf_generado_flag",
+   "fieldtype": "Check",
+   "label": "PDF Generado",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "emails_enviados",
+   "fieldtype": "Int",
+   "label": "Emails Enviados",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "whatsapps_enviados",
+   "fieldtype": "Int",
+   "label": "WhatsApps Enviados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_clvd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fecha_pdf_generado",
+   "fieldtype": "Datetime",
+   "label": "Fecha Generaci\u00f3n PDF",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_ultimo_email",
+   "fieldtype": "Datetime",
+   "label": "\u00daltimo Email Enviado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_ultimo_whatsapp",
+   "fieldtype": "Datetime",
+   "label": "\u00daltimo whatsapp Enviado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_suxq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "cobranza_vinculada",
+   "fieldtype": "Link",
+   "label": "Cobranza Vinculada",
+   "options": "Cobranza_Cliente"
+  },
+  {
+   "fieldname": "analisis_y_recomendaciones_section",
+   "fieldtype": "Section Break",
+   "label": "ANALISIS_Y_RECOMENDACIONES"
+  },
+  {
+   "fieldname": "insights_generados",
+   "fieldtype": "Text",
+   "label": "ANALISIS_Y_RECOMENDACIONES"
+  },
+  {
+   "description": "An\u00e1lisis generado por IA (se llenar\u00e1 autom\u00e1ticamente)",
+   "fieldname": "analisis_ia_texto",
+   "fieldtype": "Text Editor",
+   "label": "An\u00e1lisis IA"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-16 06:53:25.706276",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Declaracion_Mensual",
+ "naming_rule": "By fieldname",
+ "owner": "sromero1808@gmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Customer"
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
