@@ -83,7 +83,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "evoluciona_pyme_v2.install.before_install"
-# after_install = "evoluciona_pyme_v2.install.after_install"
+after_install = "evoluciona_pyme_v2.evoluciona_pyme_v2.setup.after_install"
 
 after_migrate = ["evoluciona_pyme_v2.evoluciona_pyme_v2.setup.sync_fixtures_post_migrate"]
 

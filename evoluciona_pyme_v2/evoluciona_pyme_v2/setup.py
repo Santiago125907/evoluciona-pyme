@@ -1,9 +1,16 @@
 import frappe
 
 
+def after_install():
+    try:
+        from frappe.utils.fixtures import sync_fixtures
+        sync_fixtures(app="evoluciona_pyme_v2")
+        frappe.db.commit()
+    except Exception:
+        frappe.log_error("Setup - after_install", frappe.get_traceback())
+
+
 def sync_fixtures_post_migrate():
-    """Reimporta los fixtures de evoluciona_pyme_v2 después del migrate
-    para restaurar el Workspace y otros registros que el migrate elimina como huérfanos."""
     try:
         from frappe.utils.fixtures import sync_fixtures
         sync_fixtures(app="evoluciona_pyme_v2")

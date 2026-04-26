@@ -1,26 +1,25 @@
 [
  {
+  "app": "evoluciona_pyme_v2",
   "charts": [],
-  "content": "[{\"id\": \"ep_custom_1\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Dashboard Evoluciona Pyme\", \"col\": 12}}, {\"id\": \"ep_sp_0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ep_hdr_1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Acceso Rápido</b></span>\", \"col\": 12}}, {\"id\": \"ep_sc_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Ficha Cliente\", \"col\": 3}}, {\"id\": \"ep_sc_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Declaracion Mensual\", \"col\": 3}}, {\"id\": \"ep_sc_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Borrador F29\", \"col\": 3}}, {\"id\": \"ep_sc_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cobranza Cliente\", \"col\": 3}}, {\"id\": \"ep_sc_5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Libro Ingresos\", \"col\": 3}}, {\"id\": \"ep_sc_6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Libro Egresos\", \"col\": 3}}, {\"id\": \"ep_sc_7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Remuneraciones\", \"col\": 3}}, {\"id\": \"ep_sc_8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Postergacion IVA\", \"col\": 3}}, {\"id\": \"ep_sp_1\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ep_hdr_2\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Módulos</b></span>\", \"col\": 12}}, {\"id\": \"ep_card_1\", \"type\": \"card\", \"data\": {\"card_name\": \"Clientes\", \"col\": 4}}, {\"id\": \"ep_card_2\", \"type\": \"card\", \"data\": {\"card_name\": \"Declaraciones e Impuestos\", \"col\": 4}}, {\"id\": \"ep_card_3\", \"type\": \"card\", \"data\": {\"card_name\": \"Libros Contables\", \"col\": 4}}, {\"id\": \"ep_card_4\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuración\", \"col\": 4}}, {\"id\": \"ep_sc_9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Configuracion App\", \"col\": 3}}, {\"id\": \"ep_sc_10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Libro Compras\", \"col\": 3}}, {\"id\": \"ep_sc_11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Libro Honorarios\", \"col\": 3}}, {\"id\": \"ep_sc_12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Libro Gastos\", \"col\": 3}}]",
+  "content": "[{\"id\":\"ep_custom_1\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Dashboard Evoluciona Pyme\",\"col\":12}},{\"id\":\"ep_sp_0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Acceso Rápido</b></span>\",\"col\":12}},{\"id\":\"ep_sc_inicio\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inicio\",\"col\":3}},{\"id\":\"ep_sc_pm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Panel Mensual\",\"col\":3}},{\"id\":\"ep_sc_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha Cliente\",\"col\":3}},{\"id\":\"ep_sc_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Declaracion Mensual\",\"col\":3}},{\"id\":\"ep_sc_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Borrador F29\",\"col\":3}},{\"id\":\"ep_sc_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cobranza Cliente\",\"col\":3}},{\"id\":\"ep_sc_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Ingresos\",\"col\":3}},{\"id\":\"ep_sc_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Egresos\",\"col\":3}},{\"id\":\"ep_sc_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Remuneraciones\",\"col\":3}},{\"id\":\"ep_sc_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Postergacion IVA\",\"col\":3}},{\"id\":\"ep_sp_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"id\":\"ep_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Clientes\",\"col\":4}},{\"id\":\"ep_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Declaraciones e Impuestos\",\"col\":4}},{\"id\":\"ep_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Libros Contables\",\"col\":4}},{\"id\":\"ep_card_4\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuración\",\"col\":4}},{\"id\":\"ep_sc_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Configuracion App\",\"col\":3}},{\"id\":\"ep_sc_10\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Compras\",\"col\":3}},{\"id\":\"ep_sc_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Honorarios\",\"col\":3}},{\"id\":\"ep_sc_12\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Gastos\",\"col\":3}}]",
   "custom_blocks": [
    {
     "custom_block_name": "Dashboard Evoluciona Pyme",
-    "label": "Dashboard Evoluciona Pyme",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "custom_blocks",
-    "parenttype": "Workspace"
+    "label": "Dashboard Evoluciona Pyme"
    }
   ],
   "docstatus": 0,
   "doctype": "Workspace",
-  "type": "Workspace",
+  "external_link": null,
   "for_user": "",
   "hide_custom": 0,
   "icon": "accounting",
   "indicator_color": "green",
   "is_hidden": 0,
-  "public": 1,
   "label": "Evoluciona Pyme V2",
+  "link_to": null,
+  "link_type": null,
   "links": [
    {
     "dependencies": null,
@@ -34,9 +33,6 @@
     "link_type": null,
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Card Break"
    },
@@ -52,9 +48,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -70,9 +63,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -88,9 +78,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -106,9 +93,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -124,9 +108,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -142,9 +123,6 @@
     "link_type": null,
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Card Break"
    },
@@ -160,9 +138,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -178,9 +153,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -196,9 +168,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -214,9 +183,6 @@
     "link_type": null,
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Card Break"
    },
@@ -232,9 +198,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -250,9 +213,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -268,9 +228,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -286,9 +243,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -304,9 +258,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -322,9 +273,6 @@
     "link_type": null,
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Card Break"
    },
@@ -340,9 +288,6 @@
     "link_type": "DocType",
     "onboard": 1,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    },
@@ -358,9 +303,6 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "links",
-    "parenttype": "Workspace",
     "report_ref_doctype": null,
     "type": "Link"
    }
@@ -368,130 +310,212 @@
   "modified": "2026-04-23 00:00:00",
   "module": "Evoluciona Pyme V2",
   "name": "Evoluciona Pyme V2",
-  "title": "Evoluciona Pyme V2",
   "number_cards": [],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [],
+  "sequence_id": 0.0,
   "shortcuts": [
    {
-    "color": "Blue",
-    "format": null,
-    "label": "Ficha Cliente",
-    "link_to": "Ficha_Cliente",
-    "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
-   },
-   {
-    "color": "Red",
-    "format": null,
-    "label": "Declaracion Mensual",
-    "link_to": "Declaracion_Mensual",
-    "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
-   },
-   {
-    "color": "Orange",
-    "format": null,
-    "label": "Borrador F29",
-    "link_to": "Borrador_F29",
-    "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "color": "Green",
+    "doc_view": null,
+    "format": "",
+    "icon": null,
+    "kanban_board": null,
+    "label": "Inicio",
+    "link_to": "panel_app",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Page",
+    "url": null
    },
    {
     "color": "Green",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Panel Mensual",
+    "link_to": "panel_mensual",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Page",
+    "url": null
+   },
+   {
+    "color": "Blue",
+    "doc_view": null,
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Ficha Cliente",
+    "link_to": "Ficha_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Red",
+    "doc_view": null,
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Declaracion Mensual",
+    "link_to": "Declaracion_Mensual",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Orange",
+    "doc_view": null,
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Borrador F29",
+    "link_to": "Borrador_F29",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "Green",
+    "doc_view": null,
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Cobranza Cliente",
     "link_to": "Cobranza_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Purple",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Libro Ingresos",
     "link_to": "Libro_de_Ingresos_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Yellow",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Libro Egresos",
     "link_to": "Libro_de_Egresos_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Cyan",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Remuneraciones",
     "link_to": "Registro_Remuneraciones",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Pink",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Postergacion IVA",
     "link_to": "Postergacion_IVA",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Gray",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Configuracion App",
     "link_to": "Configuracion App",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Green",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Libro Compras",
     "link_to": "Libro_de_Compras_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Orange",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Libro Honorarios",
     "link_to": "Libro_de_Honorarios_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    },
    {
     "color": "Red",
+    "doc_view": null,
     "format": null,
+    "icon": null,
+    "kanban_board": null,
     "label": "Libro Gastos",
     "link_to": "Libro_de_Gastos_Cliente",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": null,
     "type": "DocType",
-    "parent": "Evoluciona Pyme V2",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace"
+    "url": null
    }
   ],
-  "roles": []
+  "title": "Evoluciona Pyme V2",
+  "type": "Workspace"
  }
 ]

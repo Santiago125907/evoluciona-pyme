@@ -1,7 +1,7 @@
 {
  "app": "evoluciona_pyme_v2",
  "charts": [],
- "content": "[{\"id\":\"ep_custom_1\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Dashboard Evoluciona Pyme\",\"col\":12}},{\"id\":\"ep_sp_0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Acceso Rápido</b></span>\",\"col\":12}},{\"id\":\"ep_sc_pm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Panel Mensual\",\"col\":3}},{\"id\":\"ep_sc_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha Cliente\",\"col\":3}},{\"id\":\"ep_sc_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Declaracion Mensual\",\"col\":3}},{\"id\":\"ep_sc_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Borrador F29\",\"col\":3}},{\"id\":\"ep_sc_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cobranza Cliente\",\"col\":3}},{\"id\":\"ep_sc_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Ingresos\",\"col\":3}},{\"id\":\"ep_sc_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Egresos\",\"col\":3}},{\"id\":\"ep_sc_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Remuneraciones\",\"col\":3}},{\"id\":\"ep_sc_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Postergacion IVA\",\"col\":3}},{\"id\":\"ep_sp_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"id\":\"ep_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Clientes\",\"col\":4}},{\"id\":\"ep_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Declaraciones e Impuestos\",\"col\":4}},{\"id\":\"ep_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Libros Contables\",\"col\":4}},{\"id\":\"ep_card_4\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuración\",\"col\":4}}]",
+ "content": "[{\"id\":\"ep_custom_1\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Dashboard Evoluciona Pyme\",\"col\":12}},{\"id\":\"ep_sp_0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Acceso Rápido</b></span>\",\"col\":12}},{\"id\":\"ep_sc_inicio\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Inicio\",\"col\":3}},{\"id\":\"ep_sc_pm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Panel Mensual\",\"col\":3}},{\"id\":\"ep_sc_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha Cliente\",\"col\":3}},{\"id\":\"ep_sc_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Declaracion Mensual\",\"col\":3}},{\"id\":\"ep_sc_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Borrador F29\",\"col\":3}},{\"id\":\"ep_sc_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cobranza Cliente\",\"col\":3}},{\"id\":\"ep_sc_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Ingresos\",\"col\":3}},{\"id\":\"ep_sc_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Egresos\",\"col\":3}},{\"id\":\"ep_sc_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Remuneraciones\",\"col\":3}},{\"id\":\"ep_sc_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Postergacion IVA\",\"col\":3}},{\"id\":\"ep_sp_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"id\":\"ep_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Clientes\",\"col\":4}},{\"id\":\"ep_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Declaraciones e Impuestos\",\"col\":4}},{\"id\":\"ep_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Libros Contables\",\"col\":4}},{\"id\":\"ep_card_4\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuración\",\"col\":4}}]",
  "creation": "2026-04-23 07:22:46.036862",
  "custom_blocks": [
   {
@@ -228,6 +228,13 @@
  "roles": [],
  "sequence_id": 0.0,
  "shortcuts": [
+  {
+   "color": "Green",
+   "format": "",
+   "label": "Inicio",
+   "link_to": "panel_app",
+   "type": "Page"
+  },
   {
    "color": "Green",
    "label": "Panel Mensual",
