@@ -16,7 +16,8 @@ add_to_apps_screen = [
 		"name": "evoluciona_pyme_v2",
 		"logo": "/assets/evoluciona_pyme_v2/images/logo.svg",
 		"title": "Evoluciona Pyme",
-		"route": "/app/panel_app"
+		"route": "/desk",
+		"has_permission": "evoluciona_pyme_v2.evoluciona_pyme_v2.api.has_app_permission"
 	}
 ]
 

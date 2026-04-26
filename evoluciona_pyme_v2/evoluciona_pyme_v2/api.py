@@ -2371,3 +2371,8 @@ def resetear_declaracion(doc_name):
         }
     except Exception as e:
         frappe.response["message"] = {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def has_app_permission():
+	return frappe.session.user != "Guest"
