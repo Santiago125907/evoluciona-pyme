@@ -1,0 +1,321 @@
+{
+ "actions": [],
+ "creation": "2026-04-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tab_general",
+  "sb_empresa",
+  "nombre_empresa",
+  "rut_empresa",
+  "logo_empresa",
+  "col_break_1",
+  "nombre_titular",
+  "email_contacto",
+  "email_asesor",
+  "telefono",
+  "sitio_web",
+  "sb_banco",
+  "banco",
+  "tipo_cuenta",
+  "numero_cuenta",
+  "tab_webhooks",
+  "sb_webhooks_sii",
+  "webhook_sii",
+  "webhook_carga_historica",
+  "webhook_facturacion",
+  "webhook_envio_declaracion",
+  "webhook_preparar_pdf",
+  "webhook_descarga_masiva",
+  "sb_libro_compras",
+  "habilitar_descarga_libros",
+  "dia_descarga_libros",
+  "hora_descarga_libros",
+  "webhook_libro_compras",
+  "webhook_libro_ventas",
+  "habilitar_descarga_libro_compras",
+  "hora_descarga_libro_compras",
+  "tab_cron",
+  "sb_tareas_mensuales",
+  "habilitar_tareas_mensuales",
+  "dia_ejecucion_tareas",
+  "hora_ejecucion_tareas",
+  "sb_cron_info",
+  "cron_expresion_calculada",
+  "ultima_ejecucion_tareas",
+  "ultima_ejecucion_libro_compras",
+  "ultima_ejecucion_libros",
+  "tab_sistema",
+  "sb_api",
+  "api_access_token",
+  "habilitar_logs_api"
+ ],
+ "fields": [
+  {
+   "fieldname": "tab_general",
+   "fieldtype": "Tab Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "sb_empresa",
+   "fieldtype": "Section Break",
+   "label": "Datos de la Empresa"
+  },
+  {
+   "fieldname": "nombre_empresa",
+   "fieldtype": "Data",
+   "label": "Nombre de la Empresa",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rut_empresa",
+   "fieldtype": "Data",
+   "label": "RUT"
+  },
+  {
+   "fieldname": "logo_empresa",
+   "fieldtype": "Attach Image",
+   "label": "Logo de la Empresa"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nombre_titular",
+   "fieldtype": "Data",
+   "label": "Nombre del Titular"
+  },
+  {
+   "fieldname": "email_contacto",
+   "fieldtype": "Data",
+   "label": "Email de Contacto",
+   "options": "Email"
+  },
+  {
+   "fieldname": "email_asesor",
+   "fieldtype": "Data",
+   "label": "Email Asesor",
+   "options": "Email"
+  },
+  {
+   "fieldname": "telefono",
+   "fieldtype": "Data",
+   "label": "Teléfono"
+  },
+  {
+   "fieldname": "sitio_web",
+   "fieldtype": "Data",
+   "label": "Sitio Web"
+  },
+  {
+   "fieldname": "sb_banco",
+   "fieldtype": "Section Break",
+   "label": "Datos Bancarios"
+  },
+  {
+   "fieldname": "banco",
+   "fieldtype": "Data",
+   "label": "Banco"
+  },
+  {
+   "fieldname": "tipo_cuenta",
+   "fieldtype": "Select",
+   "label": "Tipo de Cuenta",
+   "options": "\nCuenta Corriente\nCuenta Vista\nCuenta de Ahorro"
+  },
+  {
+   "fieldname": "numero_cuenta",
+   "fieldtype": "Data",
+   "label": "Número de Cuenta"
+  },
+  {
+   "fieldname": "tab_webhooks",
+   "fieldtype": "Tab Break",
+   "label": "Webhooks N8n"
+  },
+  {
+   "fieldname": "sb_webhooks_sii",
+   "fieldtype": "Section Break",
+   "label": "Webhooks Generales"
+  },
+  {
+   "fieldname": "webhook_sii",
+   "fieldtype": "Data",
+   "label": "Webhook Actualizar SII"
+  },
+  {
+   "fieldname": "webhook_carga_historica",
+   "fieldtype": "Data",
+   "label": "Webhook Carga Histórica"
+  },
+  {
+   "fieldname": "webhook_facturacion",
+   "fieldtype": "Data",
+   "label": "Webhook Facturación (De Facto)"
+  },
+  {
+   "fieldname": "webhook_envio_declaracion",
+   "fieldtype": "Data",
+   "label": "Webhook Envío por Email/WhatsApp"
+  },
+  {
+   "fieldname": "webhook_preparar_pdf",
+   "fieldtype": "Data",
+   "label": "Webhook Preparar PDF"
+  },
+  {
+   "fieldname": "webhook_descarga_masiva",
+   "fieldtype": "Data",
+   "label": "Webhook Descarga Masiva"
+  },
+  {
+   "fieldname": "sb_libro_compras",
+   "fieldtype": "Section Break",
+   "label": "Descarga Automática de Libros"
+  },
+  {
+   "fieldname": "habilitar_descarga_libros",
+   "fieldtype": "Check",
+   "label": "Habilitar Descarga Automática de Libros (Compras y Ventas)"
+  },
+  {
+   "fieldname": "dia_descarga_libros",
+   "fieldtype": "Int",
+   "label": "Día del Mes de Descarga",
+   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
+   "default": "5",
+   "depends_on": "eval:doc.habilitar_descarga_libros"
+  },
+  {
+   "fieldname": "hora_descarga_libros",
+   "fieldtype": "Select",
+   "label": "Hora de Descarga",
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
+   "default": "08:00",
+   "depends_on": "eval:doc.habilitar_descarga_libros"
+  },
+  {
+   "fieldname": "webhook_libro_compras",
+   "fieldtype": "Data",
+   "label": "Webhook Libro de Compras (N8n)",
+   "depends_on": "eval:doc.habilitar_descarga_libros"
+  },
+  {
+   "fieldname": "webhook_libro_ventas",
+   "fieldtype": "Data",
+   "label": "Webhook Libro de Ventas (N8n)",
+   "depends_on": "eval:doc.habilitar_descarga_libros"
+  },
+  {
+   "fieldname": "habilitar_descarga_libro_compras",
+   "fieldtype": "Check",
+   "label": "Habilitar Descarga Automática Libro de Compras",
+   "hidden": 1
+  },
+  {
+   "fieldname": "hora_descarga_libro_compras",
+   "fieldtype": "Select",
+   "label": "Hora de Descarga (legado)",
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
+   "hidden": 1
+  },
+  {
+   "fieldname": "tab_cron",
+   "fieldtype": "Tab Break",
+   "label": "Tareas Automáticas"
+  },
+  {
+   "fieldname": "sb_tareas_mensuales",
+   "fieldtype": "Section Break",
+   "label": "Creación de Tareas Mensuales"
+  },
+  {
+   "fieldname": "habilitar_tareas_mensuales",
+   "fieldtype": "Check",
+   "label": "Habilitar Creación Automática de Tareas Mensuales",
+   "default": "1"
+  },
+  {
+   "fieldname": "dia_ejecucion_tareas",
+   "fieldtype": "Int",
+   "label": "Día del Mes de Ejecución",
+   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
+   "default": "1",
+   "depends_on": "eval:doc.habilitar_tareas_mensuales"
+  },
+  {
+   "fieldname": "hora_ejecucion_tareas",
+   "fieldtype": "Select",
+   "label": "Hora de Ejecución",
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
+   "default": "01:00",
+   "depends_on": "eval:doc.habilitar_tareas_mensuales"
+  },
+  {
+   "fieldname": "sb_cron_info",
+   "fieldtype": "Section Break",
+   "label": "Expresión Cron Generada"
+  },
+  {
+   "fieldname": "cron_expresion_calculada",
+   "fieldtype": "Data",
+   "label": "Expresión Cron",
+   "read_only": 1,
+   "description": "Se calcula automáticamente según día y hora configurados."
+  },
+  {
+   "fieldname": "ultima_ejecucion_tareas",
+   "fieldtype": "Datetime",
+   "label": "Última Ejecución Tareas Mensuales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultima_ejecucion_libro_compras",
+   "fieldtype": "Datetime",
+   "label": "Última Ejecución Libro de Compras (legado)",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "ultima_ejecucion_libros",
+   "fieldtype": "Datetime",
+   "label": "Última Ejecución Descarga de Libros",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tab_sistema",
+   "fieldtype": "Tab Break",
+   "label": "Sistema"
+  },
+  {
+   "fieldname": "sb_api",
+   "fieldtype": "Section Break",
+   "label": "API y Seguridad"
+  },
+  {
+   "fieldname": "api_access_token",
+   "fieldtype": "Password",
+   "label": "API Access Token"
+  },
+  {
+   "fieldname": "habilitar_logs_api",
+   "fieldtype": "Check",
+   "label": "Habilitar Logs de API"
+  }
+ ],
+ "issingle": 1,
+ "modified": "2026-04-19 00:00:00",
+ "module": "Evoluciona Pyme V2",
+ "name": "Configuracion App",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

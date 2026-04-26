@@ -33,6 +33,7 @@
   "tasa_ppm",
   "column_break_oibf",
   "regimen_tributario",
+  "usa_iva_credito",
   "credenciales_section",
   "credenciales_sii_column",
   "clave_sii",
@@ -56,7 +57,9 @@
   "servicios_adicionales",
   "tab_5_tab",
   "descuento_cliente_item",
-  "descuentos_cliente"
+  "descuentos_cliente",
+  "carga_historica_tab",
+  "panel_carga_historica"
  ],
  "fields": [
   {
@@ -229,6 +232,13 @@
    "options": "Pro Pyme General\nPro Pyme Transparente\nRenta Presunta\nGeneral (Semi Integrado)"
   },
   {
+   "fieldname": "usa_iva_credito",
+   "fieldtype": "Check",
+   "label": "Usa IVA Cr\u00e9dito Fiscal",
+   "default": "1",
+   "description": "Desmarcar para clientes con giro 100% exento: el IVA pagado en compras se trata como costo empresa."
+  },
+  {
    "fieldname": "credenciales_section",
    "fieldtype": "Section Break",
    "label": "Credenciales"
@@ -348,12 +358,23 @@
    "fieldname": "descuentos_cliente",
    "fieldtype": "Table",
    "options": "Descuento_Cliente_Item"
+  },
+  {
+   "fieldname": "carga_historica_tab",
+   "fieldtype": "Tab Break",
+   "label": "Carga Histórica"
+  },
+  {
+   "fieldname": "panel_carga_historica",
+   "fieldtype": "HTML",
+   "label": "Panel Carga Histórica",
+   "options": "<div id=\"panel-carga-historica\" style=\"padding:20px 0;\">\n  <div style=\"background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:20px 24px;max-width:640px;\">\n    <h5 style=\"margin:0 0 4px;color:#333;font-weight:600;\">Carga Histórica</h5>\n    <p style=\"margin:0 0 16px;font-size:12px;color:#888;\">Selecciona el período y usa los botones según lo que necesites.</p>\n    <div style=\"display:flex;gap:16px;margin-bottom:20px;align-items:flex-end;\">\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Año</label>\n        <select id=\"ch-ano\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Año —</option>\n          <option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option>\n        </select>\n      </div>\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Mes</label>\n        <select id=\"ch-mes\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Mes —</option>\n          <option value=\"1\">Enero</option><option value=\"2\">Febrero</option><option value=\"3\">Marzo</option>\n          <option value=\"4\">Abril</option><option value=\"5\">Mayo</option><option value=\"6\">Junio</option>\n          <option value=\"7\">Julio</option><option value=\"8\">Agosto</option><option value=\"9\">Septiembre</option>\n          <option value=\"10\">Octubre</option><option value=\"11\">Noviembre</option><option value=\"12\">Diciembre</option>\n        </select>\n      </div>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Crear declaraciones</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;\">\n      <button onclick=\"ch_crear_declaraciones()\" style=\"background:#1a6e3c;color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;\">📋 Crear Declaracion Mensual + F29</button>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Importar documentos tributarios</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;\">\n      <button onclick=\"ch_importar('compras')\" style=\"background:#e67e22;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Compras</button>\n      <button onclick=\"ch_importar('ventas')\" style=\"background:#27ae60;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Ventas</button>\n      <button onclick=\"ch_importar('honorarios')\" style=\"background:#8e44ad;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Honorarios</button>\n      <button onclick=\"ch_importar('lre')\" style=\"background:#2980b9;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 LRE (Previred)</button>\n    </div>\n  </div>\n</div>"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:33.008888",
+ "modified": "2026-04-26 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Ficha_Cliente",

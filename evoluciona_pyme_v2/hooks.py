@@ -85,6 +85,8 @@ app_license = "mit"
 # before_install = "evoluciona_pyme_v2.install.before_install"
 # after_install = "evoluciona_pyme_v2.install.after_install"
 
+after_migrate = ["evoluciona_pyme_v2.evoluciona_pyme_v2.setup.sync_fixtures_post_migrate"]
+
 # Uninstallation
 # ------------
 
@@ -149,12 +151,13 @@ app_license = "mit"
 # ---------------
 
 scheduler_events = {
-	# "all": ["evoluciona_pyme_v2.tasks.all"],
-	# "daily": ["evoluciona_pyme_v2.tasks.daily"],
-	# "hourly": ["evoluciona_pyme_v2.tasks.hourly"],
-	# "weekly": ["evoluciona_pyme_v2.tasks.weekly"],
-	"monthly": [
-		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.crear_tareas_mensuales"
+	# Cron 1: crea Declaracion_Mensual + Borrador_F29 (una vez al mes, día+hora configurables)
+	"hourly_long": [
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.dispatcher_cron"
+	],
+	# Cron 2: dispara webhooks de descarga de Libro de Compras y Ventas (una vez al día)
+	"hourly": [
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.dispatcher_libros"
 	],
 }
 
@@ -242,5 +245,7 @@ fixtures = [
 	{"dt": "Server Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
 	{"dt": "Client Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
 	{"dt": "Workspace", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
+	{"dt": "Custom HTML Block", "filters": [["name", "in", ["Dashboard Evoluciona Pyme"]]]},
 	{"dt": "Web Page", "filters": [["name", "in", ["portal-login", "portal-del-cliente"]]]},
+	{"dt": "Configuracion_Codigo_F29", "filters": [["name", "in", ["62","155","49","151","48","504","532","528","520","562","510","759","111","502","142"]]]},
 ]

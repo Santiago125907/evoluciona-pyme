@@ -26,14 +26,14 @@
   {
    "fieldname": "codigo_f29",
    "fieldtype": "Data",
-   "label": "C\u00f3digo F29",
+   "label": "Código F29",
    "unique": 1
   },
   {
-   "description": "La descripci\u00f3n oficial (ej: \"IVA por Facturas Emitidas\").",
+   "description": "La descripción oficial (ej: \"IVA por Facturas Emitidas\").",
    "fieldname": "descripcion",
    "fieldtype": "Data",
-   "label": "Descripci\u00f3n"
+   "label": "Descripción"
   },
   {
    "fieldname": "tabla_destino",
@@ -44,14 +44,14 @@
   {
    "fieldname": "tipo_operacion_subtotal",
    "fieldtype": "Select",
-   "label": "Tipo de Operaci\u00f3n (Subtotal)",
+   "label": "Tipo de Operación (Subtotal)",
    "options": "Suma\nResta\nInformativo"
   },
   {
    "default": "0",
    "fieldname": "es_calculado",
    "fieldtype": "Check",
-   "label": "\u00bfEs Calculado?"
+   "label": "¿Es Calculado?"
   },
   {
    "fieldname": "instrucciones_solo_si_es_calculado_section",
@@ -62,7 +62,7 @@
    "fieldname": "fuente_doctype",
    "fieldtype": "Select",
    "label": "Fuente de Datos",
-   "options": "\nLibro_de_Egresos_Cliente\nLibro_de_Ingresos_Cliente\nRegistro_Remuneraciones",
+   "options": "\nLibro_de_Ingresos_Cliente\nLibro_de_Compras_Cliente\nLibro_de_Honorarios_Cliente\nLibro_de_Gastos_Cliente\nLibro_de_Egresos_Cliente\nRegistro_Remuneraciones",
    "read_only_depends_on": "eval:!doc.es_calculado"
   },
   {

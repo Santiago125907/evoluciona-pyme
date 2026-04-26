@@ -12,10 +12,11 @@
   "tipo_documento",
   "folio",
   "rut_receptor",
+  "razon_social_receptor",
+  "monto_exento",
   "neto",
   "iva",
-  "total",
-  "razon_social_receptor"
+  "total"
  ],
  "fields": [
   {
@@ -35,7 +36,7 @@
   {
    "fieldname": "ano_tributario",
    "fieldtype": "Select",
-   "label": "A\u00f1o Tributario",
+   "label": "Año Tributario",
    "options": "2025\n2026\n2027",
    "reqd": 1
   },
@@ -49,7 +50,7 @@
    "fieldname": "tipo_documento",
    "fieldtype": "Select",
    "label": "Tipo de Documento",
-   "options": "FACTURA ELECTR\u00d3NICA\nNOTA DE CR\u00c9DITO ELECTR\u00d3NICA\nNOTA DE D\u00c9BITO ELECTR\u00d3NICA\nTotal Oper. del mes Boleta Electr.(39)\nTotal mes Comprobantes Pago Electr\u00f3nico(48)"
+   "options": "FACTURA ELECTRÓNICA\nFACTURA NO ELECTRÓNICA\nNOTA DE CRÉDITO ELECTRÓNICA\nNOTA DE DÉBITO ELECTRÓNICA\nTotal Oper. del mes Boleta Electr.(39)\nTotal mes Comprobantes Pago Electrónico(48)"
   },
   {
    "fieldname": "folio",
@@ -60,6 +61,16 @@
    "fieldname": "rut_receptor",
    "fieldtype": "Data",
    "label": "RUT Receptor"
+  },
+  {
+   "fieldname": "razon_social_receptor",
+   "fieldtype": "Data",
+   "label": "Razón Social Receptor"
+  },
+  {
+   "fieldname": "monto_exento",
+   "fieldtype": "Currency",
+   "label": "Monto Exento"
   },
   {
    "fieldname": "neto",
@@ -75,17 +86,12 @@
    "fieldname": "total",
    "fieldtype": "Currency",
    "label": "Total"
-  },
-  {
-   "fieldname": "razon_social_receptor",
-   "fieldtype": "Data",
-   "label": "Raz\u00f3n Social Receptor"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:33.487740",
+ "modified": "2026-04-25 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Libro_de_Ingresos_Cliente",

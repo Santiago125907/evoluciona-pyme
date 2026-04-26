@@ -55,7 +55,7 @@ frappe.ui.form.on('Ficha_Cliente', {
                     // Webhook n8n SII
                     
                     
-                    frappe.db.get_single_value('Configuracion_n8n', 'webhook_sii').then(N8N_WEBHOOK_SII => { fetch(N8N_WEBHOOK_SII, {
+                    frappe.db.get_single_value('Configuracion App', 'webhook_sii').then(N8N_WEBHOOK_SII => { fetch(N8N_WEBHOOK_SII, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -172,7 +172,7 @@ frappe.ui.form.on('Ficha_Cliente', {
                         indicator: 'green'
                     }, 5);
 
-                    frappe.db.get_single_value('Configuracion_n8n', 'webhook_carga_historica').then(N8N_WEBHOOK_URL => { fetch(N8N_WEBHOOK_URL, {
+                    frappe.db.get_single_value('Configuracion App', 'webhook_carga_historica').then(N8N_WEBHOOK_URL => { fetch(N8N_WEBHOOK_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -841,7 +841,7 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
                         // PASO 6: FREEZE UI y enviar a n8n
                         frappe.dom.freeze('📤 Enviando declaración por Email y WhatsApp...<br><small>Por favor espera 10-20 segundos</small>');
                         
-                        frappe.db.get_single_value('Configuracion_n8n', 'webhook_envio_declaracion').then(N8N_WEBHOOK_ENVIO => { fetch(N8N_WEBHOOK_ENVIO, {
+                        frappe.db.get_single_value('Configuracion App', 'webhook_envio_declaracion').then(N8N_WEBHOOK_ENVIO => { fetch(N8N_WEBHOOK_ENVIO, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -1494,7 +1494,7 @@ function facturar_cobranza(doc_name, frm) {
                                 console.log('📤 Payload a De Facto:', payload);
                                 
                                 // PASO 5: Enviar a n8n
-                                frappe.db.get_single_value('Configuracion_n8n', 'webhook_facturacion').then(N8N_WEBHOOK_FACTURACION => { fetch(N8N_WEBHOOK_FACTURACION, {
+                                frappe.db.get_single_value('Configuracion App', 'webhook_facturacion').then(N8N_WEBHOOK_FACTURACION => { fetch(N8N_WEBHOOK_FACTURACION, {
                                     method: 'POST',
                                     headers: {'Content-Type': 'application/json'},
                                     body: JSON.stringify(payload)
@@ -1638,7 +1638,7 @@ frappe.ui.form.on('Ficha_Cliente', {
                     // Webhook n8n SII
                     
                     
-                    frappe.db.get_single_value('Configuracion_n8n', 'webhook_sii').then(N8N_WEBHOOK_SII => { fetch(N8N_WEBHOOK_SII, {
+                    frappe.db.get_single_value('Configuracion App', 'webhook_sii').then(N8N_WEBHOOK_SII => { fetch(N8N_WEBHOOK_SII, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -1755,7 +1755,7 @@ frappe.ui.form.on('Ficha_Cliente', {
                         indicator: 'green'
                     }, 5);
 
-                    frappe.db.get_single_value('Configuracion_n8n', 'webhook_carga_historica').then(N8N_WEBHOOK_URL => { fetch(N8N_WEBHOOK_URL, {
+                    frappe.db.get_single_value('Configuracion App', 'webhook_carga_historica').then(N8N_WEBHOOK_URL => { fetch(N8N_WEBHOOK_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -2424,7 +2424,7 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
                         // PASO 6: FREEZE UI y enviar a n8n
                         frappe.dom.freeze('📤 Enviando declaración por Email y WhatsApp...<br><small>Por favor espera 10-20 segundos</small>');
                         
-                        frappe.db.get_single_value('Configuracion_n8n', 'webhook_envio_declaracion').then(N8N_WEBHOOK_ENVIO => { fetch(N8N_WEBHOOK_ENVIO, {
+                        frappe.db.get_single_value('Configuracion App', 'webhook_envio_declaracion').then(N8N_WEBHOOK_ENVIO => { fetch(N8N_WEBHOOK_ENVIO, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -3077,7 +3077,7 @@ function facturar_cobranza(doc_name, frm) {
                                 console.log('📤 Payload a De Facto:', payload);
                                 
                                 // PASO 5: Enviar a n8n
-                                frappe.db.get_single_value('Configuracion_n8n', 'webhook_facturacion').then(N8N_WEBHOOK_FACTURACION => { fetch(N8N_WEBHOOK_FACTURACION, {
+                                frappe.db.get_single_value('Configuracion App', 'webhook_facturacion').then(N8N_WEBHOOK_FACTURACION => { fetch(N8N_WEBHOOK_FACTURACION, {
                                     method: 'POST',
                                     headers: {'Content-Type': 'application/json'},
                                     body: JSON.stringify(payload)

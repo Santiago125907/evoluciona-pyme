@@ -19,17 +19,21 @@ class Declaracion_Mensual(Document):
 		check_f29 = 1 if self.get('check_f29_cuadrado') else 0
 		check_prev = 1 if self.get('check_previred_cuadrado') else 0
 
+		# Si el cliente no tiene Previred, el check de Previred no es obligatorio
+		usa_previred = bool(frappe.db.get_value('Ficha_Cliente', self.cliente, 'rut_usuario'))
+		checks_ok = check_rrhh and check_f29 and (check_prev if usa_previred else True)
+
 		total_checks = check_rrhh + check_f29 + check_prev
 
 		if total_checks == 0:
 			self.estado = "Borrador"
-		elif total_checks == 3:
+		elif checks_ok:
 			self.estado = "Listo"
 		else:
 			self.estado = "En Validación"
 
 		frappe.msgprint(
-			f"📊 Checks: RRHH={check_rrhh}, F29={check_f29}, Prev={check_prev} → Estado: {self.estado}",
+			f"📊 Checks: RRHH={check_rrhh}, F29={check_f29}, Prev={check_prev} (req={usa_previred}) → Estado: {self.estado}",
 			indicator='blue'
 		)
 

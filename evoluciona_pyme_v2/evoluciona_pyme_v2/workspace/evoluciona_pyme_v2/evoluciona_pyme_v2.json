@@ -1,0 +1,288 @@
+{
+ "app": "evoluciona_pyme_v2",
+ "charts": [],
+ "content": "[{\"id\":\"ep_custom_1\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Dashboard Evoluciona Pyme\",\"col\":12}},{\"id\":\"ep_sp_0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Acceso Rápido</b></span>\",\"col\":12}},{\"id\":\"ep_sc_pm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Panel Mensual\",\"col\":3}},{\"id\":\"ep_sc_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Ficha Cliente\",\"col\":3}},{\"id\":\"ep_sc_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Declaracion Mensual\",\"col\":3}},{\"id\":\"ep_sc_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Borrador F29\",\"col\":3}},{\"id\":\"ep_sc_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cobranza Cliente\",\"col\":3}},{\"id\":\"ep_sc_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Ingresos\",\"col\":3}},{\"id\":\"ep_sc_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Libro Egresos\",\"col\":3}},{\"id\":\"ep_sc_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Remuneraciones\",\"col\":3}},{\"id\":\"ep_sc_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Postergacion IVA\",\"col\":3}},{\"id\":\"ep_sp_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"ep_hdr_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Módulos</b></span>\",\"col\":12}},{\"id\":\"ep_card_1\",\"type\":\"card\",\"data\":{\"card_name\":\"Clientes\",\"col\":4}},{\"id\":\"ep_card_2\",\"type\":\"card\",\"data\":{\"card_name\":\"Declaraciones e Impuestos\",\"col\":4}},{\"id\":\"ep_card_3\",\"type\":\"card\",\"data\":{\"card_name\":\"Libros Contables\",\"col\":4}},{\"id\":\"ep_card_4\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuración\",\"col\":4}}]",
+ "creation": "2026-04-23 07:22:46.036862",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Dashboard Evoluciona Pyme",
+   "label": "Dashboard Evoluciona Pyme"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "accounting",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Evoluciona Pyme V2",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Clientes",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Ficha Cliente",
+   "link_count": 0,
+   "link_to": "Ficha_Cliente",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cobranza Cliente",
+   "link_count": 0,
+   "link_to": "Cobranza_Cliente",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vencimiento Cliente",
+   "link_count": 0,
+   "link_to": "Vencimiento_Cliente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Catálogo Servicios",
+   "link_count": 0,
+   "link_to": "Catalogo_Servicio",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planes Contables",
+   "link_count": 0,
+   "link_to": "Plan_Contable",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Declaraciones e Impuestos",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Panel Mensual",
+   "link_count": 0,
+   "link_to": "panel_mensual",
+   "link_type": "Page",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Declaracion Mensual",
+   "link_count": 0,
+   "link_to": "Declaracion_Mensual",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Borrador F29",
+   "link_count": 0,
+   "link_to": "Borrador_F29",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Postergacion IVA",
+   "link_count": 0,
+   "link_to": "Postergacion_IVA",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libros Contables",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libro de Ingresos",
+   "link_count": 0,
+   "link_to": "Libro_de_Ingresos_Cliente",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libro de Egresos",
+   "link_count": 0,
+   "link_to": "Libro_de_Egresos_Cliente",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Registro Remuneraciones",
+   "link_count": 0,
+   "link_to": "Registro_Remuneraciones",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Control de Carga",
+   "link_count": 0,
+   "link_to": "Control_Carga",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuración",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuracion App",
+   "link_count": 0,
+   "link_to": "Configuracion App",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuracion F29",
+   "link_count": 0,
+   "link_to": "Configuracion_Codigo_F29",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-04-23 07:28:30.522646",
+ "modified_by": "sromero1808@gmail.com",
+ "module": "Evoluciona Pyme V2",
+ "name": "Evoluciona Pyme V2",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "label": "Panel Mensual",
+   "link_to": "panel_mensual",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "label": "Ficha Cliente",
+   "link_to": "Ficha_Cliente",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "label": "Declaracion Mensual",
+   "link_to": "Declaracion_Mensual",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Borrador F29",
+   "link_to": "Borrador_F29",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "label": "Cobranza Cliente",
+   "link_to": "Cobranza_Cliente",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "label": "Libro Ingresos",
+   "link_to": "Libro_de_Ingresos_Cliente",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "label": "Libro Egresos",
+   "link_to": "Libro_de_Egresos_Cliente",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "label": "Remuneraciones",
+   "link_to": "Registro_Remuneraciones",
+   "type": "DocType"
+  },
+  {
+   "color": "Pink",
+   "label": "Postergacion IVA",
+   "link_to": "Postergacion_IVA",
+   "type": "DocType"
+  }
+ ],
+ "title": "Evoluciona Pyme V2",
+ "type": "Workspace"
+}

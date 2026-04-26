@@ -1,3 +1,4 @@
+import json
 import frappe
 
 @frappe.whitelist(allow_guest=False)
@@ -117,17 +118,64 @@ def recalcular_asistente_f29(**kwargs):
                             AND mes_tributario = %(mes)s
                             AND docstatus IN (0, 1)
                         """
-                        
-                        params = {
-                            "cliente": doc.cliente,
-                            "ano": str(doc.ano),
-                            "mes": str(doc.mes)
-                        }
-                        
+                        params = {"cliente": doc.cliente, "ano": str(doc.ano), "mes": str(doc.mes)}
                         if filtro:
                             query += " AND tipo_egreso = %(filtro)s"
                             params["filtro"] = filtro
-                        
+                        result = frappe.db.sql(query, params, as_dict=True)
+                        monto = result[0].total if result else 0
+
+                    # =====================================================
+                    # CALCULAR DESDE LIBRO DE COMPRAS
+                    # =====================================================
+                    elif fuente == "Libro_de_Compras_Cliente":
+                        query = f"""
+                            SELECT COALESCE(SUM(`{campo}`), 0) as total
+                            FROM `tabLibro_de_Compras_Cliente`
+                            WHERE cliente = %(cliente)s
+                            AND ano_tributario = %(ano)s
+                            AND mes_tributario = %(mes)s
+                            AND docstatus IN (0, 1)
+                        """
+                        params = {"cliente": doc.cliente, "ano": str(doc.ano), "mes": str(doc.mes)}
+                        if filtro:
+                            query += " AND tipo_documento = %(filtro)s"
+                            params["filtro"] = filtro
+                        result = frappe.db.sql(query, params, as_dict=True)
+                        monto = result[0].total if result else 0
+
+                    # =====================================================
+                    # CALCULAR DESDE LIBRO DE HONORARIOS
+                    # =====================================================
+                    elif fuente == "Libro_de_Honorarios_Cliente":
+                        query = f"""
+                            SELECT COALESCE(SUM(`{campo}`), 0) as total
+                            FROM `tabLibro_de_Honorarios_Cliente`
+                            WHERE cliente = %(cliente)s
+                            AND ano_tributario = %(ano)s
+                            AND mes_tributario = %(mes)s
+                            AND docstatus IN (0, 1)
+                        """
+                        params = {"cliente": doc.cliente, "ano": str(doc.ano), "mes": str(doc.mes)}
+                        result = frappe.db.sql(query, params, as_dict=True)
+                        monto = result[0].total if result else 0
+
+                    # =====================================================
+                    # CALCULAR DESDE LIBRO DE GASTOS
+                    # =====================================================
+                    elif fuente == "Libro_de_Gastos_Cliente":
+                        query = f"""
+                            SELECT COALESCE(SUM(`{campo}`), 0) as total
+                            FROM `tabLibro_de_Gastos_Cliente`
+                            WHERE cliente = %(cliente)s
+                            AND ano_tributario = %(ano)s
+                            AND mes_tributario = %(mes)s
+                            AND docstatus IN (0, 1)
+                        """
+                        params = {"cliente": doc.cliente, "ano": str(doc.ano), "mes": str(doc.mes)}
+                        if filtro:
+                            query += " AND tipo_gasto = %(filtro)s"
+                            params["filtro"] = filtro
                         result = frappe.db.sql(query, params, as_dict=True)
                         monto = result[0].total if result else 0
                     
@@ -1241,10 +1289,9 @@ def preparar_datos_pdf(**kwargs):
         }
         
         # 16. ENVIAR A N8N
-        N8N_URL = frappe.db.get_single_value('Configuracion_n8n', 'webhook_preparar_pdf')
+        N8N_URL = frappe.db.get_single_value('Configuracion App', 'webhook_preparar_pdf')
         if not N8N_URL:
-            # Fallback por si no lo han llenado
-            N8N_URL = "https://n8n-n8n.6pe7e2.easypanel.host/webhook/f4f3ccd0-0155-4068-9f81-63cb9d715cee"
+            frappe.throw("URL del webhook 'Preparar PDF' no configurada en Configuracion App")
         
         payload_json = json.dumps(payload)
         
@@ -1346,12 +1393,12 @@ def enviar_pdf_cliente(**kwargs):
                         "tipo_envio": "declaracion_mensual"
                     }
                     
-                    # Serializar a JSON manualmente
-                    import json
                     payload_json = json.dumps(payload)
                     
                     # 4. Llamar webhook n8n de ENVÍO
-                    N8N_ENVIO_URL = "https://n8n-n8n.6pe7e2.easypanel.host/webhook/enviar-pdf"
+                    N8N_ENVIO_URL = frappe.db.get_single_value('Configuracion App', 'webhook_envio_declaracion')
+                    if not N8N_ENVIO_URL:
+                        frappe.throw("URL del webhook 'Envío Declaración' no configurada en Configuracion App")
                     
                     response = frappe.make_post_request(
                         url=N8N_ENVIO_URL,
@@ -1397,3 +1444,930 @@ def enviar_pdf_cliente(**kwargs):
             }
 
 
+# ── Importador CSV SII — Libro de Compras ───────────────────────────────────
+
+# Mapa de códigos de tipo de documento SII → opciones del DocType
+TIPO_DOC_SII = {
+    "33": "FACTURA ELECTRÓNICA",
+    "34": "FACTURA NO ELECTRÓNICA",
+    "46": "FACTURA DE COMPRA ELECTRÓNICA",
+    "43": "LIQUIDACIÓN FACTURA",
+    "56": "NOTA DE DÉBITO ELECTRÓNICA",
+    "61": "NOTA DE CRÉDITO ELECTRÓNICA",
+}
+
+def _parse_int(val):
+    try:
+        return int(str(val).strip().replace(".", "").replace(",", "") or 0)
+    except Exception:
+        return 0
+
+def _parse_fecha(val):
+    # Fecha Docto viene como DD/MM/YYYY, Fecha Recepcion como DD/MM/YYYY HH:MM:SS
+    try:
+        return frappe.utils.datetime.datetime.strptime(val.strip()[:10], "%d/%m/%Y").date()
+    except Exception:
+        return None
+
+
+def _resolver_periodo(doc_name=None, cliente=None, mes=None, ano=None):
+    """Returns (cliente, mes_str, ano_str) from either a Borrador_F29 or direct params."""
+    if doc_name:
+        f29 = frappe.get_doc("Borrador_F29", doc_name)
+        return f29.cliente, str(f29.mes), str(f29.ano)
+    if cliente and mes and ano:
+        return str(cliente), str(mes), str(ano)
+    frappe.throw("Se requiere doc_name o cliente+mes+ano.")
+
+
+@frappe.whitelist(allow_guest=False)
+def importar_libro_compras_csv(**kwargs):
+    """
+    Importa el CSV de Libro de Compras descargado del SII al DocType
+    Libro_de_Compras_Cliente, eliminando primero los registros existentes
+    del cliente/período.
+
+    Args:
+        doc_name  : name del Borrador_F29 (entrega cliente, mes, año)
+        file_url  : URL del archivo subido (frappe file)
+    """
+    import csv, io
+
+    doc_name  = frappe.form_dict.get("doc_name")
+    file_url  = frappe.form_dict.get("file_url")
+    cliente_p = frappe.form_dict.get("cliente")
+    mes_p     = frappe.form_dict.get("mes")
+    ano_p     = frappe.form_dict.get("ano")
+
+    if not file_url:
+        frappe.response["message"] = {"status": "error", "message": "Faltan parámetros."}
+        return
+
+    # 1. Resolver cliente/mes/año
+    try:
+        cliente, mes, ano = _resolver_periodo(doc_name=doc_name, cliente=cliente_p, mes=mes_p, ano=ano_p)
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
+        return
+
+    # 2. Leer configuración IVA del cliente
+    usa_iva = frappe.db.get_value("Ficha_Cliente", cliente, "usa_iva_credito")
+    usa_iva = int(usa_iva or 1)
+
+    # 3. Leer archivo
+    try:
+        file_doc  = frappe.get_doc("File", {"file_url": file_url})
+        file_path = file_doc.get_full_path()
+        with open(file_path, encoding="utf-8-sig") as f:
+            contenido = f.read()
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": f"Error leyendo archivo: {e}"}
+        return
+
+    # 4. Eliminar registros existentes del período
+    existentes = frappe.get_all(
+        "Libro_de_Compras_Cliente",
+        filters={"cliente": cliente, "mes_tributario": mes, "ano_tributario": ano},
+        fields=["name"]
+    )
+    for r in existentes:
+        frappe.delete_doc("Libro_de_Compras_Cliente", r.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+
+    # 5. Parsear CSV
+    reader    = csv.DictReader(io.StringIO(contenido), delimiter=";")
+    insertados = 0
+    errores    = []
+
+    for i, row in enumerate(reader, start=1):
+        try:
+            tipo_codigo  = str(row.get("Tipo Doc", "")).strip()
+            tipo_doc     = TIPO_DOC_SII.get(tipo_codigo, "OTRO")
+            rut          = str(row.get("RUT Proveedor", "")).strip()
+            razon        = str(row.get("Razon Social", "")).strip()
+            folio        = str(row.get("Folio", "")).strip()
+            fecha        = _parse_fecha(row.get("Fecha Docto", ""))
+            neto         = _parse_int(row.get("Monto Neto", 0))
+            iva_rec      = _parse_int(row.get("Monto IVA Recuperable", 0))
+            iva_no_rec   = _parse_int(row.get("Monto Iva No Recuperable", 0))
+            exento       = _parse_int(row.get("Monto Exento", 0))
+            total        = _parse_int(row.get("Monto Total", 0))
+
+            # IVA crédito solo si el cliente es afecto
+            iva_credito = iva_rec if usa_iva else 0
+
+            # Costo empresa
+            if usa_iva:
+                costo = neto + exento + iva_no_rec
+            else:
+                costo = neto + iva_rec + exento + iva_no_rec
+
+            doc = frappe.get_doc({
+                "doctype":          "Libro_de_Compras_Cliente",
+                "cliente":          cliente,
+                "mes_tributario":   mes,
+                "ano_tributario":   ano,
+                "tipo_documento":   tipo_doc,
+                "folio":            folio,
+                "fecha_documento":  fecha,
+                "rut_proveedor":    rut,
+                "razon_social_proveedor": razon,
+                "neto":             neto,
+                "iva_credito":      iva_credito,
+                "monto_exento":     exento,
+                "total_documento":  total,
+                "costo_empresa":    costo,
+            })
+            doc.insert(ignore_permissions=True)
+            insertados += 1
+
+        except Exception as e:
+            errores.append(f"Fila {i}: {str(e)[:80]}")
+
+    frappe.db.commit()
+
+    frappe.response["message"] = {
+        "status":     "ok",
+        "insertados": insertados,
+        "eliminados": len(existentes),
+        "errores":    len(errores),
+        "detalle_errores": errores[:10],
+        "message":    f"Importación completada: {insertados} registros cargados, {len(existentes)} anteriores eliminados."
+                      + (f" {len(errores)} errores." if errores else ""),
+    }
+
+
+# ── Importador CSV SII — Libro de Ventas ────────────────────────────────────
+
+TIPO_DOC_VENTA_SII = {
+    "33": "FACTURA ELECTRÓNICA",
+    "34": "FACTURA NO ELECTRÓNICA",
+    "56": "NOTA DE DÉBITO ELECTRÓNICA",
+    "61": "NOTA DE CRÉDITO ELECTRÓNICA",
+}
+
+# Mapa del resumen: texto del SII (puede venir con encoding roto) → tipo_documento
+RESUMEN_TIPO_MAP = {
+    "boleta":        "Total Oper. del mes Boleta Electr.(39)",
+    "comprobante":   "Total mes Comprobantes Pago Electrónico(48)",
+}
+
+def _normalizar_tipo_resumen(texto):
+    """Devuelve el tipo_documento correcto a partir del texto del resumen SII."""
+    t = texto.lower()
+    if "boleta" in t:
+        return "Total Oper. del mes Boleta Electr.(39)"
+    if "comprobante" in t or "pago" in t:
+        return "Total mes Comprobantes Pago Electrónico(48)"
+    return None  # Factura Electrónica del resumen → ignorar
+
+@frappe.whitelist(allow_guest=False)
+def importar_libro_ventas_csv(**kwargs):
+    """
+    Importa el CSV de Libro de Ventas descargado del SII.
+    Acepta dos archivos opcionales:
+      - file_url_detalle  : RCV_VENTA_*.csv  (facturas, NC, ND individuales)
+      - file_url_resumen  : RCV_RESUMEN_VENTA_*.csv (totales boletas/comprobantes)
+
+    Elimina todos los registros existentes del cliente/período antes de importar.
+    """
+    import csv, io
+
+    doc_name         = frappe.form_dict.get("doc_name")
+    file_url_detalle = frappe.form_dict.get("file_url_detalle")
+    file_url_resumen = frappe.form_dict.get("file_url_resumen")
+    cliente_p        = frappe.form_dict.get("cliente")
+    mes_p            = frappe.form_dict.get("mes")
+    ano_p            = frappe.form_dict.get("ano")
+
+    if not file_url_detalle and not file_url_resumen:
+        frappe.response["message"] = {"status": "error", "message": "Debes subir al menos un archivo."}
+        return
+
+    try:
+        cliente, mes, ano = _resolver_periodo(doc_name=doc_name, cliente=cliente_p, mes=mes_p, ano=ano_p)
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
+        return
+
+    # Eliminar registros existentes del período
+    existentes = frappe.get_all(
+        "Libro_de_Ingresos_Cliente",
+        filters={"cliente": cliente, "mes_tributario": mes, "ano_tributario": ano},
+        fields=["name"]
+    )
+    for r in existentes:
+        frappe.delete_doc("Libro_de_Ingresos_Cliente", r.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+
+    insertados = 0
+    errores    = []
+
+    def _leer_archivo(file_url, encoding="utf-8-sig"):
+        file_doc  = frappe.get_doc("File", {"file_url": file_url})
+        file_path = file_doc.get_full_path()
+        with open(file_path, encoding=encoding, errors="replace") as f:
+            return f.read()
+
+    def _insertar(tipo_doc, folio, fecha, rut, razon, exento, neto, iva, total):
+        doc = frappe.get_doc({
+            "doctype":              "Libro_de_Ingresos_Cliente",
+            "cliente":              cliente,
+            "mes_tributario":       mes,
+            "ano_tributario":       ano,
+            "tipo_documento":       tipo_doc,
+            "folio":                folio or "",
+            "fecha_documento":      fecha,
+            "rut_receptor":         rut or "",
+            "razon_social_receptor": razon or "",
+            "monto_exento":         exento,
+            "neto":                 neto,
+            "iva":                  iva,
+            "total":                total,
+        })
+        doc.insert(ignore_permissions=True)
+
+    # ── Archivo detalle (RCV_VENTA) ──────────────────────────────────────────
+    if file_url_detalle:
+        try:
+            contenido = _leer_archivo(file_url_detalle)
+            reader    = csv.DictReader(io.StringIO(contenido), delimiter=";")
+            for i, row in enumerate(reader, start=1):
+                try:
+                    tipo_codigo = str(row.get("Tipo Doc", "")).strip()
+                    tipo_doc    = TIPO_DOC_VENTA_SII.get(tipo_codigo)
+                    if not tipo_doc:
+                        continue  # tipo no reconocido, saltar
+                    exento = _parse_int(row.get("Monto Exento", 0))
+                    neto   = _parse_int(row.get("Monto Neto", 0))
+                    iva    = _parse_int(row.get("Monto IVA", 0))
+                    total  = _parse_int(row.get("Monto total", 0))
+                    _insertar(
+                        tipo_doc  = tipo_doc,
+                        folio     = str(row.get("Folio", "")).strip(),
+                        fecha     = _parse_fecha(row.get("Fecha Docto", "")),
+                        rut       = str(row.get("Rut cliente", "")).strip(),
+                        razon     = str(row.get("Razon Social", "")).strip(),
+                        exento    = exento,
+                        neto      = neto,
+                        iva       = iva,
+                        total     = total,
+                    )
+                    insertados += 1
+                except Exception as e:
+                    errores.append(f"Detalle fila {i}: {str(e)[:80]}")
+        except Exception as e:
+            frappe.response["message"] = {"status": "error", "message": f"Error leyendo archivo detalle: {e}"}
+            return
+
+    # ── Archivo resumen (RCV_RESUMEN_VENTA) ──────────────────────────────────
+    if file_url_resumen:
+        try:
+            contenido = _leer_archivo(file_url_resumen, encoding="latin-1")
+            reader    = csv.DictReader(io.StringIO(contenido), delimiter=";")
+            for i, row in enumerate(reader, start=1):
+                try:
+                    tipo_txt = str(row.get("Tipo Documento", "")).strip()
+                    tipo_doc = _normalizar_tipo_resumen(tipo_txt)
+                    if not tipo_doc:
+                        continue  # fila de facturas → ignorar (ya vienen en detalle)
+                    exento = _parse_int(row.get("Monto Exento", 0))
+                    neto   = _parse_int(row.get("Monto Neto", 0))
+                    iva    = _parse_int(row.get("Monto IVA", 0))
+                    total  = _parse_int(row.get("Monto Total", 0))
+                    _insertar(
+                        tipo_doc = tipo_doc,
+                        folio    = "",
+                        fecha    = frappe.utils.today(),
+                        rut      = "",
+                        razon    = "",
+                        exento   = exento,
+                        neto     = neto,
+                        iva      = iva,
+                        total    = total,
+                    )
+                    insertados += 1
+                except Exception as e:
+                    errores.append(f"Resumen fila {i}: {str(e)[:80]}")
+        except Exception as e:
+            frappe.response["message"] = {"status": "error", "message": f"Error leyendo archivo resumen: {e}"}
+            return
+
+    frappe.db.commit()
+
+    frappe.response["message"] = {
+        "status":          "ok",
+        "insertados":      insertados,
+        "eliminados":      len(existentes),
+        "errores":         len(errores),
+        "detalle_errores": errores[:10],
+        "message":         f"Importación completada: {insertados} registros cargados, {len(existentes)} anteriores eliminados."
+                           + (f" {len(errores)} errores." if errores else ""),
+    }
+
+
+# ── Importador CSV SII — Libro de Honorarios ────────────────────────────────
+
+@frappe.whitelist()
+def importar_libro_honorarios_csv(doc_name=None, file_url=None, cliente=None, mes=None, ano=None):
+    """
+    Importa el CSV de Honorarios descargado del SII (guardado desde Excel/HTML como CSV).
+    Acepta doc_name (Borrador_F29) o cliente+mes+ano directamente.
+    """
+    import csv, io
+
+    doc_name = doc_name or frappe.form_dict.get("doc_name")
+    file_url = file_url or frappe.form_dict.get("file_url")
+    cliente  = cliente  or frappe.form_dict.get("cliente")
+    mes      = mes      or frappe.form_dict.get("mes")
+    ano      = ano      or frappe.form_dict.get("ano")
+
+    try:
+        cliente, mes, ano = _resolver_periodo(doc_name=doc_name, cliente=cliente, mes=mes, ano=ano)
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
+        return
+
+    # Eliminar registros existentes del período
+    existentes = frappe.get_all(
+        "Libro_de_Honorarios_Cliente",
+        filters={"cliente": cliente, "mes_tributario": mes, "ano_tributario": ano},
+        fields=["name"],
+    )
+    for r in existentes:
+        frappe.delete_doc("Libro_de_Honorarios_Cliente", r.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+
+    # Leer archivo
+    file_doc  = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    # Intentar latin-1 primero (el SII genera este formato en Excel/HTML)
+    for enc in ("latin-1", "utf-8-sig", "utf-8"):
+        try:
+            with open(file_path, encoding=enc, errors="strict") as f:
+                contenido = f.read()
+            break
+        except (UnicodeDecodeError, LookupError):
+            continue
+    else:
+        with open(file_path, encoding="latin-1", errors="replace") as f:
+            contenido = f.read()
+
+    lines = contenido.splitlines()
+
+    # Encontrar la fila de encabezados (contiene "N°" o "N" en primera columna)
+    header_idx = None
+    for idx, line in enumerate(lines):
+        primera = line.split(";")[0].strip().replace("﻿", "")
+        if primera in ("N°", "N"):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        frappe.response["message"] = {"status": "error", "message": "No se encontró la fila de encabezados en el archivo."}
+        return
+
+    data_lines = "\n".join(lines[header_idx:])
+    reader = csv.DictReader(io.StringIO(data_lines), delimiter=";")
+
+    insertados = 0
+    errores    = []
+
+    for i, row in enumerate(reader, start=1):
+        try:
+            folio = str(row.get("N°", "") or row.get("N", "")).strip()
+            # Saltar totales, filas vacías y sin folio numérico
+            if not folio or not folio.isdigit():
+                continue
+
+            estado = str(row.get("Estado", "")).strip().upper()
+            if estado == "ANULADA":
+                continue
+
+            fecha_str = str(row.get("Fecha", "")).strip()
+            # Formato DD-MM-YYYY o DD/MM/YYYY
+            fecha_str = fecha_str.replace("-", "/")
+            fecha = _parse_fecha(fecha_str)
+
+            bruto    = _parse_int(row.get("Brutos", 0))
+            retenido = _parse_int(row.get("Retenido", 0))
+            pagado   = _parse_int(row.get("Pagado", 0))
+
+            frappe.get_doc({
+                "doctype":             "Libro_de_Honorarios_Cliente",
+                "cliente":             cliente,
+                "mes_tributario":      mes,
+                "ano_tributario":      ano,
+                "folio":               folio,
+                "fecha_documento":     fecha,
+                "rut_prestador":       str(row.get("Rut", "") or row.get("RUT", "")).strip(),
+                "nombre_prestador":    str(row.get("Nombre o Razón Social", "") or row.get("Nombre o Razon Social", "")).strip(),
+                "monto_bruto":         bruto,
+                "retencion_honorarios": retenido,
+                "monto_liquido":       pagado,
+                "total_documento":     bruto,
+                "costo_empresa":       bruto,
+            }).insert(ignore_permissions=True)
+            insertados += 1
+
+        except Exception as e:
+            errores.append(f"Fila {i}: {str(e)[:80]}")
+
+    frappe.db.commit()
+
+    frappe.response["message"] = {
+        "status":          "ok",
+        "insertados":      insertados,
+        "eliminados":      len(existentes),
+        "errores":         len(errores),
+        "detalle_errores": errores[:10],
+        "message":         f"Importación honorarios completada: {insertados} boletas cargadas, {len(existentes)} anteriores eliminadas."
+                           + (f" {len(errores)} errores." if errores else ""),
+    }
+
+
+# ── Importador CSV Previred — Libro de Remuneraciones Electrónico (LRE) ────────
+
+@frappe.whitelist()
+def importar_lre_csv(doc_name=None, file_url=None, cliente=None, mes=None, ano=None):
+    """
+    Importa el CSV del LRE (Libro de Remuneraciones Electrónico) de Previred.
+    Acepta doc_name (Borrador_F29) o cliente+mes+ano directamente.
+    """
+    import csv, io, re
+
+    doc_name = doc_name or frappe.form_dict.get("doc_name")
+    file_url = file_url or frappe.form_dict.get("file_url")
+    cliente  = cliente  or frappe.form_dict.get("cliente")
+    mes      = mes      or frappe.form_dict.get("mes")
+    ano      = ano      or frappe.form_dict.get("ano")
+
+    try:
+        cliente, mes, ano = _resolver_periodo(doc_name=doc_name, cliente=cliente, mes=mes, ano=ano)
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
+        return
+
+    # Leer archivo (Previred usa utf-8 o latin-1)
+    file_doc  = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+    for enc in ("utf-8-sig", "latin-1", "utf-8"):
+        try:
+            with open(file_path, encoding=enc, errors="strict") as f:
+                contenido = f.read()
+            break
+        except (UnicodeDecodeError, LookupError):
+            continue
+    else:
+        with open(file_path, encoding="latin-1", errors="replace") as f:
+            contenido = f.read()
+
+    reader = csv.reader(io.StringIO(contenido), delimiter=";")
+    rows   = list(reader)
+    if len(rows) < 2:
+        frappe.response["message"] = {"status": "error", "message": "Archivo vacío o sin datos."}
+        return
+
+    # Construir mapa código → índice de columna
+    header = rows[0]
+    col_map = {}
+    for idx, h in enumerate(header):
+        m = re.search(r'\((\d+)\)', h)
+        if m:
+            col_map[int(m.group(1))] = idx
+
+    def _col(row, code, default=0):
+        idx = col_map.get(code)
+        if idx is None or idx >= len(row):
+            return default
+        return _parse_int(row[idx]) if default == 0 else str(row[idx]).strip()
+
+    def _col_str(row, code):
+        return _col(row, code, default="")
+
+    # Eliminar detalles existentes del período
+    existentes = frappe.get_all(
+        "Detalle_LRE_Cliente",
+        filters={"cliente": cliente, "mes_tributario": mes, "ano_tributario": ano},
+        fields=["name"],
+    )
+    for r in existentes:
+        frappe.delete_doc("Detalle_LRE_Cliente", r.name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+
+    insertados = 0
+    errores    = []
+
+    # Acumuladores para Registro_Remuneraciones
+    acc = {k: 0 for k in [
+        "empleados", "hab_5201", "imp_5210", "no_imp_5230",
+        "afp_3141", "salud_3143", "afc_trab_3151",
+        "afc_emp_4151", "mutual_4152", "sis_4155",
+        "imp_unico_3161", "prestamo_3166", "aportes_emp_5410",
+    ]}
+
+    for i, row in enumerate(rows[1:], start=1):
+        if not row or not str(row[0]).strip():
+            continue
+        rut = str(row[0]).strip()
+        if not rut or rut.lower() in ("rut trabajador(1101)", "totales", "total"):
+            continue
+
+        try:
+            frappe.get_doc({
+                "doctype":              "Detalle_LRE_Cliente",
+                "cliente":              cliente,
+                "ano_tributario":       ano,
+                "mes_tributario":       mes,
+                "rut_trabajador":       rut,
+                "dias_trabajados":      _col(row, 1115),
+                "sueldo":               _col(row, 2101),
+                "sobresueldo":          _col(row, 2102),
+                "gratificacion":        _col(row, 2106),
+                "colacion":             _col(row, 2301),
+                "movilizacion":         _col(row, 2302),
+                "total_haberes":        _col(row, 5201),
+                "total_imponible":      _col(row, 5210),
+                "total_no_imponible":   _col(row, 5230),
+                "total_descuentos":     _col(row, 5301),
+                "total_aportes_empleador": _col(row, 5410),
+                "total_liquido":        _col(row, 5501),
+                "afp":                  _col(row, 3141),
+                "salud":                _col(row, 3143),
+                "afc_trabajador":       _col(row, 3151),
+                "impuesto_unico":       _col(row, 3161),
+                "retencion_prestamo":   _col(row, 3166),
+                "afc_empleador":        _col(row, 4151),
+                "mutual_sanna":         _col(row, 4152) + _col(row, 4155),
+            }).insert(ignore_permissions=True)
+
+            acc["empleados"]      += 1
+            acc["hab_5201"]       += _col(row, 5201)
+            acc["imp_5210"]       += _col(row, 5210)
+            acc["no_imp_5230"]    += _col(row, 5230)
+            acc["afp_3141"]       += _col(row, 3141)
+            acc["salud_3143"]     += _col(row, 3143)
+            acc["afc_trab_3151"]  += _col(row, 3151)
+            acc["afc_emp_4151"]   += _col(row, 4151)
+            acc["mutual_4152"]    += _col(row, 4152)
+            acc["sis_4155"]       += _col(row, 4155)
+            acc["imp_unico_3161"] += _col(row, 3161)
+            acc["prestamo_3166"]  += _col(row, 3166)
+            acc["aportes_emp_5410"] += _col(row, 5410)
+            insertados += 1
+
+        except Exception as e:
+            errores.append(f"Fila {i} ({rut}): {str(e)[:80]}")
+
+    frappe.db.commit()
+
+    # ── Actualizar Registro_Remuneraciones ────────────────────────────────────
+    total_afp      = acc["afp_3141"]
+    total_salud    = acc["salud_3143"]
+    total_cesantia = acc["afc_trab_3151"] + acc["afc_emp_4151"]
+    total_mutual   = acc["mutual_4152"] + acc["sis_4155"]
+    total_previred = total_afp + total_salud + total_cesantia + total_mutual
+
+    rr_name = frappe.db.get_value(
+        "Registro_Remuneraciones",
+        {"cliente": cliente, "ano": ano, "mes": mes},
+        "name"
+    )
+    if rr_name:
+        rr = frappe.get_doc("Registro_Remuneraciones", rr_name)
+    else:
+        rr = frappe.get_doc({"doctype": "Registro_Remuneraciones", "cliente": cliente, "ano": ano, "mes": mes})
+
+    rr.total_empleados_activos    = acc["empleados"]
+    rr.total_haberes_imponibles   = acc["imp_5210"]
+    rr.total_haberes_no_imponibles = acc["no_imp_5230"]
+    rr.costo_total_empleador      = acc["hab_5201"] + acc["aportes_emp_5410"]
+    rr.total_afp                  = total_afp
+    rr.total_salud                = total_salud
+    rr.total_seguro_cesantia      = total_cesantia
+    rr.total_sis_mutual           = total_mutual
+    rr.total_previred_a_pagar     = total_previred
+    rr.impuesto_unico             = acc["imp_unico_3161"]
+    rr.retencion_prestamo_solidario = acc["prestamo_3166"]
+
+    if rr_name:
+        rr.save(ignore_permissions=True)
+    else:
+        rr.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.response["message"] = {
+        "status":      "ok",
+        "insertados":  insertados,
+        "eliminados":  len(existentes),
+        "errores":     len(errores),
+        "detalle_errores": errores[:10],
+        "empleados":   acc["empleados"],
+        "total_previred": total_previred,
+        "imp_unico":   acc["imp_unico_3161"],
+        "message":     f"LRE importado: {insertados} trabajadores cargados. "
+                       f"Registro_Remuneraciones actualizado — Previred: ${total_previred:,.0f}, Imp.Único: ${acc['imp_unico_3161']:,.0f}."
+                       + (f" {len(errores)} errores." if errores else ""),
+    }
+
+
+# ── Postergación IVA ─────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def registrar_postergacion_iva(doc_name, monto, meses_diferidos=2):
+    """
+    Crea o actualiza un registro Postergacion_IVA y actualiza el Borrador_F29.
+    meses_diferidos: 1 o 2 (Art. 64 D.L. 825 permite hasta 2 meses).
+    fecha_vencimiento: día 20 del mes siguiente al mes de pago en el F29.
+    """
+    import datetime
+    from frappe.utils import add_months
+
+    doc_f29 = frappe.get_doc("Borrador_F29", doc_name)
+    cliente = doc_f29.cliente
+    mes     = int(doc_f29.mes)
+    ano     = int(doc_f29.ano)
+    monto   = float(monto)
+    meses_diferidos = int(meses_diferidos)
+
+    # Mes/año en que se paga el F29 diferido
+    fecha_origen  = datetime.date(ano, mes, 1)
+    fecha_pago    = add_months(fecha_origen, meses_diferidos)
+    mes_pago      = fecha_pago.month
+    ano_pago      = fecha_pago.year
+
+    # Vencimiento: día 20 del mes siguiente al de pago
+    fecha_sig     = add_months(fecha_pago, 1)
+    fecha_venc    = datetime.date(fecha_sig.year, fecha_sig.month, 20)
+
+    id_post = f"POST-{cliente}-{ano}-{mes}"
+
+    existing_name = frappe.db.get_value("Postergacion_IVA", {"id_postergacion": id_post}, "name")
+    if existing_name:
+        post_doc = frappe.get_doc("Postergacion_IVA", existing_name)
+        post_doc.monto_postergado  = monto
+        post_doc.mes_f29_pagado    = mes_pago
+        post_doc.ano_f29_pagado    = ano_pago
+        post_doc.fecha_vencimiento = fecha_venc
+        post_doc.save(ignore_permissions=True)
+    else:
+        post_doc = frappe.get_doc({
+            "doctype":          "Postergacion_IVA",
+            "id_postergacion":  id_post,
+            "cliente":          cliente,
+            "mes_origen":       mes,
+            "ano_origen":       ano,
+            "monto_postergado": monto,
+            "mes_f29_pagado":   mes_pago,
+            "ano_f29_pagado":   ano_pago,
+            "fecha_vencimiento": fecha_venc,
+        })
+        post_doc.insert(ignore_permissions=True)
+
+    # Actualizar Borrador_F29
+    doc_f29.postergar_iva_periodo    = 1
+    doc_f29.postergacion_del_periodo = monto
+    doc_f29.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.response["message"] = {
+        "status":            "ok",
+        "id_postergacion":   id_post,
+        "monto":             monto,
+        "mes_pago":          mes_pago,
+        "ano_pago":          ano_pago,
+        "fecha_vencimiento": str(fecha_venc),
+        "message": f"Postergación registrada: ${monto:,.0f} — vence el {fecha_venc.strftime('%d/%m/%Y')}.",
+    }
+
+
+@frappe.whitelist()
+def cancelar_postergacion_iva(doc_name):
+    """Elimina la Postergacion_IVA del período y limpia el Borrador_F29."""
+    doc_f29  = frappe.get_doc("Borrador_F29", doc_name)
+    cliente  = doc_f29.cliente
+    mes      = int(doc_f29.mes)
+    ano      = int(doc_f29.ano)
+    id_post  = f"POST-{cliente}-{ano}-{mes}"
+
+    existing_name = frappe.db.get_value("Postergacion_IVA", {"id_postergacion": id_post}, "name")
+    if existing_name:
+        frappe.delete_doc("Postergacion_IVA", existing_name, ignore_permissions=True, force=True)
+
+    doc_f29.postergar_iva_periodo    = 0
+    doc_f29.postergacion_del_periodo = 0
+    doc_f29.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.response["message"] = {"status": "ok", "message": "Postergación cancelada."}
+
+
+# ── Creación de Declaraciones + Borrador F29 ─────────────────────────────────
+
+def _crear_par_declaracion_f29(cliente, mes, ano, biblioteca):
+    """
+    Crea Declaracion_Mensual + Borrador_F29 para un cliente/período.
+    Retorna (creado: bool, mensaje: str).
+    """
+    abrev = frappe.db.get_value("Ficha_Cliente", cliente, "abreviatura_cliente") or cliente
+    id_dm  = f"DM-{abrev}-{ano}-{mes}"
+    id_f29 = f"F29-{abrev}-{ano}-{mes}"
+
+    if frappe.db.exists("Declaracion_Mensual", {"id_documento": id_dm}):
+        return False, f"Ya existe: {id_dm}"
+
+    dm = frappe.get_doc({
+        "doctype":      "Declaracion_Mensual",
+        "id_documento": id_dm,
+        "cliente":      cliente,
+        "ano":          ano,
+        "mes":          mes,
+    })
+    dm.insert(ignore_permissions=True)
+
+    mapeo = {
+        "tabla_debitos":   "Linea_F29_Debito",
+        "tabla_creditos":  "Linea_F29_Credito",
+        "tabla_impuestos": "Linea_F29_Impuesto",
+    }
+    f29 = frappe.get_doc({
+        "doctype":                       "Borrador_F29",
+        "id_documento":                  id_f29,
+        "cliente":                       cliente,
+        "ano":                           ano,
+        "mes":                           mes,
+        "declaracion_mensual_vinculada": dm.name,
+    })
+    f29.insert(ignore_permissions=True)
+
+    if biblioteca:
+        for regla in biblioteca:
+            if regla.tabla_destino in mapeo:
+                f29.append(regla.tabla_destino, {
+                    "orden":                  regla.orden,
+                    "codigo_f29":             regla.codigo_f29,
+                    "descripcion":            regla.descripcion,
+                    "tipo_operacion_subtotal": regla.tipo_operacion_subtotal or "Suma",
+                    "monto":                  0.0,
+                    "tipo_origen":            "Calculado" if regla.es_calculado else "Manual",
+                })
+        f29.save(ignore_permissions=True)
+
+    dm.borrador_f29_vinculado = f29.name
+    dm.save(ignore_permissions=True)
+    frappe.db.commit()
+    return True, f"Creado: {id_dm}"
+
+
+def _cargar_biblioteca_f29():
+    return frappe.get_all(
+        "Configuracion_Codigo_F29",
+        fields=["orden", "codigo_f29", "descripcion", "tabla_destino",
+                "tipo_operacion_subtotal", "es_calculado"],
+        order_by="orden asc",
+    )
+
+
+@frappe.whitelist()
+def crear_declaraciones_periodo(cliente, mes, ano):
+    """
+    Crea Declaracion_Mensual + Borrador_F29 para un cliente y período específico.
+    Usado desde la pestaña Carga Histórica de Ficha_Cliente.
+    """
+    try:
+        biblioteca = _cargar_biblioteca_f29()
+        creado, msg = _crear_par_declaracion_f29(str(cliente), str(mes), str(ano), biblioteca)
+        frappe.response["message"] = {
+            "status":  "ok" if creado else "exists",
+            "creado":  creado,
+            "message": msg,
+        }
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def procesar_mes_actual():
+    """
+    Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos
+    en el período del mes anterior (misma lógica que el cron mensual).
+    Idempotente — omite los que ya existen.
+    Llamado manualmente desde el Workspace para procesar clientes nuevos.
+    """
+    from frappe.utils import add_months, getdate, nowdate
+
+    hoy           = getdate(nowdate())
+    fecha_periodo = add_months(hoy, -1)
+    mes           = str(fecha_periodo.month)
+    ano           = str(fecha_periodo.year)
+
+    clientes = frappe.get_all(
+        "Ficha_Cliente",
+        filters={"estado_cliente": "Activo"},
+        fields=["name", "abreviatura_cliente"],
+        order_by="abreviatura_cliente asc",
+    )
+
+    if not clientes:
+        frappe.response["message"] = {"status": "ok", "message": "No hay clientes activos.", "creados": 0}
+        return
+
+    biblioteca = _cargar_biblioteca_f29()
+    creados = omitidos = errores = 0
+    detalle_errores = []
+
+    for c in clientes:
+        try:
+            creado, _ = _crear_par_declaracion_f29(c.name, mes, ano, biblioteca)
+            if creado:
+                creados += 1
+            else:
+                omitidos += 1
+        except Exception as e:
+            errores += 1
+            detalle_errores.append(f"{c.abreviatura_cliente}: {str(e)[:80]}")
+
+    frappe.response["message"] = {
+        "status":   "ok",
+        "periodo":  f"{mes}/{ano}",
+        "creados":  creados,
+        "omitidos": omitidos,
+        "errores":  errores,
+        "detalle_errores": detalle_errores[:10],
+        "message":  f"Período {mes}/{ano} — {creados} creados, {omitidos} ya existían."
+                    + (f" {errores} errores." if errores else ""),
+    }
+
+
+# ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_f29_panel_data(ano, mes):
+    """Devuelve datos F29 del período con honorarios y PPM desde las líneas hijas."""
+    rows = frappe.db.sql("""
+        SELECT
+            f.name,
+            f.cliente,
+            f.subtotal_debitos,
+            f.subtotal_creditos,
+            f.remanente_mes_siguiente,
+            f.subtotal_otros_impuestos,
+            f.impuesto_determinado,
+            f.total_a_pagar_f29,
+            SUM(CASE WHEN i.codigo_f29 = '151' THEN i.monto ELSE 0 END) AS honorarios_a_pagar,
+            SUM(CASE WHEN i.codigo_f29 = '62'  THEN i.monto ELSE 0 END) AS ppm_a_pagar
+        FROM `tabBorrador_F29` f
+        LEFT JOIN `tabLinea_F29_Impuesto` i ON i.parent = f.name
+        WHERE f.ano = %(ano)s AND f.mes = %(mes)s
+        GROUP BY f.name
+    """, {"ano": ano, "mes": mes}, as_dict=True)
+
+    return {r.name: r for r in rows}
+
+
+# ── Resetear Declaración Mensual ─────────────────────────────────────────────
+
+@frappe.whitelist()
+def resetear_declaracion(doc_name):
+    """
+    Regresa una Declaracion_Mensual a estado Borrador:
+    - Limpia checks (RRHH, F29, Previred)
+    - Limpia campos PDF
+    - Elimina Cobranza_Cliente vinculada del período
+    - Estado → Borrador
+    """
+    try:
+        dm = frappe.get_doc("Declaracion_Mensual", doc_name)
+
+        # Eliminar Cobranza_Cliente del período
+        cobros = frappe.get_all(
+            "Cobranza_Cliente",
+            filters={"cliente": dm.cliente, "periodo_mes": dm.mes, "periodo_ano": dm.ano},
+            fields=["name"]
+        )
+        eliminados = 0
+        for c in cobros:
+            frappe.delete_doc("Cobranza_Cliente", c.name, ignore_permissions=True, force=True)
+            eliminados += 1
+
+        # Actualizar campos directamente en DB (sin before_save ni validación de links)
+        frappe.db.set_value("Declaracion_Mensual", doc_name, {
+            "check_gasto_rem_cargado": 0,
+            "check_f29_cuadrado":      0,
+            "check_previred_cuadrado": 0,
+            "pdf_link_cliente":        "",
+            "pdf_generado":            "",
+            "pdf_generado_flag":       0,
+            "cobranza_vinculada":      "",
+            "estado":                  "Borrador",
+        })
+
+        frappe.db.commit()
+        frappe.response["message"] = {
+            "status":    "ok",
+            "cobros_eliminados": eliminados,
+            "message":   f"Declaración regresada a Borrador. {eliminados} cobro(s) eliminado(s).",
+        }
+    except Exception as e:
+        frappe.response["message"] = {"status": "error", "message": str(e)}
