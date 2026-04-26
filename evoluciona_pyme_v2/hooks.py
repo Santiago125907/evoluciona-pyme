@@ -11,15 +11,14 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "evoluciona_pyme_v2",
-# 		"logo": "/assets/evoluciona_pyme_v2/logo.png",
-# 		"title": "Evoluciona Pyme V2",
-# 		"route": "/evoluciona_pyme_v2",
-# 		"has_permission": "evoluciona_pyme_v2.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "evoluciona_pyme_v2",
+		"logo": "/assets/evoluciona_pyme_v2/images/logo.svg",
+		"title": "Evoluciona Pyme",
+		"route": "/app/panel_app"
+	}
+]
 
 # Includes in <head>
 # ------------------
