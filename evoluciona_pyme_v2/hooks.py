@@ -4,6 +4,7 @@ app_publisher = "Santiago Romero"
 app_description = "Sistema de Contabilidad y Gestión de Clientes para Evoluciona Pyme"
 app_email = "sromero1808@gmail.com"
 app_license = "mit"
+app_home = "/app/panel_app"
 
 # Apps
 # ------------------
@@ -16,7 +17,7 @@ add_to_apps_screen = [
 		"name": "evoluciona_pyme_v2",
 		"logo": "/assets/evoluciona_pyme_v2/images/logo.svg",
 		"title": "Evoluciona Pyme",
-		"route": "/desk",
+		"route": "/app/panel_app",
 		"has_permission": "evoluciona_pyme_v2.evoluciona_pyme_v2.api.has_app_permission"
 	}
 ]
