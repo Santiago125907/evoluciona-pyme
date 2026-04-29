@@ -140,13 +140,11 @@ after_migrate = ["evoluciona_pyme_v2.evoluciona_pyme_v2.setup.sync_fixtures_post
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Ficha_Cliente": {
+		"after_insert": "evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_cliente"
+	}
+}
 
 # Scheduled Tasks
 # ---------------

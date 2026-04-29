@@ -48,7 +48,23 @@
   "tab_sistema",
   "sb_api",
   "api_access_token",
-  "habilitar_logs_api"
+  "habilitar_logs_api",
+  "tab_integraciones",
+  "sb_gotenberg",
+  "gotenberg_url",
+  "gotenberg_usuario",
+  "gotenberg_password",
+  "sb_ia",
+  "ia_proveedor",
+  "ia_api_key",
+  "ia_modelo",
+  "ia_activo",
+  "sb_pdf_diseno",
+  "pdf_color_primario",
+  "pdf_color_secundario",
+  "sb_pdf_hoja6",
+  "pdf_habilitar_hoja6",
+  "pdf_texto_promocion"
  ],
  "fields": [
   {
@@ -302,6 +318,96 @@
    "fieldname": "habilitar_logs_api",
    "fieldtype": "Check",
    "label": "Habilitar Logs de API"
+  },
+  {
+   "fieldname": "tab_integraciones",
+   "fieldtype": "Tab Break",
+   "label": "Integraciones"
+  },
+  {
+   "fieldname": "sb_gotenberg",
+   "fieldtype": "Section Break",
+   "label": "Gotenberg (Generación de PDF)"
+  },
+  {
+   "fieldname": "gotenberg_url",
+   "fieldtype": "Data",
+   "label": "URL Gotenberg",
+   "description": "Ej: http://localhost:3000 o http://gotenberg:3000"
+  },
+  {
+   "fieldname": "gotenberg_usuario",
+   "fieldtype": "Data",
+   "label": "Usuario (opcional)"
+  },
+  {
+   "fieldname": "gotenberg_password",
+   "fieldtype": "Password",
+   "label": "Contraseña (opcional)"
+  },
+  {
+   "fieldname": "sb_ia",
+   "fieldtype": "Section Break",
+   "label": "Inteligencia Artificial (Análisis)"
+  },
+  {
+   "fieldname": "ia_proveedor",
+   "fieldtype": "Select",
+   "label": "Proveedor IA",
+   "options": "\nOpenAI\nAnthropic"
+  },
+  {
+   "fieldname": "ia_api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "ia_modelo",
+   "fieldtype": "Data",
+   "label": "Modelo",
+   "description": "Ej: gpt-4o-mini o claude-haiku-4-5-20251001"
+  },
+  {
+   "fieldname": "ia_activo",
+   "fieldtype": "Check",
+   "label": "Análisis IA Activo",
+   "default": "0"
+  },
+  {
+   "fieldname": "sb_pdf_diseno",
+   "fieldtype": "Section Break",
+   "label": "Diseño del PDF"
+  },
+  {
+   "fieldname": "pdf_color_primario",
+   "fieldtype": "Color",
+   "label": "Color Primario",
+   "default": "#00C4CC",
+   "description": "Color principal del reporte (encabezados, bordes, totales)"
+  },
+  {
+   "fieldname": "pdf_color_secundario",
+   "fieldtype": "Color",
+   "label": "Color Secundario",
+   "default": "#FF9A00",
+   "description": "Color de acento (opción 2, gráficos)"
+  },
+  {
+   "fieldname": "sb_pdf_hoja6",
+   "fieldtype": "Section Break",
+   "label": "Hoja 6 - Programa de Socios"
+  },
+  {
+   "fieldname": "pdf_habilitar_hoja6",
+   "fieldtype": "Check",
+   "label": "Incluir Hoja de Programa de Socios en el PDF",
+   "default": "1"
+  },
+  {
+   "fieldname": "pdf_texto_promocion",
+   "fieldtype": "Long Text",
+   "label": "Texto de Promoción (Hoja 6)",
+   "description": "Texto introductorio del programa de socios. Si se deja vacío se usa el texto por defecto."
   }
  ],
  "issingle": 1,

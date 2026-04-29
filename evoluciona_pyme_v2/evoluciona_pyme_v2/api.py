@@ -1288,62 +1288,60 @@ def preparar_datos_pdf(**kwargs):
             }
         }
         
-        # 16. ENVIAR A N8N
-        N8N_URL = frappe.db.get_single_value('Configuracion App', 'webhook_preparar_pdf')
-        if not N8N_URL:
-            frappe.throw("URL del webhook 'Preparar PDF' no configurada en Configuracion App")
-        
-        payload_json = json.dumps(payload)
-        
-        frappe.log_error("Payload enviado a n8n", payload_json)
-        
-        response = frappe.make_post_request(
-            url=N8N_URL,
-            data=payload_json,
-            headers={"Content-Type": "application/json"}
-        )
-        
-        frappe.log_error("Respuesta de n8n", str(response))
-        
-        # =========================================================
-        # 17. GUARDAR RESPUESTA DE N8N EN DECLARACIÓN
-        # =========================================================
-        if response and isinstance(response, dict):
-            if response.get("status") == "ok":
-                # Guardar URLs del PDF
-                if response.get("pdf_url_drive"):
-                    decl.pdf_link_cliente = response.get("pdf_url_drive")
-                
-                if response.get("pdf_file_id"):
-                    decl.pdf_drive_file_id = response.get("pdf_file_id")
-                
-                # Si la carpeta del cliente fue creada, actualizar Ficha_Cliente
-                if response.get("carpeta_cliente_creada") == True and response.get("folder_cliente_id"):
-                    try:
-                        cliente_doc.drive_folder_id = response.get("folder_cliente_id")
-                        cliente_doc.drive_folder_url = response.get("folder_cliente_url")
-                        cliente_doc.save(ignore_permissions=True)
-                        frappe.log_error("CARPETA CLIENTE CREADA", f"ID guardado: {response.get('folder_cliente_id')}")
-                    except Exception as e:
-                        frappe.log_error("Error guardando folder_id en cliente", str(e))
-        
-        decl.pdf_generado_flag = 1 if response.get("status") == "ok" else 0
+        # 16. GENERAR PDF NATIVO CON GOTENBERG
+        from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf
+
+        config = frappe.get_single('Configuracion App')
+        html = generar_html(payload, config)
+        pdf_bytes = convertir_a_pdf(html)
+
+        meses_nombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                         "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+        mes_nombre = meses_nombres[mes_actual - 1]
+        abrev = cliente_doc.abreviatura_cliente or decl.cliente
+        nombre_archivo = 'Declaracion_{}_{}_{}.pdf'.format(abrev, mes_nombre, ano_actual)
+
+        # Guardar PDF como archivo adjunto en Frappe
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": nombre_archivo,
+            "attached_to_doctype": "Declaracion_Mensual",
+            "attached_to_name": declaracion_name,
+            "content": pdf_bytes,
+            "decode": False,
+            "is_private": 0
+        })
+        file_doc.save(ignore_permissions=True)
+        pdf_url = file_doc.file_url
+
+        decl.pdf_link_cliente = pdf_url
+        decl.pdf_generado_flag = 1
         decl.fecha_pdf_generado = frappe.utils.now_datetime()
         decl.save(ignore_permissions=True)
         frappe.db.commit()
-        
+
         frappe.response['message'] = {
             "status": "success",
-            "message": "PDF enviado a n8n correctamente",
-            "pdf_url": response.get("pdf_url_drive") if response else None
+            "message": "PDF generado correctamente",
+            "pdf_url": pdf_url
         }
-        
+
     except Exception as e:
-        frappe.log_error("Error en Server Script PDF", str(e))
+        frappe.log_error("Error generando PDF", str(e))
         frappe.response['message'] = {
             "status": "error",
             "message": f"Error: {str(e)}"
         }
+
+
+def preparar_datos_pdf_payload(declaracion_name):
+    """Extrae el payload de datos para generar el PDF. Reutilizable desde pdf.py."""
+    import frappe as _frappe
+    _frappe.form_dict['declaracion_name'] = declaracion_name
+    # Llama la función completa pero sólo retorna el payload
+    # Esta función es un alias liviano — la lógica real está en preparar_datos_pdf
+    # Se usa internamente desde pdf.generar_y_subir_pdf
+    raise NotImplementedError("Usa preparar_datos_pdf directamente")
 
 
 @frappe.whitelist(allow_guest=False)

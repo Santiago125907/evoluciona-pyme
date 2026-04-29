@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "creation": "2026-04-28 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "activo",
+  "carpeta_madre_id",
+  "email_propietario_drive",
+  "sb_credenciales",
+  "service_account_json",
+  "sb_info",
+  "client_email_info",
+  "sb_oauth",
+  "oauth_client_id",
+  "oauth_client_secret",
+  "oauth_redirect_uri",
+  "col_oauth",
+  "oauth_autorizado",
+  "oauth_refresh_token"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "label": "Integración Activa"
+  },
+  {
+   "fieldname": "carpeta_madre_id",
+   "fieldtype": "Data",
+   "label": "ID Carpeta Madre en Drive",
+   "description": "ID de la carpeta raíz en Google Drive donde se crearán las subcarpetas de cada cliente. Es el código al final de la URL de la carpeta."
+  },
+  {
+   "fieldname": "email_propietario_drive",
+   "fieldtype": "Data",
+   "label": "Email Propietario Drive",
+   "description": "Email de la cuenta Google dueña de la carpeta. Los archivos subidos se transferirán a este propietario para evitar el límite de cuota de la Service Account."
+  },
+  {
+   "fieldname": "sb_credenciales",
+   "fieldtype": "Section Break",
+   "label": "Credenciales Service Account"
+  },
+  {
+   "fieldname": "service_account_json",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "label": "Service Account JSON",
+   "description": "Pega aquí el contenido completo del archivo JSON de la Service Account de Google Cloud."
+  },
+  {
+   "fieldname": "sb_info",
+   "fieldtype": "Section Break",
+   "label": "Información"
+  },
+  {
+   "fieldname": "client_email_info",
+   "fieldtype": "Data",
+   "label": "Email de la Service Account",
+   "read_only": 1,
+   "description": "Este correo debe tener acceso compartido a la carpeta madre en Google Drive."
+  },
+  {
+   "fieldname": "sb_oauth",
+   "fieldtype": "Section Break",
+   "label": "OAuth2 — Subida de Archivos como Usuario"
+  },
+  {
+   "fieldname": "oauth_client_id",
+   "fieldtype": "Data",
+   "label": "OAuth Client ID",
+   "description": "Desde Google Cloud Console → APIs → Credenciales → OAuth 2.0 (tipo: Aplicación web)"
+  },
+  {
+   "fieldname": "oauth_client_secret",
+   "fieldtype": "Password",
+   "label": "OAuth Client Secret"
+  },
+  {
+   "fieldname": "oauth_redirect_uri",
+   "fieldtype": "Data",
+   "label": "URI de Redirección (agregar en Google Cloud)",
+   "read_only": 1,
+   "description": "Copia esta URL y agrégala en Google Cloud Console → Credenciales → URIs de redireccionamiento autorizados"
+  },
+  {
+   "fieldname": "col_oauth",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "oauth_autorizado",
+   "fieldtype": "Check",
+   "label": "OAuth Autorizado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "oauth_refresh_token",
+   "fieldtype": "Password",
+   "label": "Refresh Token (auto)",
+   "read_only": 1,
+   "description": "Se llena automáticamente al autorizar."
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-28 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Configuracion_Drive",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "",
+ "track_changes": 0
+}

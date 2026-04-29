@@ -651,7 +651,7 @@ function generar_pdf_declaracion(doc_name, frm) {
             
             // Llamar API para generar PDF
             frappe.call({
-                method: 'preparar_datos_pdf',
+                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
                 args: {
                     declaracion_name: doc_name
                 },
@@ -1802,6 +1802,35 @@ frappe.ui.form.on('Ficha_Cliente', {
         // =====================================================
         renderizar_panel_cobranza(frm);
         
+
+        // BOTÓN GOOGLE DRIVE
+        if (!frm.is_new()) {
+            if (!frm.doc.drive_folder_id) {
+                frm.add_custom_button("📁 Crear Carpeta Drive", function() {
+                    frappe.confirm("¿Crear carpeta en Google Drive para este cliente?", function() {
+                        frappe.call({
+                            method: "evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_manual",
+                            args: { cliente: frm.doc.name },
+                            freeze: true,
+                            freeze_message: "Creando carpeta en Drive...",
+                            callback(r) {
+                                const res = r.message || {};
+                                if (res.status === "ok") {
+                                    frappe.show_alert({ message: "✅ Carpeta creada en Drive", indicator: "green" }, 4);
+                                    frm.reload_doc();
+                                } else {
+                                    frappe.msgprint({ title: "Error", message: res.message || res.status, indicator: "red" });
+                                }
+                            }
+                        });
+                    });
+                }, "Google Drive");
+            } else {
+                frm.add_custom_button("📂 Abrir Carpeta Drive", function() {
+                    window.open(frm.doc.drive_folder_url, "_blank");
+                }, "Google Drive");
+            }
+        }
     } // Fin refresh
 });
 
@@ -2234,7 +2263,7 @@ function generar_pdf_declaracion(doc_name, frm) {
             
             // Llamar API para generar PDF
             frappe.call({
-                method: 'preparar_datos_pdf',
+                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
                 args: {
                     declaracion_name: doc_name
                 },

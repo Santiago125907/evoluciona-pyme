@@ -483,7 +483,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 frappe.confirm('¿Generar PDF del informe mensual?', () => {
                     frappe.show_alert({message:'Generando PDF...', indicator:'blue'}, 5);
                     frappe.call({
-                        method:'preparar_datos_pdf', args:{declaracion_name:doc},
+                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf', args:{declaracion_name:doc},
                         freeze:true, freeze_message:'Generando PDF... puede tomar 30-60 segundos',
                         callback(r) {
                             const res = r.message||{};
