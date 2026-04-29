@@ -3,15 +3,6 @@ import frappe
 
 @frappe.whitelist(allow_guest=False)
 def recalcular_asistente_f29(**kwargs):
-    # SERVER SCRIPT API: Recalcular F29 desde Documentos Tributarios
-    # ================================================================
-    # Script Type: API
-    # API Method: recalcular_asistente_f29
-    # Allow Guest: NO
-    # ================================================================
-    
-    # NOTA: En Server Scripts no es necesario 'import frappe', ya está disponible globalmente.
-    
     # Obtener parámetro
     doc_name = frappe.form_dict.get('doc_name')
     
@@ -27,11 +18,7 @@ def recalcular_asistente_f29(**kwargs):
             # =====================================================
             doc = frappe.get_doc("Borrador_F29", doc_name)
             
-            frappe.msgprint(f"""
-            INICIANDO CÁLCULO F29
-            Cliente: {doc.cliente}
-            Periodo: {doc.mes}/{doc.ano}
-            """)
+            frappe.logger().info(f"Calculando F29: {doc.cliente} {doc.mes}/{doc.ano}")
             
             # =====================================================
             # OBTENER CONFIGURACIÓN
@@ -220,7 +207,6 @@ def recalcular_asistente_f29(**kwargs):
                                 linea.tipo_origen = "Calculado"
                                 lineas_actualizadas += 1
                                 linea_encontrada = True
-                                frappe.msgprint(f"✓ Código {codigo}: ${monto:,.0f}")
                                 break
                         
                         if not linea_encontrada:
@@ -271,8 +257,6 @@ def recalcular_asistente_f29(**kwargs):
                 
                 ppm = ventas_totales * (tasa_ppm / 100)
                 
-                frappe.msgprint(f"PPM: Base Imponible ${ventas_totales:,.0f} * {tasa_ppm}% = ${ppm:,.0f}")
-                
                 # Actualizar PPM en tabla_impuestos
                 if doc.tabla_impuestos:
                     for linea in doc.tabla_impuestos:
@@ -280,7 +264,6 @@ def recalcular_asistente_f29(**kwargs):
                             linea.monto = ppm
                             linea.tipo_origen = "Calculado"
                             lineas_actualizadas += 1
-                            frappe.msgprint(f"✓ PPM actualizado: ${ppm:,.0f}")
                             break
                 
                 # =====================================================
@@ -384,274 +367,11 @@ def recalcular_asistente_f29(**kwargs):
             }
 
 
-@frappe.whitelist(allow_guest=False)
-def test_apiobtener_datos(**kwargs):
-    resultado = {
-        'status': 'success',
-        'mensaje': 'Búsqueda iniciada',
-        'timestamp': frappe.utils.now()
-    }
-    
-    codigo_producto = frappe.form_dict.get('codigo_producto')
-    
-    if codigo_producto:
-        # Buscar el producto - NOTA: usa 'Producto_Simple' con guión bajo
-        productos = frappe.get_all('Producto_Simple', 
-            filters={'codigo': codigo_producto},
-            fields=['nombre_producto', 'precio', 'stock', 'codigo']
-        )
-        
-        if productos:
-            resultado['producto_encontrado'] = productos[0]
-            resultado['mensaje'] = 'Producto encontrado!'
-        else:
-            resultado['mensaje'] = 'Producto no encontrado'
-    else:
-        resultado['mensaje'] = 'No se proporcionó código de producto'
-    
-    frappe.response['message'] = resultado
-
-
-@frappe.whitelist(allow_guest=False)
-def test_calcular_suma(**kwargs):
-    # ================================================================
-    # SERVER SCRIPT API: Test Calcular Suma
-    # ================================================================
-    # Script Type: API
-    # API Method: test_calcular_suma
-    # Allow Guest: NO
-    # ================================================================
-    
-    # 1. OBTENER PARÁMETROS
-    doc_name = frappe.form_dict.get('doc_name')
-    
-    # 2. VALIDAR
-    if not doc_name:
-        frappe.response['message'] = {
-            "status": "error",
-            "message": "Falta doc_name"
-        }
-    else:
-        try:
-            # Mostrar mensaje de inicio
-            frappe.msgprint("=== INICIO TEST ===")
-            frappe.msgprint(f"Doc Name: {doc_name}")
-            
-            # 3. OBTENER EL DOCUMENTO
-            doc = frappe.get_doc("Test Calculadora", doc_name)
-            
-            frappe.msgprint(f"Documento encontrado: {doc.name}")
-            
-            # 4. CALCULAR LA SUMA
-            suma_total = 0
-            
-            if doc.tabla_numeros:
-                frappe.msgprint(f"Filas encontradas: {len(doc.tabla_numeros)}")
-                
-                for fila in doc.tabla_numeros:
-                    valor = float(fila.valor or 0)
-                    suma_total += valor
-                    frappe.msgprint(f"+ {fila.descripcion}: ${valor}")
-            else:
-                frappe.msgprint("No hay filas en la tabla")
-            
-            # 5. ACTUALIZAR EL RESULTADO
-            doc.numero_resultado = suma_total
-            frappe.msgprint(f"Suma total calculada: ${suma_total}")
-            
-            # 6. GUARDAR
-            doc.save()
-            frappe.db.commit()
-            
-            frappe.msgprint("=== FIN TEST ===", indicator='green')
-            
-            # 7. RETORNAR RESPUESTA
-            frappe.response['message'] = {
-                "status": "ok",
-                "suma": suma_total
-            }
-            
-        except Exception as e:
-            frappe.log_error(
-                title="Error en Test Calcular Suma",
-                message=str(e)
-            )
-            frappe.msgprint(f"ERROR: {str(e)}", indicator='red')
-            frappe.response['message'] = {
-                "status": "error",
-                "message": str(e)
-            }
-
-
-@frappe.whitelist(allow_guest=False)
-def agregar_lineas_f29test_agregar_lineas(**kwargs):
-    # Server Script API para agregar líneas a Borrador F29
-    # Script Type: API
-    # API Method: agregar_lineas_f29.test_agregar_lineas
-    
-    # Variable para almacenar el resultado
-    resultado = None
-    
-    # Cargar biblioteca de códigos
-    biblioteca_de_codigos = frappe.get_all(
-        "Configuracion_Codigo_F29",
-        fields=[
-            "orden",
-            "codigo_f29",
-            "descripcion",
-            "tabla_destino",
-            "tipo_operacion_subtotal",
-            "es_calculado"
-        ],
-        order_by="orden asc"
-    )
-    
-    if not biblioteca_de_codigos:
-        resultado = {
-            "success": False,
-            "message": "⚠️ No hay códigos configurados en Configuracion_Codigo_F29"
-        }
-    else:
-        # Buscar un cliente activo
-        cliente = frappe.get_all(
-            "Ficha_Cliente",
-            filters={"estado_cliente": "Activo"},
-            fields=["name", "abreviatura_cliente"],
-            limit_page_length=1
-        )
-        
-        if not cliente:
-            resultado = {
-                "success": False,
-                "message": "❌ No hay clientes activos en el sistema"
-            }
-        else:
-            cliente = cliente[0]
-            
-            # Crear IDs únicos con string aleatorio (frappe.generate_hash ya está disponible)
-            timestamp = frappe.generate_hash(length=6)
-            id_declaracion = f"DM-TEST-{timestamp}"
-            id_borrador = f"F29-TEST-{timestamp}"
-            
-            try:
-                # Crear Declaración Mensual
-                doc_declaracion = frappe.get_doc({
-                    "doctype": "Declaracion_Mensual",
-                    "id_documento": id_declaracion,
-                    "cliente": cliente.name,
-                    "ano": "2025",
-                    "mes": "10"
-                })
-                doc_declaracion.insert(ignore_permissions=True)
-                
-                # Crear Borrador F29
-                doc_borrador = frappe.get_doc({
-                    "doctype": "Borrador_F29",
-                    "id_documento": id_borrador,
-                    "cliente": cliente.name,
-                    "ano": "2025",
-                    "mes": "10",
-                    "declaracion_mensual_vinculada": doc_declaracion.name
-                })
-                doc_borrador.insert(ignore_permissions=True)
-                
-                # Vincular bidireccionalmente
-                doc_declaracion.borrador_f29_vinculado = doc_borrador.name
-                doc_declaracion.save(ignore_permissions=True)
-                
-                frappe.db.commit()
-                
-                # Mapeo de tablas
-                mapeo_tablas = {
-                    "tabla_debitos": "Linea_F29_Debito",
-                    "tabla_creditos": "Linea_F29_Credito",
-                    "tabla_impuestos": "Linea_F29_Impuesto"
-                }
-                
-                # Recargar el borrador para asegurar que existe en BD
-                doc_borrador.reload()
-                
-                lineas_agregadas = 0
-                errores = []
-                
-                # Agregar líneas usando append()
-                for regla in biblioteca_de_codigos:
-                    
-                    # Validaciones
-                    if not regla.tabla_destino:
-                        errores.append(f"Código {regla.codigo_f29}: Sin tabla_destino")
-                        continue
-                    
-                    if regla.tabla_destino not in mapeo_tablas:
-                        errores.append(f"Código {regla.codigo_f29}: Tabla '{regla.tabla_destino}' inválida")
-                        continue
-                    
-                    try:
-                        tipo_origen = "Calculado" if regla.es_calculado else "Manual"
-                        
-                        # Agregar línea
-                        doc_borrador.append(regla.tabla_destino, {
-                            "orden": regla.orden,
-                            "codigo_f29": regla.codigo_f29,
-                            "descripcion": regla.descripcion,
-                            "tipo_operacion_subtotal": regla.tipo_operacion_subtotal or "",
-                            "monto": 0.0,
-                            "tipo_origen": tipo_origen
-                        })
-                        
-                        lineas_agregadas += 1
-                        
-                    except Exception as e:
-                        errores.append(f"Código {regla.codigo_f29}: {str(e)}")
-                        continue
-                
-                # Guardar el documento con todas las líneas
-                doc_borrador.save(ignore_permissions=True)
-                frappe.db.commit()
-                
-                # Log del resultado
-                frappe.log_error(
-                    title=f"✅ Test Líneas F29 - {doc_borrador.name}",
-                    message=f"Líneas agregadas: {lineas_agregadas}\nTotal códigos: {len(biblioteca_de_codigos)}\nErrores: {len(errores)}"
-                )
-                
-                # Resultado exitoso
-                resultado = {
-                    "success": True,
-                    "message": f"✅ Test completado! Se agregaron {lineas_agregadas} líneas",
-                    "declaracion_creada": doc_declaracion.name,
-                    "borrador_creado": doc_borrador.name,
-                    "lineas_agregadas": lineas_agregadas,
-                    "total_codigos": len(biblioteca_de_codigos),
-                    "cliente_usado": cliente.abreviatura_cliente,
-                    "errores": errores if errores else None
-                }
-                
-            except Exception as e:
-                frappe.db.rollback()
-                error_msg = str(e)
-                
-                frappe.log_error(
-                    title="❌ Error en test_agregar_lineas",
-                    message=error_msg
-                )
-                
-                resultado = {
-                    "success": False,
-                    "message": f"❌ Error: {error_msg}"
-                }
-    
-    # Asignar resultado a la respuesta
-    frappe.response['message'] = resultado
 
 
 @frappe.whitelist(allow_guest=False)
 def preparar_datos_pdf(**kwargs):
-    # =============================================================
-    # SERVER SCRIPT: Generar PDF n8n - VERSIÓN COMPLETA + DRIVE
-    # Incluye: Hojas 1-5 + preparación para Google Drive
-    # =============================================================
-    
+
     try:
         # 1. OBTENER NOMBRE DE DECLARACIÓN
         declaracion_name = frappe.form_dict.get('declaracion_name')
