@@ -1,0 +1,14 @@
+{
+ "creation": "2026-05-12 00:00:00",
+ "doctype": "Page",
+ "modified": "2026-05-12 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "libro_rcv",
+ "owner": "Administrator",
+ "page_name": "libro_rcv",
+ "roles": [
+  {"role": "System Manager"}
+ ],
+ "title": "Libros RCV"
+}

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-11-20 19:35:31.072271",
+ "creation": "2026-05-09 12:00:58.861054",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -22,7 +22,8 @@
   "column_break_frxh",
   "fecha_vencimiento",
   "notas_section",
-  "notas"
+  "notas",
+  "estado"
  ],
  "fields": [
   {
@@ -121,16 +122,24 @@
    "fieldtype": "Small Text",
    "label": "Notas",
    "options": "Observaciones adicionales"
+  },
+  {
+   "default": "Vigente",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Vigente\nPor Vencer\nVencida\nPagada"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:36.521278",
+ "modified": "2026-05-09 12:00:58.836878",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Postergacion_IVA",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

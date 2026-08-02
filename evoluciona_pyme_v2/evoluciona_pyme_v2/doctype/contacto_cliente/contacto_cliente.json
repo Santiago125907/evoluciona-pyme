@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "autoname": "field:email",
+ "creation": "2026-05-09 12:00:56.688361",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre",
+  "email",
+  "whatsapp",
+  "cargo",
+  "column_break_1",
+  "activo",
+  "debe_cambiar_password",
+  "password_hash",
+  "section_break_portal",
+  "ultimo_login",
+  "total_empresas"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre Completo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp"
+  },
+  {
+   "fieldname": "cargo",
+   "fieldtype": "Data",
+   "label": "Cargo / Rol"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activo"
+  },
+  {
+   "default": "1",
+   "fieldname": "debe_cambiar_password",
+   "fieldtype": "Check",
+   "label": "Debe cambiar contrase\u00f1a al entrar"
+  },
+  {
+   "fieldname": "password_hash",
+   "fieldtype": "Password",
+   "hidden": 1,
+   "label": "Hash Contrase\u00f1a"
+  },
+  {
+   "fieldname": "section_break_portal",
+   "fieldtype": "Section Break",
+   "label": "Actividad Portal"
+  },
+  {
+   "fieldname": "ultimo_login",
+   "fieldtype": "Datetime",
+   "label": "\u00daltimo Login",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_empresas",
+   "fieldtype": "Int",
+   "label": "Empresas vinculadas",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:56.664119",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Contacto_Cliente",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Evoluciona Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Evoluciona Supervisor",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Evoluciona Senior",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Evoluciona Asesor",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "nombre",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "nombre"
+}

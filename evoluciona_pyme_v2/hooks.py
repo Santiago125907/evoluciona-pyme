@@ -86,8 +86,6 @@ add_to_apps_screen = [
 # before_install = "evoluciona_pyme_v2.install.before_install"
 after_install = "evoluciona_pyme_v2.evoluciona_pyme_v2.setup.after_install"
 
-after_migrate = ["evoluciona_pyme_v2.evoluciona_pyme_v2.setup.sync_fixtures_post_migrate"]
-
 # Uninstallation
 # ------------
 
@@ -142,7 +140,18 @@ after_migrate = ["evoluciona_pyme_v2.evoluciona_pyme_v2.setup.sync_fixtures_post
 
 doc_events = {
 	"Ficha_Cliente": {
-		"after_insert": "evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_cliente"
+		"after_insert": [
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_cliente",
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.auto_asignar_asesor",
+		],
+		"on_update": [
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_auth.enviar_bienvenida_portal",
+		]
+	},
+	"Declaracion_Mensual": {
+		"on_update": [
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_notif.on_declaracion_update",
+		]
 	}
 }
 
@@ -157,6 +166,10 @@ scheduler_events = {
 	# Cron 2: dispara webhooks de descarga de Libro de Compras y Ventas (una vez al día)
 	"hourly": [
 		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.dispatcher_libros"
+	],
+	# Cron 3: recordatorio de vencimiento — corre cada día a las 9am
+	"daily": [
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_notif.recordatorio_vencimiento"
 	],
 }
 
@@ -240,11 +253,6 @@ scheduler_events = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 fixtures = [
-	{"dt": "DocType", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
-	{"dt": "Server Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
-	{"dt": "Client Script", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
-	{"dt": "Workspace", "filters": [["module", "=", "Evoluciona Pyme V2"]]},
 	{"dt": "Custom HTML Block", "filters": [["name", "in", ["Dashboard Evoluciona Pyme"]]]},
-	{"dt": "Web Page", "filters": [["name", "in", ["portal-login", "portal-del-cliente"]]]},
 	{"dt": "Configuracion_Codigo_F29", "filters": [["name", "in", ["62","155","49","151","48","504","532","528","520","562","510","759","111","502","142"]]]},
 ]

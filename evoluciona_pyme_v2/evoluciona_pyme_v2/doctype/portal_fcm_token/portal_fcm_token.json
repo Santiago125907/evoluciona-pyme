@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-05-09 12:00:58.650024",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "contacto",
+  "email",
+  "fcm_token",
+  "column_break_1",
+  "activo",
+  "dispositivo",
+  "ultima_vez"
+ ],
+ "fields": [
+  {
+   "fieldname": "contacto",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contacto",
+   "options": "Contacto_Cliente",
+   "search_index": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "search_index": 1
+  },
+  {
+   "fieldname": "fcm_token",
+   "fieldtype": "Small Text",
+   "label": "FCM Token",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activo"
+  },
+  {
+   "fieldname": "dispositivo",
+   "fieldtype": "Data",
+   "label": "Dispositivo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultima_vez",
+   "fieldtype": "Datetime",
+   "label": "\u00daltima vez visto",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:58.626621",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Portal_FCM_Token",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Evoluciona Admin",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "ultima_vez",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "email"
+}

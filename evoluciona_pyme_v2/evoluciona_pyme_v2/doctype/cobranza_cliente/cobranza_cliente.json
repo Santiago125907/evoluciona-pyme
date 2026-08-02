@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:id_cobranza",
- "creation": "2025-11-17 13:21:03.697823",
+ "creation": "2026-05-09 12:00:56.301527",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -243,7 +243,7 @@
    "fieldname": "metodo_pago",
    "fieldtype": "Select",
    "label": "M\u00e9todo de Pago",
-   "options": "Transferencia\nEfectivo\nCheque        Tarjeta\nOtro"
+   "options": "Transferencia\nEfectivo\nCheque\nTarjeta\nOtro"
   },
   {
    "depends_on": "eval:doc.estado_cobranza == \"Pagado\"",
@@ -306,12 +306,12 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:36.155067",
+ "modified": "2026-05-09 12:00:56.274265",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Cobranza_Cliente",
  "naming_rule": "By fieldname",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

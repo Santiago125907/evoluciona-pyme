@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "creation": "2026-05-09 12:00:57.019118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cliente"
+ ],
+ "fields": [
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cliente",
+   "options": "Ficha_Cliente",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-09 12:00:56.995743",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Destinatario_Anuncio",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

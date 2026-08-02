@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-11-14 18:11:14.018122",
+ "creation": "2026-05-09 12:00:58.959799",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -35,11 +35,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:35.593074",
+ "modified": "2026-05-09 12:00:58.935751",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Producto_Simple",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

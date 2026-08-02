@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-05-09 12:00:58.319126",
+ "description": "Env\u00edo de notificaciones push a suscriptores del portal",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titulo",
+  "cuerpo",
+  "section_dest",
+  "enviar_a_todos",
+  "destinatarios",
+  "section_result",
+  "col1",
+  "enviado",
+  "fecha_envio",
+  "total_enviados"
+ ],
+ "fields": [
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "T\u00edtulo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cuerpo",
+   "fieldtype": "Small Text",
+   "label": "Mensaje",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_dest",
+   "fieldtype": "Section Break",
+   "label": "Destinatarios"
+  },
+  {
+   "default": "1",
+   "fieldname": "enviar_a_todos",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enviar a todos los clientes"
+  },
+  {
+   "depends_on": "eval:!doc.enviar_a_todos",
+   "description": "Agrega aqu\u00ed solo los clientes que quieres notificar. Si \"Enviar a todos\" est\u00e1 marcado, se ignora esta lista.",
+   "fieldname": "destinatarios",
+   "fieldtype": "Table",
+   "label": "Clientes seleccionados",
+   "options": "Destinatario_Notif"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break",
+   "label": "Resultado"
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "enviado",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enviado",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_envio",
+   "fieldtype": "Datetime",
+   "label": "Fecha de Env\u00edo",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_enviados",
+   "fieldtype": "Int",
+   "label": "Dispositivos Alcanzados",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:58.295116",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Notificacion_Push_Portal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

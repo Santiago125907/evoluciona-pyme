@@ -1,0 +1,105 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-05-09 12:00:59.280780",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cliente",
+  "servicio",
+  "nombre_servicio",
+  "plan_seleccionado",
+  "fecha_solicitud",
+  "estado",
+  "sec_contacto",
+  "nombre_contacto",
+  "telefono",
+  "email",
+  "comentario"
+ ],
+ "fields": [
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cliente",
+   "options": "Ficha_Cliente"
+  },
+  {
+   "fieldname": "servicio",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Servicio",
+   "options": "Servicio_Portal"
+  },
+  {
+   "fieldname": "nombre_servicio",
+   "fieldtype": "Data",
+   "label": "Nombre Servicio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "plan_seleccionado",
+   "fieldtype": "Data",
+   "label": "Plan Seleccionado"
+  },
+  {
+   "fieldname": "fecha_solicitud",
+   "fieldtype": "Datetime",
+   "label": "Fecha Solicitud"
+  },
+  {
+   "default": "Nuevo",
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Estado",
+   "options": "Nuevo\nContactado\nCerrado"
+  },
+  {
+   "fieldname": "sec_contacto",
+   "fieldtype": "Section Break",
+   "label": "Datos de Contacto"
+  },
+  {
+   "fieldname": "nombre_contacto",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre"
+  },
+  {
+   "fieldname": "telefono",
+   "fieldtype": "Data",
+   "label": "Tel\u00e9fono"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "comentario",
+   "fieldtype": "Text",
+   "label": "Comentario / Consulta"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:59.257189",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Solicitud_Servicio_Portal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

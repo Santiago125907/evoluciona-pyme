@@ -2,8 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:id_documento",
- "creation": "2025-10-25 11:18:12.698212",
- "default_print_format": "",
+ "creation": "2026-05-09 12:00:56.844216",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -12,6 +11,7 @@
   "ano",
   "mes",
   "estado",
+  "publicado_portal",
   "id_documento",
   "column_break_pivz",
   "pdf_link_cliente",
@@ -68,7 +68,7 @@
    "fieldname": "ano",
    "fieldtype": "Select",
    "label": "A\u00d1O",
-   "options": "2025\n2026\n2027"
+   "options": "2023\n2024\n2025\n2026\n2027"
   },
   {
    "fieldname": "mes",
@@ -81,8 +81,15 @@
    "fieldname": "estado",
    "fieldtype": "Select",
    "label": "ESTADO",
-   "options": "Borrador\nEn Validaci\u00f3n\nListo\nEnviado",
+   "options": "Borrador\nEn Validaci\u00f3n\nListo\nEnviado\nPublicado",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "publicado_portal",
+   "fieldtype": "Check",
+   "label": "Publicado en Portal",
+   "read_only": 1
   },
   {
    "fieldname": "id_documento",
@@ -113,6 +120,7 @@
    "fieldname": "total_f29_a_pagar",
    "fieldtype": "Currency",
    "label": "TOTAL_A_PAGAR_F29",
+   "precision": "0",
    "read_only": 1
   },
   {
@@ -291,12 +299,12 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:53:25.706276",
+ "modified": "2026-05-12 10:26:50.943017",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Declaracion_Mensual",
  "naming_rule": "By fieldname",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

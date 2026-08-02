@@ -1,10 +1,12 @@
 {
  "actions": [],
- "creation": "2026-04-28 10:00:00.000000",
+ "creation": "2026-05-09 12:00:56.611054",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "html_instrucciones_oauth",
+  "html_url_autorizacion",
   "activo",
   "carpeta_madre_id",
   "email_propietario_drive",
@@ -25,19 +27,19 @@
    "default": "1",
    "fieldname": "activo",
    "fieldtype": "Check",
-   "label": "Integración Activa"
+   "label": "Integraci\u00f3n Activa"
   },
   {
+   "description": "ID de la carpeta ra\u00edz en Google Drive donde se crear\u00e1n las subcarpetas de cada cliente. Es el c\u00f3digo al final de la URL de la carpeta.",
    "fieldname": "carpeta_madre_id",
    "fieldtype": "Data",
-   "label": "ID Carpeta Madre en Drive",
-   "description": "ID de la carpeta raíz en Google Drive donde se crearán las subcarpetas de cada cliente. Es el código al final de la URL de la carpeta."
+   "label": "ID Carpeta Madre en Drive"
   },
   {
+   "description": "Email de la cuenta Google due\u00f1a de la carpeta. Los archivos subidos se transferir\u00e1n a este propietario para evitar el l\u00edmite de cuota de la Service Account.",
    "fieldname": "email_propietario_drive",
    "fieldtype": "Data",
-   "label": "Email Propietario Drive",
-   "description": "Email de la cuenta Google dueña de la carpeta. Los archivos subidos se transferirán a este propietario para evitar el límite de cuota de la Service Account."
+   "label": "Email Propietario Drive"
   },
   {
    "fieldname": "sb_credenciales",
@@ -45,34 +47,34 @@
    "label": "Credenciales Service Account"
   },
   {
+   "description": "Pega aqu\u00ed el contenido completo del archivo JSON de la Service Account de Google Cloud.",
    "fieldname": "service_account_json",
    "fieldtype": "Code",
-   "options": "JSON",
    "label": "Service Account JSON",
-   "description": "Pega aquí el contenido completo del archivo JSON de la Service Account de Google Cloud."
+   "options": "JSON"
   },
   {
    "fieldname": "sb_info",
    "fieldtype": "Section Break",
-   "label": "Información"
+   "label": "Informaci\u00f3n"
   },
   {
+   "description": "Este correo debe tener acceso compartido a la carpeta madre en Google Drive.",
    "fieldname": "client_email_info",
    "fieldtype": "Data",
    "label": "Email de la Service Account",
-   "read_only": 1,
-   "description": "Este correo debe tener acceso compartido a la carpeta madre en Google Drive."
+   "read_only": 1
   },
   {
    "fieldname": "sb_oauth",
    "fieldtype": "Section Break",
-   "label": "OAuth2 — Subida de Archivos como Usuario"
+   "label": "OAuth2 \u2014 Subida de Archivos como Usuario"
   },
   {
+   "description": "Desde Google Cloud Console \u2192 APIs \u2192 Credenciales \u2192 OAuth 2.0 (tipo: Aplicaci\u00f3n web)",
    "fieldname": "oauth_client_id",
    "fieldtype": "Data",
-   "label": "OAuth Client ID",
-   "description": "Desde Google Cloud Console → APIs → Credenciales → OAuth 2.0 (tipo: Aplicación web)"
+   "label": "OAuth Client ID"
   },
   {
    "fieldname": "oauth_client_secret",
@@ -80,11 +82,11 @@
    "label": "OAuth Client Secret"
   },
   {
+   "description": "Copia esta URL y agr\u00e9gala en Google Cloud Console \u2192 Credenciales \u2192 URIs de redireccionamiento autorizados",
    "fieldname": "oauth_redirect_uri",
    "fieldtype": "Data",
-   "label": "URI de Redirección (agregar en Google Cloud)",
-   "read_only": 1,
-   "description": "Copia esta URL y agrégala en Google Cloud Console → Credenciales → URIs de redireccionamiento autorizados"
+   "label": "URI de Redirecci\u00f3n (agregar en Google Cloud)",
+   "read_only": 1
   },
   {
    "fieldname": "col_oauth",
@@ -97,16 +99,28 @@
    "read_only": 1
   },
   {
+   "description": "Se llena autom\u00e1ticamente al autorizar.",
    "fieldname": "oauth_refresh_token",
    "fieldtype": "Password",
    "label": "Refresh Token (auto)",
-   "read_only": 1,
-   "description": "Se llena automáticamente al autorizar."
+   "read_only": 1
+  },
+  {
+   "fieldname": "html_instrucciones_oauth",
+   "fieldtype": "HTML",
+   "label": "Instrucciones OAuth2",
+   "options": "\n<div style=\"background:#f8f9fa; border:1px solid #dee2e6; border-radius:8px; padding:16px; margin-bottom:8px;\">\n    <h5 style=\"color:#1a3a4a; margin-top:0;\">\ud83d\udccb Instrucciones para conectar Google Drive</h5>\n\n    <b>PASO 1 \u2014 Google Cloud Console</b>\n    <ol style=\"margin-top:6px;\">\n        <li>Ve a <a href=\"https://console.cloud.google.com\" target=\"_blank\">console.cloud.google.com</a></li>\n        <li>Crea o selecciona un proyecto</li>\n        <li>Activa la <b>Google Drive API</b> (APIs y servicios \u2192 Biblioteca)</li>\n        <li>Crea una <b>Service Account</b> \u2192 descarga el JSON \u2192 p\u00e9galo en el campo de abajo</li>\n        <li>Crea un <b>OAuth 2.0 Client ID</b> (tipo: Aplicaci\u00f3n web)</li>\n        <li>En \"URIs de redirecci\u00f3n autorizados\" agrega la URI que aparece en este formulario</li>\n        <li>Copia el <b>Client ID</b> y <b>Client Secret</b> \u2192 p\u00e9galos en los campos de abajo</li>\n    </ol>\n\n    <b>PASO 2 \u2014 Google Drive</b>\n    <ol style=\"margin-top:6px;\">\n        <li>Crea una carpeta ra\u00edz para los clientes en tu Drive</li>\n        <li>Copia el ID de la URL: <code>drive.google.com/drive/folders/<b>ESTE_ES_EL_ID</b></code></li>\n        <li>Comparte la carpeta con el email de la Service Account con rol <b>Editor</b></li>\n        <li>Pega el ID en el campo \"ID Carpeta Madre\" de arriba</li>\n    </ol>\n\n    <b>PASO 3 \u2014 Pantalla de consentimiento OAuth</b>\n    <ol style=\"margin-top:6px;\">\n        <li>Ve a APIs y servicios \u2192 Pantalla de consentimiento de OAuth</li>\n        <li>En \"Usuarios de prueba\" agrega tu email Gmail</li>\n    </ol>\n\n    <b>PASO 4 \u2014 Autorizar</b>\n    <ol style=\"margin-top:6px;\">\n        <li>Guarda este formulario</li>\n        <li>Abre la <b>URL de autorizaci\u00f3n</b> que aparece abajo en tu navegador</li>\n        <li>Inicia sesi\u00f3n con tu cuenta Google y acepta los permisos</li>\n        <li>El sistema guardar\u00e1 el token autom\u00e1ticamente \u2192 \"OAuth Autorizado\" se marcar\u00e1 en verde</li>\n    </ol>\n</div>\n"
+  },
+  {
+   "fieldname": "html_url_autorizacion",
+   "fieldtype": "HTML",
+   "label": "URL de Autorizaci\u00f3n",
+   "options": "\n<div style=\"background:#e8f4fd; border:1px solid #bee5eb; border-radius:8px; padding:12px; margin-bottom:8px;\">\n    <b>\ud83d\udd17 URL de Autorizaci\u00f3n OAuth2</b><br>\n    <small style=\"color:#555;\">Abre esta URL en el navegador para autorizar. Reemplaza el CLIENT_ID si cambias las credenciales.</small><br><br>\n    <code style=\"background:#fff; padding:8px; border-radius:4px; display:block; font-size:11px; word-break:break-all; border:1px solid #ccc;\">\nhttps://accounts.google.com/o/oauth2/auth?client_id=TU_CLIENT_ID&redirect_uri=https://comando.evolucionapyme.cl/api/method/evoluciona_pyme_v2.evoluciona_pyme_v2.drive.oauth_callback_drive&response_type=code&scope=https://www.googleapis.com/auth/drive&access_type=offline&prompt=consent\n    </code>\n    <br>\n    <small><b>\u26a0\ufe0f Reemplaza</b> <code>TU_CLIENT_ID</code> con el valor del campo \"OAuth Client ID\" de arriba.</small>\n</div>\n"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-04-28 10:00:00.000000",
+ "modified": "2026-05-09 12:00:56.587270",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion_Drive",
@@ -115,19 +129,13 @@
  "permissions": [
   {
    "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
    "read": 1,
    "role": "System Manager",
-   "share": 0,
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "",
- "track_changes": 0
+ "states": []
 }

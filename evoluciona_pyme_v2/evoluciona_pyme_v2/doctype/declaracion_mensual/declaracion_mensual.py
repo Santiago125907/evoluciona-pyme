@@ -14,7 +14,30 @@ class Declaracion_Mensual(Document):
 		else:
 			frappe.msgprint("ℹ️ Documento nuevo, no se crea cobranza aún", indicator='blue')
 
+		# Guardar en flags si se está publicando (más robusto que atributo de instancia)
+		old_publicado = 0
+		if not self.is_new():
+			old_publicado = frappe.db.get_value("Declaracion_Mensual", self.name, "publicado_portal") or 0
+		if bool(self.publicado_portal) and not bool(old_publicado):
+			frappe.flags.push_declaracion = self.name
+
+	def after_save(self):
+		"""Envía push notification al publicar la declaración en el portal."""
+		if frappe.flags.get("push_declaracion") == self.name:
+			frappe.flags.push_declaracion = None
+			frappe.enqueue(
+				"evoluciona_pyme_v2.evoluciona_pyme_v2.doctype.declaracion_mensual.declaracion_mensual.enviar_push_declaracion",
+				name=self.name,
+				queue="short",
+				timeout=120,
+				enqueue_after_commit=True,
+			)
+
 	def actualizar_estado_declaracion(self):
+		# No sobreescribir estados especiales gestionados manualmente
+		if self.estado in ("Publicado", "Enviado"):
+			return
+
 		check_rrhh = 1 if self.get('check_gasto_rem_cargado') else 0
 		check_f29 = 1 if self.get('check_f29_cuadrado') else 0
 		check_prev = 1 if self.get('check_previred_cuadrado') else 0
@@ -122,8 +145,11 @@ class Declaracion_Mensual(Document):
 
 			frappe.msgprint(f"📈 Ventas Netas del Mes: ${total_ventas:,.0f}", indicator='blue')
 
-			# 2. Buscar en el plan de tramos
-			if cliente_doc.get('plan_contable'):
+			# 2. Determinar monto base: precio fijo o plan por tramos
+			if cliente_doc.get('precio_fijo'):
+				monto_contable = float(cliente_doc.get('monto_base_fijo') or 0)
+				frappe.msgprint(f"💲 Precio Base Fijo: ${monto_contable:,.0f}", indicator='blue')
+			elif cliente_doc.get('plan_contable'):
 				plan = frappe.get_doc("Plan_Contable", cliente_doc.plan_contable)
 				frappe.msgprint(f"📑 Plan Asignado: {plan.nombre_del_plan}", indicator='blue')
 				for tramo in plan.tramos:
@@ -315,3 +341,82 @@ class Declaracion_Mensual(Document):
 		except Exception as e:
 			frappe.log_error(str(e), "Error Cobranza Declaracion_Mensual")
 			frappe.msgprint(f"❌ Error al crear cobranza: {str(e)}", indicator='red')
+
+
+# ── Función independiente para el worker de background ───────────────────────
+
+def enviar_push_declaracion(name):
+	"""Ejecutado por frappe.enqueue — envía push al publicar una declaración."""
+	try:
+		doc = frappe.get_doc("Declaracion_Mensual", name)
+		if not doc.publicado_portal or not doc.cliente:
+			return
+
+		from evoluciona_pyme_v2.evoluciona_pyme_v2.portal_api import enviar_push_a_cliente
+
+		MESES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+				 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+		try:
+			mes_num = int(doc.mes)
+			mes_nombre = MESES[mes_num] if 1 <= mes_num <= 12 else str(doc.mes)
+		except Exception:
+			mes_nombre = str(doc.mes)
+
+		def _fmt(v):
+			return "${:,.0f}".format(v).replace(",", ".")
+
+		cliente   = doc.cliente
+		decl_mes  = int(doc.mes or 1)
+		decl_ano  = int(doc.ano or 0)
+		decl_per  = decl_ano * 100 + decl_mes
+
+		f29      = float(doc.total_f29_a_pagar or 0)
+		previred = float(doc.total_previred_a_pagar or 0)
+
+		# Honorarios del mes actual + mora de períodos anteriores sin pagar
+		honorarios = 0.0
+		mora       = 0.0
+		cobranzas  = frappe.db.sql("""
+			SELECT monto_a_cobrar, periodo_mes, periodo_ano
+			FROM `tabCobranza_Cliente`
+			WHERE cliente = %(c)s
+			  AND estado_cobranza IN ('Vencido', 'Por Cobrar', 'Facturado')
+		""", {"c": cliente}, as_dict=True)
+		for cob in cobranzas:
+			cob_per = int(cob.periodo_ano) * 100 + int(cob.periodo_mes)
+			if cob_per == decl_per:
+				honorarios += float(cob.monto_a_cobrar or 0)
+			elif cob_per < decl_per:
+				mora += float(cob.monto_a_cobrar or 0)
+
+		# Postergación IVA que vence este mes
+		posts = frappe.db.sql("""
+			SELECT monto_postergado FROM `tabPostergacion_IVA`
+			WHERE cliente = %(c)s
+			  AND mes_f29_pagado = %(mes)s AND ano_f29_pagado = %(ano)s
+		""", {"c": cliente, "mes": decl_mes, "ano": decl_ano}, as_dict=True)
+		post_vencida = sum(float(p.monto_postergado or 0) for p in posts)
+
+		total  = f29 + previred + honorarios + mora + post_vencida
+		partes = []
+		if f29 > 0:          partes.append("F29 {}".format(_fmt(f29)))
+		if previred > 0:     partes.append("Prev {}".format(_fmt(previred)))
+		if honorarios > 0:   partes.append("Hon {}".format(_fmt(honorarios)))
+		if mora > 0:         partes.append("Mora {}".format(_fmt(mora)))
+		if post_vencida > 0: partes.append("IVA ant. {}".format(_fmt(post_vencida)))
+
+		cuerpo = (" · ".join(partes) + "  |  Total: {}".format(_fmt(total))) if partes else _fmt(total)
+
+		enviar_push_a_cliente(
+			cliente=cliente,
+			titulo="Tu declaración de {} está lista 📋".format(mes_nombre),
+			cuerpo=cuerpo,
+			data={"tipo": "declaracion", "cliente": cliente,
+				  "mes": str(doc.mes), "ano": str(doc.ano)},
+		)
+	except Exception as e:
+		import traceback
+		frappe.log_error(
+			"enviar_push_declaracion name={}\n{}".format(name, traceback.format_exc()),
+			"Portal Push Declaracion"
+		)

@@ -54,8 +54,9 @@ def dispatcher_cron():
 # ── CRON 2: Descarga de libros contables ────────────────────────────────────
 def dispatcher_libros():
 	"""
-	hourly — Dispara los webhooks de descarga de Libro de Compras y/o Libro de
-	Ventas en n8n, una vez al mes el día y hora configurados en Configuracion App.
+	hourly — Descarga el RCV (compras y ventas) de todos los clientes activos
+	directamente desde el SII vía Base API, una vez al mes el día y hora
+	configurados en Configuracion App.
 	"""
 	cfg = _cargar_cfg()
 	if not cfg or not cfg.habilitar_descarga_libros:
@@ -72,23 +73,26 @@ def dispatcher_libros():
 	if ultima and ultima.month == now.month and ultima.year == now.year:
 		return  # ya se ejecutó este mes
 
-	enviado = False
-	payload_base = {"mes": str(now.month), "ano": str(now.year)}
+	fecha_anterior = add_months(getdate(), -1)
+	periodo = fecha_anterior.strftime("%Y-%m")
+	ano  = fecha_anterior.year
+	mes  = fecha_anterior.month
 
-	if cfg.webhook_libro_compras:
-		_disparar_webhook("libro_compras", cfg.webhook_libro_compras,
-						  {**payload_base, "accion": "descarga_libro_compras"})
-		enviado = True
+	from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api
 
-	if cfg.webhook_libro_ventas:
-		_disparar_webhook("libro_ventas", cfg.webhook_libro_ventas,
-						  {**payload_base, "accion": "descarga_libro_ventas"})
-		enviado = True
+	rcv_api.descargar_rcv_todos(periodo)
 
-	if enviado:
-		cfg.ultima_ejecucion_libros = now_datetime()
-		cfg.save(ignore_permissions=True)
-		frappe.db.commit()
+	for fila in (cfg.get("tabla_rcv_empresas") or []):
+		if fila.descargar_honorarios:
+			try:
+				bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
+			except Exception as e:
+				frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
+			frappe.db.commit()
+
+	cfg.ultima_ejecucion_libros = now_datetime()
+	cfg.save(ignore_permissions=True)
+	frappe.db.commit()
 
 
 def _disparar_webhook(nombre, url, payload):

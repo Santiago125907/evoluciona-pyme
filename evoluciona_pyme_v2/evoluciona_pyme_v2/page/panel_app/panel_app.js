@@ -1,5 +1,6 @@
 frappe.pages['panel_app'].on_page_load = function(wrapper) {
-    frappe.ui.make_app_page({ parent: wrapper, title: 'Inicio', single_column: true });
+    const page = frappe.ui.make_app_page({ parent: wrapper, title: 'Inicio', single_column: true });
+    page.add_button(__('📋 Panel Mensual'), () => frappe.set_route('panel_mensual'), { btn_class: 'btn-primary' });
 
     const hoy   = new Date();
     const prev  = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
@@ -323,7 +324,7 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
             </div>
             <div class="pa-progress-wrap">
                 <div class="pa-progress-label">
-                    <span>Progreso del período</span>
+                    <span>Progreso del período <small id="pa-scope-label" style="opacity:.6;font-size:10px;margin-left:6px;"></small></span>
                     <strong id="pa-pct-label">—</strong>
                 </div>
                 <div class="pa-progress-bg">
@@ -389,6 +390,40 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
                     <span class="pa-sc-sub">Libro boletas</span>
                     <span class="pa-sc-dot"></span>
                 </a>
+                <a class="pa-sc" style="--sc-color:#e67e22" onclick="frappe.set_route('List','Libro_de_Gastos_Cliente')">
+                    <span class="pa-sc-icon">🧾</span>
+                    <span class="pa-sc-label">Libro Gastos</span>
+                    <span class="pa-sc-sub">Egresos contables</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+                <a class="pa-sc" style="--sc-color:#9b59b6" onclick="frappe.set_route('List','Postergacion_IVA')">
+                    <span class="pa-sc-icon">🔄</span>
+                    <span class="pa-sc-label">Postergación IVA</span>
+                    <span class="pa-sc-sub">IVA diferido</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+            </div>
+
+            <p class="pa-section-title">Portal &amp; App</p>
+            <div class="pa-shortcuts" style="margin-bottom:32px;">
+                <a class="pa-sc" style="--sc-color:#f39c12" onclick="frappe.set_route('List','Notificacion_Push_Portal')">
+                    <span class="pa-sc-icon">🔔</span>
+                    <span class="pa-sc-label">Notificaciones</span>
+                    <span class="pa-sc-sub">Push masivo</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+                <a class="pa-sc" style="--sc-color:#3498db" onclick="frappe.set_route('List','Anuncio_Portal')">
+                    <span class="pa-sc-icon">📢</span>
+                    <span class="pa-sc-label">Anuncios</span>
+                    <span class="pa-sc-sub">Banner en portal</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+                <a class="pa-sc" style="--sc-color:#1abc9c" onclick="frappe.set_route('List','Contacto_Cliente')">
+                    <span class="pa-sc-icon">👤</span>
+                    <span class="pa-sc-label">Contactos App</span>
+                    <span class="pa-sc-sub">Usuarios del portal</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
             </div>
 
             <p class="pa-section-title">Estado del período — <span id="pa-mes-label">—</span></p>
@@ -422,6 +457,24 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
                     <span class="pa-sc-sub">Servicios adicionales</span>
                     <span class="pa-sc-dot"></span>
                 </a>
+                <a class="pa-sc" style="--sc-color:#4285f4" onclick="frappe.set_route('Form','Configuracion_Drive','Configuracion_Drive')">
+                    <span class="pa-sc-icon">☁️</span>
+                    <span class="pa-sc-label">Google Drive</span>
+                    <span class="pa-sc-sub">Configuración Drive</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+                <a class="pa-sc pa-sc-asesores" style="--sc-color:#7c3aed;display:none" onclick="frappe.set_route('gestion_asesores')">
+                    <span class="pa-sc-icon">👥</span>
+                    <span class="pa-sc-label">Gestión Asesores</span>
+                    <span class="pa-sc-sub">Asignar clientes</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
+                <a class="pa-sc" style="--sc-color:#6c757d" onclick="frappe.set_route('List','Plan_Servicio_Portal')">
+                    <span class="pa-sc-icon">💼</span>
+                    <span class="pa-sc-label">Planes Portal</span>
+                    <span class="pa-sc-sub">Planes de servicio</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
             </div>
 
             <p class="pa-section-title">Cobranza del período</p>
@@ -450,111 +503,99 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
     $('#pa-badge-periodo').text(mes_nom);
     $('#pa-mes-label').text(mes_nom);
 
-    // 1. Clientes activos
+    // Stats unificados según rol
     frappe.call({
-        method: 'frappe.client.get_count',
-        args: { doctype: 'Ficha_Cliente', filters: { estado_cliente: 'Activo' }, ignore_permissions: 1 },
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_stats_panel',
+        args: { ano, mes },
         callback(r) {
-            const total = r.message || 0;
+            const s   = r.message || {};
+            const rol = s.rol || 'asesor';
+            const fmt = n => Math.round(n).toLocaleString('es-CL');
 
-            // 2. Declaraciones del período
-            frappe.call({
-                method: 'frappe.client.get_list',
-                args: { doctype: 'Declaracion_Mensual', filters: { ano, mes },
-                        fields: ['name', 'estado'], limit_page_length: 300, ignore_permissions: 1 },
-                callback(r2) {
-                    const decs = r2.message || [];
-                    const borrador   = decs.filter(d => !d.estado || d.estado === 'Borrador').length;
-                    const validacion = decs.filter(d => d.estado === 'En Validación').length;
-                    const listos     = decs.filter(d => d.estado === 'Listo').length;
-                    const enviados   = decs.filter(d => d.estado === 'Enviado').length;
-                    const sin_dec    = total - decs.length;
-                    const avance     = listos + enviados;
-                    const pct        = total ? Math.round(avance / total * 100) : 0;
+            // Etiqueta de alcance
+            const scopeLabels = {
+                admin:      '— Panel global',
+                supervisor: '— Tu cartera + sin asignar',
+                senior:     '— Tu cartera + sin asignar',
+                asesor:     '— Tu cartera',
+            };
+            $('#pa-scope-label').text(scopeLabels[rol] || '');
 
-                    // Hero stats
-                    $('#pa-hero-stats').html(`
-                        <div class="pa-hstat">
-                            <strong>${total}</strong><span>Clientes</span>
-                        </div>
-                        <div class="pa-hstat green">
-                            <strong>${avance}</strong><span>Listos/Enviados</span>
-                        </div>
-                        <div class="pa-hstat orange">
-                            <strong>${borrador + validacion}</strong><span>En proceso</span>
-                        </div>
-                        <div class="pa-hstat red">
-                            <strong>${sin_dec}</strong><span>Sin declaración</span>
-                        </div>
-                    `);
+            // Mostrar shortcut Gestión Asesores solo a admin/supervisor
+            if (rol === 'admin' || rol === 'supervisor') {
+                $('.pa-sc-asesores').show();
+            }
 
-                    $('#pa-pct-label').text(`${avance} de ${total} (${pct}%)`);
-                    setTimeout(() => $('#pa-prog-fill').css('width', pct + '%'), 100);
+            // Hero stats
+            $('#pa-hero-stats').html(`
+                <div class="pa-hstat">
+                    <strong>${s.total}</strong><span>Clientes</span>
+                </div>
+                <div class="pa-hstat green">
+                    <strong>${s.avance}</strong><span>Listos/Enviados</span>
+                </div>
+                <div class="pa-hstat orange">
+                    <strong>${(s.borrador||0) + (s.validacion||0)}</strong><span>En proceso</span>
+                </div>
+                <div class="pa-hstat red">
+                    <strong>${s.sin_dec}</strong><span>Sin declaración</span>
+                </div>
+            `);
 
-                    // Cards estado
-                    $('#pa-cards').html(`
-                        <div class="pa-card" style="--card-color:#95a5a6">
-                            <div class="pa-card-top">
-                                <div><strong>${sin_dec}</strong><p>Sin declaración</p></div>
-                                <span class="pa-card-ico">⬜</span>
-                            </div>
-                            <div class="pa-card-sub">Clientes sin declaración creada</div>
-                        </div>
-                        <div class="pa-card" style="--card-color:#ffc107">
-                            <div class="pa-card-top">
-                                <div><strong>${borrador}</strong><p>Borrador</p></div>
-                                <span class="pa-card-ico">✏️</span>
-                            </div>
-                            <div class="pa-card-sub">Declaraciones en borrador</div>
-                        </div>
-                        <div class="pa-card" style="--card-color:#ff9800">
-                            <div class="pa-card-top">
-                                <div><strong>${validacion}</strong><p>En Validación</p></div>
-                                <span class="pa-card-ico">🔍</span>
-                            </div>
-                            <div class="pa-card-sub">Pendientes de validar</div>
-                        </div>
-                        <div class="pa-card" style="--card-color:#28a745">
-                            <div class="pa-card-top">
-                                <div><strong>${listos}</strong><p>Listos</p></div>
-                                <span class="pa-card-ico">✅</span>
-                            </div>
-                            <div class="pa-card-sub">Listos para enviar</div>
-                        </div>
-                        <div class="pa-card" style="--card-color:#17a2b8">
-                            <div class="pa-card-top">
-                                <div><strong>${enviados}</strong><p>Enviados</p></div>
-                                <span class="pa-card-ico">📤</span>
-                            </div>
-                            <div class="pa-card-sub">Declaraciones enviadas</div>
-                        </div>
-                    `);
-                }
-            });
+            $('#pa-pct-label').text(`${s.avance} de ${s.total} (${s.pct}%)`);
+            setTimeout(() => $('#pa-prog-fill').css('width', s.pct + '%'), 100);
 
-            // 3. Cobranzas
-            frappe.call({
-                method: 'frappe.client.get_list',
-                args: { doctype: 'Cobranza_Cliente', filters: { periodo_ano: ano, periodo_mes: mes },
-                        fields: ['monto_a_cobrar', 'estado_cobranza'], limit_page_length: 300, ignore_permissions: 1 },
-                callback(r3) {
-                    const cobros = r3.message || [];
-                    const fmt = n => Math.round(n).toLocaleString('es-CL');
+            // Cards estado
+            $('#pa-cards').html(`
+                <div class="pa-card" style="--card-color:#95a5a6">
+                    <div class="pa-card-top">
+                        <div><strong>${s.sin_dec}</strong><p>Sin declaración</p></div>
+                        <span class="pa-card-ico">⬜</span>
+                    </div>
+                    <div class="pa-card-sub">Clientes sin declaración creada</div>
+                </div>
+                <div class="pa-card" style="--card-color:#ffc107">
+                    <div class="pa-card-top">
+                        <div><strong>${s.borrador}</strong><p>Borrador</p></div>
+                        <span class="pa-card-ico">✏️</span>
+                    </div>
+                    <div class="pa-card-sub">Declaraciones en borrador</div>
+                </div>
+                <div class="pa-card" style="--card-color:#ff9800">
+                    <div class="pa-card-top">
+                        <div><strong>${s.validacion}</strong><p>En Validación</p></div>
+                        <span class="pa-card-ico">🔍</span>
+                    </div>
+                    <div class="pa-card-sub">Pendientes de validar</div>
+                </div>
+                <div class="pa-card" style="--card-color:#28a745">
+                    <div class="pa-card-top">
+                        <div><strong>${s.listos}</strong><p>Listos</p></div>
+                        <span class="pa-card-ico">✅</span>
+                    </div>
+                    <div class="pa-card-sub">Listos para enviar</div>
+                </div>
+                <div class="pa-card" style="--card-color:#17a2b8">
+                    <div class="pa-card-top">
+                        <div><strong>${s.enviados}</strong><p>Enviados</p></div>
+                        <span class="pa-card-ico">📤</span>
+                    </div>
+                    <div class="pa-card-sub">Declaraciones enviadas</div>
+                </div>
+            `);
 
-                    const por_cobrar = cobros.filter(c => c.estado_cobranza === 'Por Cobrar');
-                    const facturado  = cobros.filter(c => c.estado_cobranza === 'Facturado');
-                    const pagado     = cobros.filter(c => c.estado_cobranza === 'Pagado');
-
-                    const sum = arr => arr.reduce((a, c) => a + parseFloat(c.monto_a_cobrar || 0), 0);
-
-                    $('#pa-cob-porcobrar').text('$' + fmt(sum(por_cobrar)));
-                    $('#pa-cob-porcobrar-n').text(por_cobrar.length + ' cobro' + (por_cobrar.length !== 1 ? 's' : ''));
-                    $('#pa-cob-facturado').text('$' + fmt(sum(facturado)));
-                    $('#pa-cob-facturado-n').text(facturado.length + ' cobro' + (facturado.length !== 1 ? 's' : ''));
-                    $('#pa-cob-pagado').text('$' + fmt(sum(pagado)));
-                    $('#pa-cob-pagado-n').text(pagado.length + ' cobro' + (pagado.length !== 1 ? 's' : ''));
-                }
-            });
+            // Cobranzas
+            const cob = s.cobros || {};
+            const pc  = cob.por_cobrar || {};
+            const fa  = cob.facturado  || {};
+            const pa  = cob.pagado     || {};
+            const cn  = n => n + ' cobro' + (n !== 1 ? 's' : '');
+            $('#pa-cob-porcobrar').text('$' + fmt(pc.monto || 0));
+            $('#pa-cob-porcobrar-n').text(cn(pc.n || 0));
+            $('#pa-cob-facturado').text('$' + fmt(fa.monto || 0));
+            $('#pa-cob-facturado-n').text(cn(fa.n || 0));
+            $('#pa-cob-pagado').text('$' + fmt(pa.monto || 0));
+            $('#pa-cob-pagado-n').text(cn(pa.n || 0));
         }
     });
 };

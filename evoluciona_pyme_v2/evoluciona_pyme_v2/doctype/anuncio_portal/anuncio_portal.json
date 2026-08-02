@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-05-09 12:00:55.997355",
+ "description": "Banners y anuncios que se muestran en el portal de clientes",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titulo",
+  "cuerpo",
+  "emoji",
+  "color",
+  "activo",
+  "fecha_hasta",
+  "section_dest",
+  "para_todos",
+  "clientes"
+ ],
+ "fields": [
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "T\u00edtulo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cuerpo",
+   "fieldtype": "Small Text",
+   "label": "Mensaje",
+   "reqd": 1
+  },
+  {
+   "default": "\ud83c\udf89",
+   "fieldname": "emoji",
+   "fieldtype": "Data",
+   "label": "Emoji"
+  },
+  {
+   "default": "turquoise",
+   "fieldname": "color",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Color del banner",
+   "options": "turquoise\norange\ndark\nsuccess"
+  },
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activo"
+  },
+  {
+   "fieldname": "fecha_hasta",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "V\u00e1lido hasta (vac\u00edo = sin l\u00edmite)"
+  },
+  {
+   "fieldname": "section_dest",
+   "fieldtype": "Section Break",
+   "label": "Destinatarios"
+  },
+  {
+   "default": "1",
+   "fieldname": "para_todos",
+   "fieldtype": "Check",
+   "label": "Para todos los clientes"
+  },
+  {
+   "depends_on": "eval:!doc.para_todos",
+   "fieldname": "clientes",
+   "fieldtype": "Table",
+   "label": "Clientes espec\u00edficos",
+   "options": "Destinatario_Anuncio"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:55.584195",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Anuncio_Portal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

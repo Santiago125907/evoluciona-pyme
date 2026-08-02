@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:{cliente}-{periodo_mes}-{periodo_a\u00f1o}",
- "creation": "2025-10-28 07:12:16.668450",
+ "creation": "2026-05-09 12:00:56.767267",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -25,7 +25,7 @@
    "fieldname": "periodo_a\u00f1o",
    "fieldtype": "Select",
    "label": "Periodo a\u00f1o",
-   "options": "2025\n2026\n2027"
+   "options": "2023\n2024\n2025\n2026\n2027"
   },
   {
    "fieldname": "periodo_mes",
@@ -65,12 +65,12 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:34.654313",
+ "modified": "2026-05-09 12:00:56.744299",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Control_Carga",
- "naming_rule": "Expression",
- "owner": "sromero1808@gmail.com",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

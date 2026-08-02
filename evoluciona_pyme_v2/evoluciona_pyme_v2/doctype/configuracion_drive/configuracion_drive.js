@@ -10,6 +10,31 @@ frappe.ui.form.on("Configuracion_Drive", {
             }
         });
 
+        // URL de autorización dinámica
+        frappe.call({
+            method: "evoluciona_pyme_v2.evoluciona_pyme_v2.drive.get_redirect_uri_info",
+            callback(r) {
+                const redirect_uri = r.message || "";
+                const client_id = frm.doc.oauth_client_id || "TU_CLIENT_ID";
+                const auth_url = client_id !== "TU_CLIENT_ID"
+                    ? `https://accounts.google.com/o/oauth2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=https://www.googleapis.com/auth/drive&access_type=offline&prompt=consent`
+                    : null;
+
+                const url_html = auth_url
+                    ? `<div style="background:#e8f4fd; border:1px solid #bee5eb; border-radius:8px; padding:12px; margin-bottom:8px;">
+                        <b>🔗 URL de Autorización OAuth2</b><br>
+                        <small style="color:#555;">Abre esta URL en el navegador para autorizar.</small><br><br>
+                        <code style="background:#fff; padding:8px; border-radius:4px; display:block; font-size:11px; word-break:break-all; border:1px solid #ccc;">${auth_url}</code>
+                        <br><button class="btn btn-xs btn-primary" onclick="window.open('${auth_url}','_blank')">Abrir URL</button>
+                       </div>`
+                    : `<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:12px;">
+                        ⚠️ Ingresa el <b>OAuth Client ID</b> para ver la URL de autorización.
+                       </div>`;
+
+                frm.get_field("html_url_autorizacion").$wrapper.html(url_html);
+            }
+        });
+
         // OAuth status indicator
         if (frm.doc.oauth_autorizado) {
             frm.dashboard.set_headline_alert(

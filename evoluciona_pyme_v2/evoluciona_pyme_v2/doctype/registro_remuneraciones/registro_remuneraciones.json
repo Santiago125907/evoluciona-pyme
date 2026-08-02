@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-20 20:46:25.966903",
+ "creation": "2026-05-09 12:00:59.031001",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -42,7 +42,7 @@
    "fieldname": "ano",
    "fieldtype": "Select",
    "label": "A\u00f1o",
-   "options": "2025\n2026\n2027",
+   "options": "2023\n2024\n2025\n2026\n2027",
    "reqd": 1
   },
   {
@@ -137,11 +137,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:33.811698",
+ "modified": "2026-05-09 12:00:59.005252",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Registro_Remuneraciones",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

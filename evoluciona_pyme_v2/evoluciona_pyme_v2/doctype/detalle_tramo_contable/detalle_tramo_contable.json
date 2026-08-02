@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-04-04 21:09:48.993329",
+ "creation": "2026-05-09 12:00:57.315108",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -35,7 +35,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-16 06:42:36.943144",
+ "modified": "2026-05-09 12:00:57.292032",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Detalle_Tramo_Contable",

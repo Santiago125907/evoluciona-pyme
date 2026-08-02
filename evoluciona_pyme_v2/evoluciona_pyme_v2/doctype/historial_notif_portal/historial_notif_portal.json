@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-05-09 12:00:57.582825",
+ "description": "Registro de notificaciones push enviadas a los clientes del portal",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cliente",
+  "titulo",
+  "cuerpo",
+  "tipo",
+  "leido",
+  "enviados"
+ ],
+ "fields": [
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cliente",
+   "options": "Ficha_Cliente"
+  },
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "T\u00edtulo"
+  },
+  {
+   "fieldname": "cuerpo",
+   "fieldtype": "Small Text",
+   "label": "Mensaje"
+  },
+  {
+   "default": "manual",
+   "fieldname": "tipo",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Tipo",
+   "options": "declaracion\nvencimiento\nmanual\nrecordatorio"
+  },
+  {
+   "default": "0",
+   "fieldname": "leido",
+   "fieldtype": "Check",
+   "label": "Le\u00eddo"
+  },
+  {
+   "default": "0",
+   "fieldname": "enviados",
+   "fieldtype": "Int",
+   "label": "Dispositivos alcanzados"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:57.560126",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Historial_Notif_Portal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

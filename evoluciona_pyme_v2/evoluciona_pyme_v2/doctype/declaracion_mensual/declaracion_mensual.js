@@ -46,6 +46,43 @@ frappe.ui.form.on('Declaracion_Mensual', {
         }
         
         // =====================================================
+        // BOTÓN: PUBLICAR EN APP
+        // =====================================================
+        if (frm.doc.publicado_portal) {
+            frm.add_custom_button(__('✅ Publicado en App'), function() {
+                frappe.confirm('¿Quitar esta declaración del portal de la App?', function() {
+                    frappe.call({
+                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                        args: { doc_name: frm.doc.name },
+                        freeze: true, freeze_message: 'Actualizando portal...',
+                        callback: function(r) {
+                            if (r.message?.status === 'ok') {
+                                frappe.show_alert({ message: r.message.message, indicator: 'orange' }, 4);
+                                frm.reload_doc();
+                            }
+                        }
+                    });
+                });
+            }).addClass('btn-success');
+        } else {
+            frm.add_custom_button(__('📱 Publicar en App'), function() {
+                frappe.confirm('¿Publicar esta declaración en la App del cliente? Se enviará una notificación push.', function() {
+                    frappe.call({
+                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                        args: { doc_name: frm.doc.name },
+                        freeze: true, freeze_message: 'Publicando en App...',
+                        callback: function(r) {
+                            if (r.message?.status === 'ok') {
+                                frappe.show_alert({ message: r.message.message, indicator: 'green' }, 4);
+                                frm.reload_doc();
+                            }
+                        }
+                    });
+                });
+            }).addClass('btn-warning');
+        }
+
+        // =====================================================
         // BOTÓN: IR A REGISTRO RRHH
         // =====================================================
         if (frm.doc.cliente && frm.doc.ano && frm.doc.mes) {
@@ -220,3 +257,141 @@ function quitar_postergacion_declaracion(frm) {
         }
     );
 }
+
+
+// ===================================================================
+// LIST VIEW: Acciones masivas
+// ===================================================================
+frappe.listview_settings['Declaracion_Mensual'] = {
+    onload: function(listview) {
+
+        // ── Calcular F29 masivo ──────────────────────────────────
+        listview.page.add_action_item(__('⚙️ Calcular F29'), function() {
+            let docs = listview.get_checked_items(true);
+            if (!docs.length) { frappe.msgprint('Selecciona al menos una declaración.'); return; }
+            frappe.confirm(
+                `¿Calcular F29 para <b>${docs.length}</b> declaración(es)?`,
+                function() {
+                    let procesadas = 0, errores = 0;
+                    let total = docs.length;
+                    frappe.show_alert({ message: `Calculando ${total} declaraciones...`, indicator: 'blue' }, 5);
+
+                    function procesar_siguiente(i) {
+                        if (i >= total) {
+                            frappe.show_alert({ message: `✅ ${procesadas} calculadas, ${errores} errores.`, indicator: procesadas > 0 ? 'green' : 'red' }, 6);
+                            listview.refresh();
+                            return;
+                        }
+                        let nombre = docs[i];
+                        // Obtener el borrador f29 vinculado
+                        frappe.db.get_value('Declaracion_Mensual', nombre, 'borrador_f29_vinculado').then(r => {
+                            let f29 = r.message && r.message.borrador_f29_vinculado;
+                            if (!f29) { errores++; procesar_siguiente(i + 1); return; }
+                            frappe.call({
+                                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29',
+                                args: { doc_name: f29 },
+                                callback: function(res) {
+                                    if (res.message?.status === 'ok') procesadas++;
+                                    else errores++;
+                                    procesar_siguiente(i + 1);
+                                },
+                                error: function() { errores++; procesar_siguiente(i + 1); }
+                            });
+                        });
+                    }
+                    procesar_siguiente(0);
+                }
+            );
+        });
+
+        // ── Publicar en App masivo ───────────────────────────────
+        listview.page.add_action_item(__('📱 Publicar en App'), function() {
+            let docs = listview.get_checked_items(true);
+            if (!docs.length) { frappe.msgprint('Selecciona al menos una declaración.'); return; }
+            frappe.confirm(
+                `¿Publicar <b>${docs.length}</b> declaración(es) en la App del cliente?`,
+                function() {
+                    let ok = 0, err = 0, total = docs.length;
+                    function procesar_siguiente(i) {
+                        if (i >= total) {
+                            frappe.show_alert({ message: `📱 ${ok} publicadas, ${err} errores.`, indicator: ok > 0 ? 'green' : 'red' }, 6);
+                            listview.refresh();
+                            return;
+                        }
+                        frappe.call({
+                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                            args: { doc_name: docs[i] },
+                            callback: function(res) {
+                                if (res.message?.status === 'ok') ok++;
+                                else err++;
+                                procesar_siguiente(i + 1);
+                            },
+                            error: function() { err++; procesar_siguiente(i + 1); }
+                        });
+                    }
+                    procesar_siguiente(0);
+                }
+            );
+        });
+
+        // ── Enviar declaraciones masivo ──────────────────────────
+        listview.page.add_action_item(__('📧 Enviar por Email'), function() {
+            let docs = listview.get_checked_items(true);
+            if (!docs.length) { frappe.msgprint('Selecciona al menos una declaración.'); return; }
+            frappe.confirm(
+                `¿Enviar <b>${docs.length}</b> declaración(es) por email?`,
+                function() {
+                    let ok = 0, err = 0, total = docs.length;
+                    function procesar_siguiente(i) {
+                        if (i >= total) {
+                            frappe.show_alert({ message: `📧 ${ok} enviadas, ${err} errores.`, indicator: ok > 0 ? 'green' : 'red' }, 6);
+                            listview.refresh();
+                            return;
+                        }
+                        frappe.call({
+                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.enviar_pdf_cliente',
+                            args: { declaracion_name: docs[i] },
+                            callback: function(res) {
+                                if (res.message?.status === 'ok') ok++;
+                                else err++;
+                                procesar_siguiente(i + 1);
+                            },
+                            error: function() { err++; procesar_siguiente(i + 1); }
+                        });
+                    }
+                    procesar_siguiente(0);
+                }
+            );
+        });
+
+        // ── Resetear declaraciones masivo ────────────────────────
+        listview.page.add_action_item(__('🔄 Resetear a Borrador'), function() {
+            let docs = listview.get_checked_items(true);
+            if (!docs.length) { frappe.msgprint('Selecciona al menos una declaración.'); return; }
+            frappe.confirm(
+                `⚠️ ¿Resetear <b>${docs.length}</b> declaración(es) a estado Borrador?<br><small>Esto limpiará validaciones y publicación en portal.</small>`,
+                function() {
+                    let ok = 0, err = 0, total = docs.length;
+                    function procesar_siguiente(i) {
+                        if (i >= total) {
+                            frappe.show_alert({ message: `🔄 ${ok} reseteadas, ${err} errores.`, indicator: ok > 0 ? 'orange' : 'red' }, 6);
+                            listview.refresh();
+                            return;
+                        }
+                        frappe.call({
+                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.resetear_declaracion',
+                            args: { doc_name: docs[i] },
+                            callback: function(res) {
+                                if (res.message?.status === 'ok') ok++;
+                                else err++;
+                                procesar_siguiente(i + 1);
+                            },
+                            error: function() { err++; procesar_siguiente(i + 1); }
+                        });
+                    }
+                    procesar_siguiente(0);
+                }
+            );
+        });
+    }
+};

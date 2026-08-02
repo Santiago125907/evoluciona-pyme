@@ -159,21 +159,23 @@ def _crear_subcarpeta(service, nombre, padre_id):
             "mimeType": "application/vnd.google-apps.folder",
             "parents": [padre_id]
         },
-        fields="id"
+        fields="id,webViewLink"
     ).execute()
-    return carpeta.get("id")
+    return carpeta.get("id"), carpeta.get("webViewLink")
 
 
-def crear_carpeta_cliente(cliente_name):
+def crear_carpeta_cliente(doc, method=None, cliente_name=None):
     config = frappe.get_single("Configuracion_Drive")
     if not config.activo:
         return
 
+    cliente_name = cliente_name or doc.name
     cliente = frappe.get_doc("Ficha_Cliente", cliente_name)
     service = get_drive_service()
     valores = {}
 
-    if not cliente.get("drive_folder_id"):
+    # Carpeta principal (matriz) del cliente
+    if not cliente.get("drive_matriz_id"):
         nombre = f"{cliente.abreviatura_cliente or cliente_name} - {cliente.razon_social or ''}".strip(" -")
         carpeta = service.files().create(
             body={
@@ -183,26 +185,29 @@ def crear_carpeta_cliente(cliente_name):
             },
             fields="id,webViewLink"
         ).execute()
-        carpeta_id = carpeta.get("id")
-        valores["drive_folder_id"] = carpeta_id
-        valores["drive_folder_url"] = carpeta.get("webViewLink")
-        valores["drive_folder_id_display"] = carpeta_id
-        valores["drive_folder_url_display"] = carpeta.get("webViewLink")
+        matriz_id = carpeta.get("id")
+        valores["drive_matriz_id"] = matriz_id
+        valores["drive_matriz_url"] = carpeta.get("webViewLink")
     else:
-        carpeta_id = cliente.get("drive_folder_id")
+        matriz_id = cliente.get("drive_matriz_id")
         carpeta = None
 
     if not cliente.get("drive_f29_id"):
-        valores["drive_f29_id"] = _crear_subcarpeta(service, "F29", carpeta_id)
+        f29_id, _ = _crear_subcarpeta(service, "F29", matriz_id)
+        valores["drive_f29_id"] = f29_id
     if not cliente.get("drive_libros_id"):
-        valores["drive_libros_id"] = _crear_subcarpeta(service, "Libros", carpeta_id)
+        libros_id, _ = _crear_subcarpeta(service, "Libros", matriz_id)
+        valores["drive_libros_id"] = libros_id
     if not cliente.get("drive_declaraciones_id"):
-        valores["drive_declaraciones_id"] = _crear_subcarpeta(service, "Declaraciones", carpeta_id)
+        dec_id, dec_url = _crear_subcarpeta(service, "Declaraciones", matriz_id)
+        valores["drive_declaraciones_id"] = dec_id
+        valores["drive_declaraciones_url"] = dec_url
+
 
     if valores:
         frappe.db.set_value("Ficha_Cliente", cliente_name, valores)
         frappe.db.commit()
-        frappe.logger().info(f"Carpeta Drive actualizada para {cliente_name}: {carpeta_id}")
+        frappe.logger().info(f"Carpeta Drive actualizada para {cliente_name}: {matriz_id}")
 
     return carpeta
 
@@ -269,10 +274,22 @@ def subir_pdf(file_bytes, nombre_archivo, carpeta_id, año=None):
 @frappe.whitelist()
 def crear_carpeta_manual(cliente):
     try:
-        resultado = crear_carpeta_cliente(cliente)
+        resultado = crear_carpeta_cliente(doc=None, cliente_name=cliente)
         if resultado:
             return {"status": "ok", "url": resultado.get("webViewLink")}
         return {"status": "ya_existe", "message": "El cliente ya tiene carpeta asignada."}
     except Exception as e:
         frappe.log_error(str(e), "Drive - crear_carpeta_manual")
         return {"status": "error", "message": str(e)}
+
+@frappe.whitelist()
+def resetear_links_drive(cliente):
+    campos = [
+        "drive_matriz_id", "drive_matriz_url",
+        "drive_f29_id", "drive_libros_id",
+        "drive_declaraciones_id", "drive_declaraciones_url",
+    ]
+    valores = {c: None for c in campos}
+    frappe.db.set_value("Ficha_Cliente", cliente, valores)
+    frappe.db.commit()
+    return {"status": "ok"}

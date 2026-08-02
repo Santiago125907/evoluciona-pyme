@@ -1,16 +1,17 @@
 {
  "actions": [],
  "autoname": "field:rut_cliente",
- "creation": "2025-10-19 22:05:51.168692",
+ "creation": "2026-05-09 12:00:57.388949",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "informaci\u00f3n_principal_section",
   "razon_social",
   "rut_cliente",
-  "contacto_principal_nombre",
-  "contacto_principal_email",
-  "contacto_principal_whatsapp",
+  "asesor_asignado",
+  "nombre_asesor",
+  "whatsapp_asesor",
+  "pdf_modo_basico",
   "abreviatura_cliente",
   "column_break_deet",
   "estado_cliente",
@@ -18,22 +19,30 @@
   "direccion_fiscal",
   "comuna",
   "ciudad",
-  "drive_folder_id",
-  "drive_folder_url",
+  "email_sii",
+  "telefono_sii",
   "erut_archivo",
   "portal_section",
-  "habilitar_portal",
-  "usuario_portal_vinculado",
-  "password_portal_hint",
+  "contactos",
   "column_break_xsyq",
+  "habilitar_portal",
   "estado_portal",
   "fecha_creacion_portal",
   "informaci\u00f3n_tributaria_y_operativa_section",
   "tipo_contabilidad",
   "tasa_ppm",
+  "fecha_inicio_actividades",
   "column_break_oibf",
   "regimen_tributario",
   "usa_iva_credito",
+  "segmento_empresa",
+  "tipo_contribuyente",
+  "subtipo_contribuyente",
+  "sb_datos_sii",
+  "actividades_economicas",
+  "column_break_sii_ref",
+  "representantes_sii",
+  "socios_sii",
   "credenciales_section",
   "credenciales_sii_column",
   "clave_sii",
@@ -49,6 +58,8 @@
   "panel_facturacion_cobranza",
   "condiciones_del_servicio_tab",
   "seccion_cobros",
+  "precio_fijo",
+  "monto_base_fijo",
   "plan_contable",
   "monto_por_empleado",
   "column_break_mjdj",
@@ -67,13 +78,31 @@
   "sb_drive_subfolders",
   "drive_f29_id",
   "drive_libros_id",
-  "drive_declaraciones_id"
+  "drive_declaraciones_id",
+  "drive_declaraciones_url",
+  "drive_matriz_id",
+  "drive_matriz_url"
  ],
  "fields": [
   {
    "fieldname": "informaci\u00f3n_principal_section",
    "fieldtype": "Section Break",
    "label": "Informaci\u00f3n Principal"
+  },
+  {
+   "fieldname": "asesor_asignado",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Asesor Asignado",
+   "options": "User",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "description": "Activar para ocultar datos bancarios, footer y hoja promocional en el PDF",
+   "fieldname": "pdf_modo_basico",
+   "fieldtype": "Check",
+   "label": "PDF B\u00e1sico"
   },
   {
    "description": "Nombre de empresa",
@@ -92,22 +121,6 @@
    "label": "RUT Cliente",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "contacto_principal_nombre",
-   "fieldtype": "Data",
-   "label": "Nombre Contacto Principal"
-  },
-  {
-   "fieldname": "contacto_principal_email",
-   "fieldtype": "Data",
-   "label": "Email Contacto Principal"
-  },
-  {
-   "description": "+56912345678",
-   "fieldname": "contacto_principal_whatsapp",
-   "fieldtype": "Data",
-   "label": "WhatsApp Contacto Principal"
   },
   {
    "fieldname": "abreviatura_cliente",
@@ -153,14 +166,15 @@
    "label": "Ciudad"
   },
   {
-   "fieldname": "drive_folder_id",
+   "fieldname": "email_sii",
    "fieldtype": "Data",
-   "label": "drive_folder_id"
+   "label": "Email (SII)",
+   "options": "Email"
   },
   {
-   "fieldname": "drive_folder_url",
+   "fieldname": "telefono_sii",
    "fieldtype": "Data",
-   "label": "drive_folder_url"
+   "label": "Teléfono (SII)"
   },
   {
    "fieldname": "erut_archivo",
@@ -170,7 +184,17 @@
   {
    "fieldname": "portal_section",
    "fieldtype": "Section Break",
-   "label": "Portal"
+   "label": "Contactos y Portal"
+  },
+  {
+   "fieldname": "contactos",
+   "fieldtype": "Table",
+   "label": "Contactos",
+   "options": "Ficha_Contacto"
+  },
+  {
+   "fieldname": "column_break_xsyq",
+   "fieldtype": "Column Break"
   },
   {
    "bold": 1,
@@ -180,33 +204,14 @@
    "label": "Habilitar Acceso Portal"
   },
   {
-   "depends_on": "eval:doc.habilitar_portal==1",
-   "description": "Email del usuario vinculado al portal",
-   "fieldname": "usuario_portal_vinculado",
-   "fieldtype": "Data",
-   "label": "Usuario Portal"
-  },
-  {
-   "description": "RUT sin puntos usado como contrase\u00f1a",
-   "fieldname": "password_portal_hint",
-   "fieldtype": "Data",
-   "label": "Contrase\u00f1a Inicial",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_xsyq",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "No Configurado",
-   "depends_on": "eval:doc.habilitar_portal==1",
    "fieldname": "estado_portal",
    "fieldtype": "Select",
    "label": "Estado Portal",
-   "options": "No Configurado\nActivo\nDeshabilitado"
+   "options": "No Configurado\nActivo\nDeshabilitado",
+   "read_only": 1
   },
   {
-   "depends_on": "eval:doc.estado_portal=='Activo'",
    "fieldname": "fecha_creacion_portal",
    "fieldtype": "Datetime",
    "label": "Fecha Creaci\u00f3n Portal",
@@ -240,11 +245,63 @@
    "options": "Pro Pyme General\nPro Pyme Transparente\nRenta Presunta\nGeneral (Semi Integrado)"
   },
   {
+   "default": "1",
+   "description": "Desmarcar para clientes con giro 100% exento: el IVA pagado en compras se trata como costo empresa.",
    "fieldname": "usa_iva_credito",
    "fieldtype": "Check",
-   "label": "Usa IVA Cr\u00e9dito Fiscal",
-   "default": "1",
-   "description": "Desmarcar para clientes con giro 100% exento: el IVA pagado en compras se trata como costo empresa."
+   "label": "Usa IVA Cr\u00e9dito Fiscal"
+  },
+  {
+   "fieldname": "segmento_empresa",
+   "fieldtype": "Data",
+   "label": "Segmento (SII)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tipo_contribuyente",
+   "fieldtype": "Data",
+   "label": "Tipo Contribuyente (SII)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subtipo_contribuyente",
+   "fieldtype": "Data",
+   "label": "Subtipo (SII)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_datos_sii",
+   "fieldtype": "Section Break",
+   "label": "Datos SII (Referencia)",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "actividades_economicas",
+   "fieldtype": "Long Text",
+   "label": "Actividades Económicas",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sii_ref",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "representantes_sii",
+   "fieldtype": "Long Text",
+   "label": "Representantes Legales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "socios_sii",
+   "fieldtype": "Long Text",
+   "label": "Socios",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_inicio_actividades",
+   "fieldtype": "Date",
+   "label": "Inicio de Actividades",
+   "read_only": 1
   },
   {
    "fieldname": "credenciales_section",
@@ -320,6 +377,19 @@
    "label": "Planes y Cobranza Mensual"
   },
   {
+   "default": "0",
+   "fieldname": "precio_fijo",
+   "fieldtype": "Check",
+   "label": "Precio Base Fijo"
+  },
+  {
+   "depends_on": "eval:doc.precio_fijo == 1",
+   "fieldname": "monto_base_fijo",
+   "fieldtype": "Currency",
+   "label": "Monto Base Fijo ($)"
+  },
+  {
+   "depends_on": "eval:doc.precio_fijo == 0",
    "fieldname": "plan_contable",
    "fieldtype": "Link",
    "label": "Plan Contable (Por Tramos)",
@@ -370,13 +440,13 @@
   {
    "fieldname": "carga_historica_tab",
    "fieldtype": "Tab Break",
-   "label": "Carga Histórica"
+   "label": "Carga Hist\u00f3rica"
   },
   {
    "fieldname": "panel_carga_historica",
    "fieldtype": "HTML",
-   "label": "Panel Carga Histórica",
-   "options": "<div id=\"panel-carga-historica\" style=\"padding:20px 0;\">\n  <div style=\"background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:20px 24px;max-width:640px;\">\n    <h5 style=\"margin:0 0 4px;color:#333;font-weight:600;\">Carga Histórica</h5>\n    <p style=\"margin:0 0 16px;font-size:12px;color:#888;\">Selecciona el período y usa los botones según lo que necesites.</p>\n    <div style=\"display:flex;gap:16px;margin-bottom:20px;align-items:flex-end;\">\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Año</label>\n        <select id=\"ch-ano\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Año —</option>\n          <option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option>\n        </select>\n      </div>\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Mes</label>\n        <select id=\"ch-mes\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Mes —</option>\n          <option value=\"1\">Enero</option><option value=\"2\">Febrero</option><option value=\"3\">Marzo</option>\n          <option value=\"4\">Abril</option><option value=\"5\">Mayo</option><option value=\"6\">Junio</option>\n          <option value=\"7\">Julio</option><option value=\"8\">Agosto</option><option value=\"9\">Septiembre</option>\n          <option value=\"10\">Octubre</option><option value=\"11\">Noviembre</option><option value=\"12\">Diciembre</option>\n        </select>\n      </div>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Crear declaraciones</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;\">\n      <button onclick=\"ch_crear_declaraciones()\" style=\"background:#1a6e3c;color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;\">📋 Crear Declaracion Mensual + F29</button>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Importar documentos tributarios</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;\">\n      <button onclick=\"ch_importar('compras')\" style=\"background:#e67e22;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Compras</button>\n      <button onclick=\"ch_importar('ventas')\" style=\"background:#27ae60;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Ventas</button>\n      <button onclick=\"ch_importar('honorarios')\" style=\"background:#8e44ad;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Honorarios</button>\n      <button onclick=\"ch_importar('lre')\" style=\"background:#2980b9;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 LRE (Previred)</button>\n    </div>\n  </div>\n</div>"
+   "label": "Panel Carga Hist\u00f3rica",
+   "options": "<div id=\"panel-carga-historica\" style=\"padding:20px 0;\">\n  <div style=\"background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:20px 24px;max-width:640px;\">\n    <h5 style=\"margin:0 0 4px;color:#333;font-weight:600;\">Carga Hist\u00f3rica</h5>\n    <p style=\"margin:0 0 16px;font-size:12px;color:#888;\">Selecciona el per\u00edodo y usa los botones seg\u00fan lo que necesites.</p>\n    <div style=\"display:flex;gap:16px;margin-bottom:20px;align-items:flex-end;\">\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">A\u00f1o</label>\n        <select id=\"ch-ano\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">\u2014 A\u00f1o \u2014</option>\n          <option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option>\n        </select>\n      </div>\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Mes</label>\n        <select id=\"ch-mes\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">\u2014 Mes \u2014</option>\n          <option value=\"1\">Enero</option><option value=\"2\">Febrero</option><option value=\"3\">Marzo</option>\n          <option value=\"4\">Abril</option><option value=\"5\">Mayo</option><option value=\"6\">Junio</option>\n          <option value=\"7\">Julio</option><option value=\"8\">Agosto</option><option value=\"9\">Septiembre</option>\n          <option value=\"10\">Octubre</option><option value=\"11\">Noviembre</option><option value=\"12\">Diciembre</option>\n        </select>\n      </div>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Crear declaraciones</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;\">\n      <button onclick=\"ch_crear_declaraciones()\" style=\"background:#1a6e3c;color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udccb Crear Declaracion Mensual + F29</button>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Importar documentos tributarios</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;\">\n      <button onclick=\"ch_importar('compras')\" style=\"background:#e67e22;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Compras</button>\n      <button onclick=\"ch_importar('ventas')\" style=\"background:#27ae60;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Ventas</button>\n      <button onclick=\"ch_importar('honorarios')\" style=\"background:#8e44ad;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Honorarios</button>\n      <button onclick=\"ch_importar('lre')\" style=\"background:#2980b9;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 LRE (Previred)</button>\n    </div>\n  </div>\n</div>"
   },
   {
    "fieldname": "drive_tab",
@@ -386,19 +456,19 @@
   {
    "fieldname": "sb_drive_principal",
    "fieldtype": "Section Break",
-   "label": "Carpeta Principal"
+   "label": "Carpeta Declaraciones"
   },
   {
+   "description": "ID de la carpeta ra\u00edz del cliente en Google Drive",
    "fieldname": "drive_folder_id_display",
    "fieldtype": "Data",
-   "label": "ID Carpeta Cliente",
-   "read_only": 1,
-   "description": "ID de la carpeta raíz del cliente en Google Drive"
+   "label": "ID Carpeta Declaraciones",
+   "read_only": 1
   },
   {
    "fieldname": "drive_folder_url_display",
    "fieldtype": "Data",
-   "label": "URL Carpeta Cliente",
+   "label": "URL Carpeta Declaraciones",
    "read_only": 1
   },
   {
@@ -423,17 +493,47 @@
    "fieldtype": "Data",
    "label": "ID Carpeta Declaraciones",
    "read_only": 1
+  },
+  {
+   "fieldname": "drive_matriz_id",
+   "fieldtype": "Data",
+   "label": "ID Carpeta Principal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "drive_matriz_url",
+   "fieldtype": "Data",
+   "label": "URL Carpeta Principal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "drive_declaraciones_url",
+   "fieldtype": "Data",
+   "label": "URL Carpeta Declaraciones",
+   "read_only": 1
+  },
+  {
+   "description": "Nombre visible en la app del cliente",
+   "fieldname": "nombre_asesor",
+   "fieldtype": "Data",
+   "label": "Nombre del Asesor / Contador"
+  },
+  {
+   "description": "Ej: 56912345678 \u2014 sin +, sin espacios",
+   "fieldname": "whatsapp_asesor",
+   "fieldtype": "Data",
+   "label": "WhatsApp del Asesor (con c\u00f3digo pa\u00eds)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-26 00:00:00.000000",
+ "modified": "2026-05-09 12:00:57.358203",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Ficha_Cliente",
  "naming_rule": "By fieldname",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

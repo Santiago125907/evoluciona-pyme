@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:id_documento",
- "creation": "2025-10-25 15:42:46.807846",
+ "creation": "2026-05-09 12:00:56.135227",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -81,7 +81,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "A\u00d1O",
-   "options": "2025\n2026\n2027",
+   "options": "2023\n2024\n2025\n2026\n2027",
    "reqd": 1
   },
   {
@@ -197,12 +197,12 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:34.052535",
+ "modified": "2026-05-09 12:00:56.105675",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Borrador_F29",
  "naming_rule": "By fieldname",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

@@ -1,0 +1,15 @@
+{
+ "creation": "2026-05-01 00:00:00",
+ "doctype": "Page",
+ "modified": "2026-05-01 00:00:00",
+ "module": "Evoluciona Pyme V2",
+ "name": "gestion_asesores",
+ "page_name": "gestion_asesores",
+ "roles": [
+  {"role": "Evoluciona Admin"},
+  {"role": "Evoluciona Supervisor"},
+  {"role": "System Manager"}
+ ],
+ "standard": "Yes",
+ "title": "Gestión de Asesores"
+}

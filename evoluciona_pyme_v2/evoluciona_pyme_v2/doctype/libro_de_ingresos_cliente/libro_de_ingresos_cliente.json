@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-20 19:08:10.145251",
+ "creation": "2026-05-09 12:00:57.918642",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -37,20 +37,20 @@
    "fieldname": "ano_tributario",
    "fieldtype": "Select",
    "label": "Año Tributario",
-   "options": "2025\n2026\n2027",
+   "options": "\n2023\n2024\n2025\n2026\n2027",
    "reqd": 1
   },
   {
    "fieldname": "mes_tributario",
    "fieldtype": "Select",
    "label": "Mes Tributario",
-   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"
+   "options": "\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"
   },
   {
    "fieldname": "tipo_documento",
    "fieldtype": "Select",
    "label": "Tipo de Documento",
-   "options": "FACTURA ELECTRÓNICA\nFACTURA NO ELECTRÓNICA\nNOTA DE CRÉDITO ELECTRÓNICA\nNOTA DE DÉBITO ELECTRÓNICA\nTotal Oper. del mes Boleta Electr.(39)\nTotal mes Comprobantes Pago Electrónico(48)"
+   "options": "FACTURA ELECTRÓNICA\nFACTURA NO ELECTRÓNICA\nNOTA DE CRÉDITO ELECTRÓNICA\nNOTA DE DÉBITO ELECTRÓNICA\nTotal Oper. del mes Boleta Electr.(39)\nTotal Oper. del mes Boleta Exenta Electr.(41)\nTotal mes Comprobantes Pago Electrónico(48)"
   },
   {
    "fieldname": "folio",
@@ -70,32 +70,36 @@
   {
    "fieldname": "monto_exento",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Monto Exento"
   },
   {
    "fieldname": "neto",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Neto"
   },
   {
    "fieldname": "iva",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "IVA"
   },
   {
    "fieldname": "total",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Total"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-25 00:00:00.000000",
+ "modified": "2026-05-11 14:56:05.665640",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Libro_de_Ingresos_Cliente",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

@@ -15,6 +15,8 @@ class Libro_de_Compras_Cliente(Document):
 			"rut_proveedor": self.rut_proveedor,
 			"folio": self.folio,
 			"tipo_documento": self.tipo_documento,
+			"ano_tributario": str(self.ano_tributario or ""),
+			"mes_tributario": str(self.mes_tributario or ""),
 			"name": ("!=", self.name or ""),
 		}
 		if frappe.db.exists(filtros):

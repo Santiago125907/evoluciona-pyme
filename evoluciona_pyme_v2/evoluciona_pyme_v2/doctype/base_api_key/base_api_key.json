@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:nombre",
+ "creation": "2026-05-09 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre",
+  "api_key",
+  "column_break_1",
+  "orden",
+  "activa",
+  "es_facturada",
+  "section_uso",
+  "limite_consultas",
+  "consultas_usadas",
+  "column_break_2",
+  "ultimo_uso",
+  "estado"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "label": "Nombre / Descripción",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "orden",
+   "fieldtype": "Int",
+   "label": "Orden de Uso",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "activa",
+   "fieldtype": "Check",
+   "label": "Activa",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "es_facturada",
+   "fieldtype": "Check",
+   "label": "Es Facturada (usar de último)",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_uso",
+   "fieldtype": "Section Break",
+   "label": "Uso"
+  },
+  {
+   "fieldname": "limite_consultas",
+   "fieldtype": "Int",
+   "label": "Límite de Consultas",
+   "default": "45",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "consultas_usadas",
+   "fieldtype": "Int",
+   "label": "Consultas Usadas",
+   "default": "0",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ultimo_uso",
+   "fieldtype": "Datetime",
+   "label": "Último Uso",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "Disponible\nAgotada\nInactiva",
+   "default": "Disponible",
+   "read_only": 1,
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-09 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Base_Api_Key",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "orden",
+ "sort_order": "ASC",
+ "states": []
+}

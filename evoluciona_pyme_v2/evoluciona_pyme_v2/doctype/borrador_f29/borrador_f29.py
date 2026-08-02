@@ -8,6 +8,24 @@ class Borrador_F29(Document):
     def before_save(self):
         self.html_renderizado = self.generar_html_f29()
 
+    def on_update(self):
+        """Sincroniza montos calculados a la Declaracion_Mensual vinculada."""
+        self._sync_declaracion_mensual()
+
+    def _sync_declaracion_mensual(self):
+        decl_name = frappe.db.get_value(
+            "Declaracion_Mensual",
+            {"borrador_f29_vinculado": self.name, "estado": ["not in", ["Publicado", "Enviado"]]},
+            "name",
+        )
+        if not decl_name:
+            return
+        frappe.db.set_value("Declaracion_Mensual", decl_name, {
+            "total_f29_a_pagar":  float(self.total_a_pagar_f29    or 0),
+            "monto_iva_postergar": float(self.impuesto_determinado or 0),
+        })
+        frappe.db.commit()
+
     # ================================================================
     # SERVER SCRIPT: Borrador F29 - Generador HTML
     # ================================================================
@@ -64,15 +82,6 @@ class Borrador_F29(Document):
                         import urllib.parse
                         filtro_encoded = urllib.parse.quote(config.filtro_tipo)
                         filtro_adicional = f"&tipo_documento={filtro_encoded}"
-                    except:
-                        pass
-            elif config.fuente_doctype == "Libro_de_Egresos_Cliente":
-                report_name = "Detalle Egresos F29"
-                if config.filtro_tipo:
-                    try:
-                        import urllib.parse
-                        filtro_encoded = urllib.parse.quote(config.filtro_tipo)
-                        filtro_adicional = f"&tipo_egreso={filtro_encoded}"
                     except:
                         pass
             elif config.fuente_doctype == "Registro_Remuneraciones":

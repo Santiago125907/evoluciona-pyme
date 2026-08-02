@@ -25,7 +25,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     });
     let sel_filtro = page.add_field({
         fieldname: 'filtro', label: 'Filtrar por', fieldtype: 'Select',
-        options: 'Todos\nSin declaración\nBorrador\nEn Validación\nListo\nEnviado',
+        options: 'Todos\nSin declaración\nBorrador\nEn Validación\nListo\nPublicado\nEnviado',
         default: 'Todos',
         change() { aplicar_filtro(); }
     });
@@ -61,6 +61,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .est-borrador { background:#ffc107; color:#000; }
         .est-validar  { background:#ff9800; color:#fff; }
         .est-listo    { background:#28a745; color:#fff; }
+        .est-publicado{ background:#6f42c1; color:#fff; }
         .est-enviado  { background:#17a2b8; color:#fff; }
         .est-sin      { background:#e9ecef; color:#888; }
         .btn-pm { padding:3px 7px; margin:1px; font-size:11px; border-radius:4px;
@@ -94,6 +95,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             <div class="pm-stat"><strong id="pm-total">—</strong><span>Clientes</span></div>
             <div class="pm-stat"><strong id="pm-con-dec">—</strong><span>Con declaración</span></div>
             <div class="pm-stat"><strong id="pm-listos">—</strong><span>Listos</span></div>
+            <div class="pm-stat"><strong id="pm-publicados" style="color:#6f42c1;">—</strong><span>Publicados</span></div>
             <div class="pm-stat"><strong id="pm-enviados">—</strong><span>Enviados</span></div>
             <div class="pm-stat"><strong id="pm-sin-dec">—</strong><span>Sin declaración</span></div>
         </div>
@@ -109,6 +111,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             <button class="btn-bulk" style="background:#ffc107;color:#000;" onclick="pm_bulk('check-rrhh')">✓ RRHH</button>
             <button class="btn-bulk" style="background:#ffc107;color:#000;" onclick="pm_bulk('check-f29')">✓ F29</button>
             <button class="btn-bulk" style="background:#ffc107;color:#000;" onclick="pm_bulk('check-prev')">✓ Prev</button>
+            <button class="btn-bulk" style="background:#6f42c1;color:#fff;"  onclick="pm_bulk('publicar')">📱 Publicar</button>
             <button class="btn-bulk" style="background:#c0392b;color:#fff;"  onclick="pm_bulk('reset')">↩ Resetear</button>
         </div>
         <div id="pm-content"><div class="pm-loading">Selecciona un período y haz clic en <b>Cargar</b></div></div>
@@ -129,8 +132,8 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         frappe.call({
             method: 'frappe.client.get_list',
             args: { doctype:'Ficha_Cliente', filters:{estado_cliente:'Activo'},
-                    fields:['name','razon_social','abreviatura_cliente','clave_sii','rut_usuario'],
-                    order_by:'abreviatura_cliente asc', limit_page_length:200, ignore_permissions:1 },
+                    fields:['name','razon_social','clave_sii','rut_usuario'],
+                    order_by:'razon_social asc', limit_page_length:200, ignore_permissions:1 },
             callback(r) {
                 _clientes = r.message || [];
                 if (!_clientes.length) { $('#pm-content').html('<div class="pm-loading">Sin clientes activos.</div>'); return; }
@@ -183,14 +186,15 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
     // ── Renderizar tabla ──────────────────────────────────────────────────────
     function renderizar() {
-        let con_dec=0, listos=0, enviados=0, sin_dec=0;
+        let con_dec=0, listos=0, publicados=0, enviados=0, sin_dec=0;
 
         const rows = _clientes.map(c => {
             const d = _dec_map[c.name];
             const co = _cobro_map[c.name];
             if (d) con_dec++; else sin_dec++;
-            if (d && d.estado==='Listo')   listos++;
-            if (d && d.estado==='Enviado') enviados++;
+            if (d && d.estado==='Listo')      listos++;
+            if (d && d.estado==='Publicado')  publicados++;
+            if (d && d.estado==='Enviado')    enviados++;
 
             const estado_html = d
                 ? `<span class="badge-est ${clase_estado(d.estado)}">${d.estado||'Borrador'}</span>`
@@ -266,8 +270,8 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}">
                 <td><input class="pm-chk" type="checkbox" data-cliente="${esc(c.name)}" data-doc="${d?esc(d.name):''}" onchange="pm_chk_change()"></td>
-                <td><a href="/app/ficha_cliente/${esc(c.name)}" target="_blank" style="font-weight:600;color:#005f6b;">${esc(c.abreviatura_cliente||c.name)}</a><br>
-                    <small style="color:#aaa;font-size:10px;">${esc(c.razon_social||'')}</small></td>
+                <td><a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
+                    <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small></td>
                 <td>${cred_sii}</td>
                 <td>${estado_html}</td>
                 <td style="white-space:nowrap;font-size:13px;letter-spacing:2px;">${checks}</td>
@@ -280,12 +284,13 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         }).join('');
 
         const total = _clientes.length;
-        const avance = listos + enviados;
+        const avance = listos + publicados + enviados;
         const pct = total ? Math.round(avance / total * 100) : 0;
 
         $('#pm-total').text(total);
         $('#pm-con-dec').text(con_dec);
         $('#pm-listos').text(listos);
+        $('#pm-publicados').text(publicados);
         $('#pm-enviados').text(enviados);
         $('#pm-sin-dec').text(sin_dec);
         $('#pm-fill').css('width', pct + '%');
@@ -336,10 +341,14 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
         if (d.estado === 'Listo') {
             if (!tiene_pdf) a += btn('gen-pdf', d.name, '', c.name, 'Gen.PDF', '#27ae60');
-            else {
-                a += btn('ver-pdf', d.name, '', c.name, 'PDF', '#0984e3');
-                a += btn('enviar',  d.name, '', c.name, 'Enviar', '#17a2b8');
-            }
+            else            a += btn('ver-pdf', d.name, '', c.name, 'PDF', '#0984e3');
+            a += btn('publicar', d.name, '', c.name, '📱 Publicar', '#6f42c1');
+            a += btn('enviar',   d.name, '', c.name, 'Enviar', '#17a2b8');
+        }
+        if (d.estado === 'Publicado') {
+            if (tiene_pdf) a += btn('ver-pdf', d.name, '', c.name, 'PDF', '#0984e3');
+            a += btn('publicar', d.name, '', c.name, '✅ Publicado', '#28a745');
+            a += btn('enviar',   d.name, '', c.name, 'Enviar', '#17a2b8');
         }
         if (d.estado === 'Enviado') {
             if (tiene_pdf) a += btn('ver-pdf',  d.name, '', c.name, 'PDF', '#0984e3');
@@ -421,7 +430,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         });
         if (!docs.length) { frappe.msgprint('Selecciona declaraciones (no clientes sin declaración).'); return; }
 
-        const label_map = {'check-rrhh':'Marcar ✓RRHH','check-f29':'Marcar ✓F29','check-prev':'Marcar ✓Previred','reset':'Resetear a Borrador'};
+        const label_map = {'check-rrhh':'Marcar ✓RRHH','check-f29':'Marcar ✓F29','check-prev':'Marcar ✓Previred','publicar':'Publicar en App','reset':'Resetear a Borrador'};
         frappe.confirm(`¿${label_map[action]||action} para ${docs.length} declaración(es)?`, () => {
             let pending = docs.length;
             docs.forEach(doc => {
@@ -429,6 +438,11 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     frappe.call({
                         method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.resetear_declaracion',
                         args:{doc_name:doc}, callback() { if(--pending===0) { frappe.show_alert({message:'Listo',indicator:'green'},3); setTimeout(cargar_panel,600); } }
+                    });
+                } else if (action === 'publicar') {
+                    frappe.call({
+                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                        args:{doc_name:doc}, callback() { if(--pending===0) { frappe.show_alert({message:'📱 Publicadas',indicator:'green'},3); setTimeout(cargar_panel,600); } }
                     });
                 } else {
                     const field_map = {'check-rrhh':'check_gasto_rem_cargado','check-f29':'check_f29_cuadrado','check-prev':'check_previred_cuadrado'};
@@ -466,7 +480,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 frappe.confirm('¿Calcular F29 automáticamente desde documentos tributarios?', () => {
                     frappe.show_alert({message:'Calculando...', indicator:'blue'}, 3);
                     frappe.call({
-                        method:'recalcular_asistente_f29', args:{doc_name:f29},
+                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29', args:{doc_name:f29},
                         callback(r) {
                             const res = r.message||{};
                             frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
@@ -528,6 +542,23 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                         }
                     });
                 }); break;
+
+            case 'publicar': {
+                const dec_actual = _dec_map[cliente];
+                const ya_publicado = dec_actual && dec_actual.estado === 'Publicado';
+                frappe.confirm(ya_publicado ? '¿Despublicar esta declaración del portal?' : '¿Publicar en la App del cliente? Se enviará notificación push.', () => {
+                    frappe.call({
+                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                        args:{doc_name:doc},
+                        callback(res) {
+                            const ok = res.message && res.message.status === 'ok';
+                            frappe.show_alert({message: ok ? (ya_publicado?'🔒 Despublicado':'📱 Publicado en App') : 'Error al publicar',
+                                               indicator: ok ? (ya_publicado?'orange':'green') : 'red'}, 4);
+                            if (ok) setTimeout(cargar_panel, 600);
+                        }
+                    });
+                }); break;
+            }
 
             case 'reset':
                 frappe.confirm(`¿Resetear declaración a <b>Borrador</b>?<br><small>Se borrarán los checks, el PDF y el cobro asociado.</small>`, () => {
@@ -603,6 +634,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         if (!e||e==='Borrador')      return 'est-borrador';
         if (e==='En Validación')     return 'est-validar';
         if (e==='Listo')             return 'est-listo';
+        if (e==='Publicado')         return 'est-publicado';
         if (e==='Enviado')           return 'est-enviado';
         return 'est-borrador';
     }

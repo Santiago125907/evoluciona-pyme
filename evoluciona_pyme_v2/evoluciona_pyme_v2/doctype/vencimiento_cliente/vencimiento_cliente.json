@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-25 15:59:40.311891",
+ "creation": "2026-05-09 12:00:59.356892",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -47,11 +47,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:34.256188",
+ "modified": "2026-05-09 12:00:59.332154",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Vencimiento_Cliente",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,

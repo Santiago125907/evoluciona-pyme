@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2026-05-09 12:00:57.082371",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cliente",
+  "razon_social"
+ ],
+ "fields": [
+  {
+   "fieldname": "cliente",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cliente",
+   "options": "Ficha_Cliente",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "cliente.razon_social",
+   "fieldname": "razon_social",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Raz\u00f3n Social",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-09 12:00:57.059410",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Destinatario_Notif",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

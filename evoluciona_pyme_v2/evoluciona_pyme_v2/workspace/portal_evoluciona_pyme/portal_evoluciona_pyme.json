@@ -1,0 +1,207 @@
+{
+ "app": "evoluciona_pyme_v2",
+ "charts": [],
+ "content": "[]",
+ "creation": "2026-05-08 20:38:44.844179",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "home",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Portal Evoluciona Pyme",
+ "link_type": "DocType",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Servicios Portal",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Servicios Portal",
+   "link_count": 0,
+   "link_to": "Servicio_Portal",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Solicitudes de Servicios",
+   "link_count": 0,
+   "link_to": "Solicitud_Servicio_Portal",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Declaraciones",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Declaraciones Mensuales",
+   "link_count": 0,
+   "link_to": "Declaracion_Mensual",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Postergaciones IVA",
+   "link_count": 0,
+   "link_to": "Postergacion_IVA",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Registro Remuneraciones",
+   "link_count": 0,
+   "link_to": "Registro_Remuneraciones",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Contabilidad",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libro de Compras",
+   "link_count": 0,
+   "link_to": "Libro_de_Compras_Cliente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libro de Honorarios",
+   "link_count": 0,
+   "link_to": "Libro_de_Honorarios_Cliente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Libro de Gastos",
+   "link_count": 0,
+   "link_to": "Libro_de_Gastos_Cliente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cobranza Cliente",
+   "link_count": 0,
+   "link_to": "Cobranza_Cliente",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Clientes y Portal",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fichas de Clientes",
+   "link_count": 0,
+   "link_to": "Ficha_Cliente",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sesiones Portal",
+   "link_count": 0,
+   "link_to": "Portal_Session",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notificaciones Push",
+   "link_count": 0,
+   "link_to": "Notificacion_Push_Portal",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Portal Push Sub",
+   "link_count": 0,
+   "link_to": "Portal_Push_Sub",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Notificacion Push Portal",
+   "link_count": 0,
+   "link_to": "Notificacion_Push_Portal",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-09 04:59:10.707574",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Portal Evoluciona Pyme",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Portal Evoluciona Pyme",
+ "type": "Workspace"
+}

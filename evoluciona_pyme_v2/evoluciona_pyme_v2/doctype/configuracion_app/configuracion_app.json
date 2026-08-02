@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2026-04-19 00:00:00",
+ "creation": "2026-05-09 12:00:56.422581",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -12,6 +12,7 @@
   "col_break_1",
   "nombre_titular",
   "email_contacto",
+  "email_pago",
   "email_asesor",
   "telefono",
   "sitio_web",
@@ -20,6 +21,9 @@
   "tipo_cuenta",
   "numero_cuenta",
   "tab_webhooks",
+  "sb_sii_gateway",
+  "sii_api_url",
+  "sii_api_token",
   "sb_webhooks_sii",
   "webhook_sii",
   "webhook_carga_historica",
@@ -31,10 +35,7 @@
   "habilitar_descarga_libros",
   "dia_descarga_libros",
   "hora_descarga_libros",
-  "webhook_libro_compras",
-  "webhook_libro_ventas",
-  "habilitar_descarga_libro_compras",
-  "hora_descarga_libro_compras",
+  "tabla_rcv_empresas",
   "tab_cron",
   "sb_tareas_mensuales",
   "habilitar_tareas_mensuales",
@@ -60,11 +61,19 @@
   "ia_modelo",
   "ia_activo",
   "sb_pdf_diseno",
+  "pdf_personalizar_colores",
   "pdf_color_primario",
   "pdf_color_secundario",
+  "pdf_color_exito",
+  "pdf_color_alerta",
+  "portal_url",
   "sb_pdf_hoja6",
   "pdf_habilitar_hoja6",
-  "pdf_texto_promocion"
+  "pdf_hoja6_referencia",
+  "pdf_texto_promocion",
+  "sb_pdf_instrucciones",
+  "pdf_ocultar_opcion_a",
+  "pdf_basico_ocultar_opcion_a"
  ],
  "fields": [
   {
@@ -106,6 +115,13 @@
    "fieldname": "email_contacto",
    "fieldtype": "Data",
    "label": "Email de Contacto",
+   "options": "Email"
+  },
+  {
+   "description": "Correo donde los clientes deben realizar transferencias",
+   "fieldname": "email_pago",
+   "fieldtype": "Data",
+   "label": "Email de Pagos",
    "options": "Email"
   },
   {
@@ -196,45 +212,27 @@
    "label": "Habilitar Descarga Automática de Libros (Compras y Ventas)"
   },
   {
+   "default": "5",
+   "depends_on": "eval:doc.habilitar_descarga_libros",
+   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
    "fieldname": "dia_descarga_libros",
    "fieldtype": "Int",
-   "label": "Día del Mes de Descarga",
-   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
-   "default": "5",
-   "depends_on": "eval:doc.habilitar_descarga_libros"
+   "label": "Día del Mes de Descarga"
   },
   {
+   "default": "08:00",
+   "depends_on": "eval:doc.habilitar_descarga_libros",
    "fieldname": "hora_descarga_libros",
    "fieldtype": "Select",
    "label": "Hora de Descarga",
-   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
-   "default": "08:00",
-   "depends_on": "eval:doc.habilitar_descarga_libros"
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00"
   },
   {
-   "fieldname": "webhook_libro_compras",
-   "fieldtype": "Data",
-   "label": "Webhook Libro de Compras (N8n)",
-   "depends_on": "eval:doc.habilitar_descarga_libros"
-  },
-  {
-   "fieldname": "webhook_libro_ventas",
-   "fieldtype": "Data",
-   "label": "Webhook Libro de Ventas (N8n)",
-   "depends_on": "eval:doc.habilitar_descarga_libros"
-  },
-  {
-   "fieldname": "habilitar_descarga_libro_compras",
-   "fieldtype": "Check",
-   "label": "Habilitar Descarga Automática Libro de Compras",
-   "hidden": 1
-  },
-  {
-   "fieldname": "hora_descarga_libro_compras",
-   "fieldtype": "Select",
-   "label": "Hora de Descarga (legado)",
-   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
-   "hidden": 1
+   "depends_on": "eval:doc.habilitar_descarga_libros",
+   "fieldname": "tabla_rcv_empresas",
+   "fieldtype": "Table",
+   "label": "Empresas a Descargar",
+   "options": "Rcv_Empresa_Config"
   },
   {
    "fieldname": "tab_cron",
@@ -247,26 +245,26 @@
    "label": "Creación de Tareas Mensuales"
   },
   {
+   "default": "1",
    "fieldname": "habilitar_tareas_mensuales",
    "fieldtype": "Check",
-   "label": "Habilitar Creación Automática de Tareas Mensuales",
-   "default": "1"
+   "label": "Habilitar Creación Automática de Tareas Mensuales"
   },
   {
+   "default": "1",
+   "depends_on": "eval:doc.habilitar_tareas_mensuales",
+   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
    "fieldname": "dia_ejecucion_tareas",
    "fieldtype": "Int",
-   "label": "Día del Mes de Ejecución",
-   "description": "Entre 1 y 28. Se ejecutará ese día cada mes.",
-   "default": "1",
-   "depends_on": "eval:doc.habilitar_tareas_mensuales"
+   "label": "Día del Mes de Ejecución"
   },
   {
+   "default": "01:00",
+   "depends_on": "eval:doc.habilitar_tareas_mensuales",
    "fieldname": "hora_ejecucion_tareas",
    "fieldtype": "Select",
    "label": "Hora de Ejecución",
-   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00",
-   "default": "01:00",
-   "depends_on": "eval:doc.habilitar_tareas_mensuales"
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00"
   },
   {
    "fieldname": "sb_cron_info",
@@ -274,11 +272,11 @@
    "label": "Expresión Cron Generada"
   },
   {
+   "description": "Se calcula automáticamente según día y hora configurados.",
    "fieldname": "cron_expresion_calculada",
    "fieldtype": "Data",
    "label": "Expresión Cron",
-   "read_only": 1,
-   "description": "Se calcula automáticamente según día y hora configurados."
+   "read_only": 1
   },
   {
    "fieldname": "ultima_ejecucion_tareas",
@@ -289,9 +287,9 @@
   {
    "fieldname": "ultima_ejecucion_libro_compras",
    "fieldtype": "Datetime",
+   "hidden": 1,
    "label": "Última Ejecución Libro de Compras (legado)",
-   "read_only": 1,
-   "hidden": 1
+   "read_only": 1
   },
   {
    "fieldname": "ultima_ejecucion_libros",
@@ -330,10 +328,10 @@
    "label": "Gotenberg (Generación de PDF)"
   },
   {
+   "description": "Ej: http://localhost:3000 o http://gotenberg:3000",
    "fieldname": "gotenberg_url",
    "fieldtype": "Data",
-   "label": "URL Gotenberg",
-   "description": "Ej: http://localhost:3000 o http://gotenberg:3000"
+   "label": "URL Gotenberg"
   },
   {
    "fieldname": "gotenberg_usuario",
@@ -362,16 +360,16 @@
    "label": "API Key"
   },
   {
+   "description": "Ej: gpt-4o-mini o claude-haiku-4-5-20251001",
    "fieldname": "ia_modelo",
    "fieldtype": "Data",
-   "label": "Modelo",
-   "description": "Ej: gpt-4o-mini o claude-haiku-4-5-20251001"
+   "label": "Modelo"
   },
   {
+   "default": "0",
    "fieldname": "ia_activo",
    "fieldtype": "Check",
-   "label": "Análisis IA Activo",
-   "default": "0"
+   "label": "Análisis IA Activo"
   },
   {
    "fieldname": "sb_pdf_diseno",
@@ -379,18 +377,50 @@
    "label": "Diseño del PDF"
   },
   {
-   "fieldname": "pdf_color_primario",
-   "fieldtype": "Color",
-   "label": "Color Primario",
-   "default": "#00C4CC",
-   "description": "Color principal del reporte (encabezados, bordes, totales)"
+   "default": "0",
+   "description": "Si está desactivado, se usan los colores por defecto del sistema.",
+   "fieldname": "pdf_personalizar_colores",
+   "fieldtype": "Check",
+   "label": "Personalizar colores del PDF"
   },
   {
+   "default": "#00C4CC",
+   "depends_on": "eval:doc.pdf_personalizar_colores",
+   "description": "Tarjeta Opción 1, encabezados, bordes, totales y gráficos principales.",
+   "fieldname": "pdf_color_primario",
+   "fieldtype": "Color",
+   "label": "Color Opción 1 / Principal"
+  },
+  {
+   "default": "#FF9A00",
+   "depends_on": "eval:doc.pdf_personalizar_colores",
+   "description": "Tarjeta Opción 2 (con postergación), gráfico de acento.",
    "fieldname": "pdf_color_secundario",
    "fieldtype": "Color",
-   "label": "Color Secundario",
-   "default": "#FF9A00",
-   "description": "Color de acento (opción 2, gráficos)"
+   "label": "Color Opción 2 / Secundario"
+  },
+  {
+   "default": "#10B981",
+   "depends_on": "eval:doc.pdf_personalizar_colores",
+   "description": "Valores positivos, RRHH, indicadores verdes.",
+   "fieldname": "pdf_color_exito",
+   "fieldtype": "Color",
+   "label": "Color Éxito / Positivo"
+  },
+  {
+   "default": "#FF6F61",
+   "depends_on": "eval:doc.pdf_personalizar_colores",
+   "description": "Deudas pendientes, alertas y highlights de advertencia.",
+   "fieldname": "pdf_color_alerta",
+   "fieldtype": "Color",
+   "label": "Color Alerta / Deuda"
+  },
+  {
+   "default": "https://portal.evolucionapyme.cl",
+   "description": "URL que aparece en el QR de acceso al portal en el PDF. Ej: https://portal.evolucionapyme.cl",
+   "fieldname": "portal_url",
+   "fieldtype": "Data",
+   "label": "URL Portal App (QR en PDF)"
   },
   {
    "fieldname": "sb_pdf_hoja6",
@@ -398,30 +428,76 @@
    "label": "Hoja 6 - Programa de Socios"
   },
   {
+   "default": "1",
    "fieldname": "pdf_habilitar_hoja6",
    "fieldtype": "Check",
-   "label": "Incluir Hoja de Programa de Socios en el PDF",
-   "default": "1"
+   "label": "Incluir Hoja de Programa de Socios en el PDF"
   },
   {
+   "fieldname": "pdf_hoja6_referencia",
+   "fieldtype": "HTML",
+   "label": "Referencia de variables y clases disponibles",
+   "options": "<div style=\"background:#f8f9fa;border:1px solid #e2e8f0;border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:1.8;\">\n<strong style=\"font-family:sans-serif;font-size:13px;color:#1a3a4a;\">📋 Variables CSS disponibles en el HTML:</strong><br><br>\n<span style=\"color:#005f6b;\">var(--primary)</span> — Color primario (ej: <em>turquesa</em>)<br>\n<span style=\"color:#005f6b;\">var(--secondary)</span> — Color secundario (ej: <em>naranja</em>)<br>\n<span style=\"color:#005f6b;\">var(--success)</span> — Color éxito (ej: <em>verde</em>)<br>\n<span style=\"color:#005f6b;\">var(--accent)</span> — Color alerta (ej: <em>rojo/coral</em>)<br>\n<span style=\"color:#005f6b;\">var(--txt)</span> — Texto principal<br>\n<span style=\"color:#005f6b;\">var(--gray)</span> — Texto secundario gris<br>\n<span style=\"color:#005f6b;\">var(--bg-alt)</span> — Fondo gris claro<br>\n<span style=\"color:#005f6b;\">var(--border)</span> — Color bordes<br><br>\n<strong style=\"font-family:sans-serif;font-size:13px;color:#1a3a4a;\">🎨 Clases de layout listas para usar:</strong><br><br>\n<span style=\"color:#7c3aed;\">.hero</span> — Bloque destacado con fondo degradado<br>\n<span style=\"color:#7c3aed;\">.hero-title</span> — Título del hero<br>\n<span style=\"color:#7c3aed;\">.section-title</span> — Título de sección con barra de color<br>\n<span style=\"color:#7c3aed;\">.steps</span> + <span style=\"color:#7c3aed;\">.step</span> — Fila de 3 pasos numerados<br>\n<span style=\"color:#7c3aed;\">.premios</span> + <span style=\"color:#7c3aed;\">.premio-card</span> — Cards de opciones/premios<br>\n<span style=\"color:#7c3aed;\">.cta</span> — Bloque call-to-action con fondo naranja<br>\n<span style=\"color:#7c3aed;\">.analisis</span> — Bloque de análisis con borde color primario<br><br>\n<strong style=\"font-family:sans-serif;font-size:13px;color:#1a3a4a;\">🏢 Datos de la empresa (de Configuracion App):</strong><br><br>\n<span style=\"color:#b45309;\">nombre_empresa</span> = valor del campo \"Nombre Empresa\" de arriba<br>\n<span style=\"color:#b45309;\">rut_empresa</span> = RUT ingresado en Configuracion App<br>\n<span style=\"color:#b45309;\">telefono</span> = Teléfono de contacto<br>\n<span style=\"color:#b45309;\">email_contacto</span> = Email de contacto<br>\n<span style=\"color:#b45309;\">sitio_web</span> = Sitio web<br><br>\n<em style=\"font-family:sans-serif;color:#718096;font-size:11px;\">💡 Estos valores NO se reemplazan automáticamente en el HTML — escríbelos directamente o cópialos desde arriba.</em>\n</div>"
+  },
+  {
+   "description": "HTML de la hoja 6 (promocional). Se inserta directo en el PDF — usa estilos inline o las clases del PDF. Si se deja vacío se usa el contenido por defecto.",
    "fieldname": "pdf_texto_promocion",
-   "fieldtype": "Long Text",
-   "label": "Texto de Promoción (Hoja 6)",
-   "description": "Texto introductorio del programa de socios. Si se deja vacío se usa el texto por defecto."
+   "fieldtype": "HTML Editor",
+   "label": "Contenido HTML Hoja 6 (Promocional)"
+  },
+  {
+   "fieldname": "sb_pdf_instrucciones",
+   "fieldtype": "Section Break",
+   "label": "Instrucciones de Pago en PDF"
+  },
+  {
+   "default": "0",
+   "description": "Oculta el bloque 'Opción A — Nosotros lo hacemos' en el PDF normal",
+   "fieldname": "pdf_ocultar_opcion_a",
+   "fieldtype": "Check",
+   "label": "Ocultar Opción A (PDF Normal)"
+  },
+  {
+   "default": "0",
+   "description": "Oculta el bloque 'Opción A — Nosotros lo hacemos' en el PDF básico",
+   "fieldname": "pdf_basico_ocultar_opcion_a",
+   "fieldtype": "Check",
+   "label": "Ocultar Opción A (PDF Básico)"
+  },
+  {
+   "fieldname": "sb_sii_gateway",
+   "fieldtype": "Section Break",
+   "label": "SII Gateway"
+  },
+  {
+   "fieldname": "sii_api_url",
+   "fieldtype": "Data",
+   "label": "URL SII Gateway",
+   "default": "https://sii.sjscuti.cl",
+   "description": "Sin slash final."
+  },
+  {
+   "fieldname": "sii_api_token",
+   "fieldtype": "Password",
+   "label": "Token SII Gateway (X-API-Key)"
   }
  ],
  "issingle": 1,
- "modified": "2026-04-19 00:00:00",
+ "links": [],
+ "modified": "2026-05-10 13:00:00.000000",
+ "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion App",
  "owner": "Administrator",
  "permissions": [
   {
-   "role": "System Manager",
    "read": 1,
+   "role": "System Manager",
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

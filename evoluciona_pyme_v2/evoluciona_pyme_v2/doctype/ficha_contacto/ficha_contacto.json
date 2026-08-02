@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-05-09 12:00:57.513857",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "contacto",
+  "nombre",
+  "email",
+  "whatsapp",
+  "column_break_1",
+  "puede_ver_portal",
+  "es_principal"
+ ],
+ "fields": [
+  {
+   "fieldname": "contacto",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contacto",
+   "options": "Contacto_Cliente",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "contacto.nombre",
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "contacto.email",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "contacto.whatsapp",
+   "fieldname": "whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "puede_ver_portal",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Acceso al portal"
+  },
+  {
+   "fieldname": "es_principal",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Contacto principal"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-09 12:00:57.489767",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Ficha_Contacto",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

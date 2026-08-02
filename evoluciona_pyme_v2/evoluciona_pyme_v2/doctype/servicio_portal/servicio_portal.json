@@ -1,0 +1,204 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-05-09 12:00:59.189118",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre",
+  "descripcion_corta",
+  "descripcion_larga",
+  "col1",
+  "categoria",
+  "tipo",
+  "col2",
+  "activo",
+  "destacado",
+  "orden",
+  "sec_imagen",
+  "imagen",
+  "icono",
+  "color",
+  "sec_socio",
+  "nombre_socio",
+  "logo_socio",
+  "sec_precios",
+  "precio",
+  "precio_oferta",
+  "precio_unidad",
+  "sec_planes",
+  "planes",
+  "sec_accion",
+  "accion",
+  "link_externo",
+  "whatsapp_numero"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre del Servicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "descripcion_corta",
+   "fieldtype": "Small Text",
+   "label": "Descripci\u00f3n Corta"
+  },
+  {
+   "fieldname": "descripcion_larga",
+   "fieldtype": "Long Text",
+   "label": "Descripci\u00f3n Completa"
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "categoria",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Categor\u00eda",
+   "options": "\nContabilidad\nLegal\nRRHH\nMarketing\nTecnolog\u00eda\nOtros"
+  },
+  {
+   "default": "Propio",
+   "fieldname": "tipo",
+   "fieldtype": "Select",
+   "label": "Tipo",
+   "options": "Propio\nSocio"
+  },
+  {
+   "fieldname": "col2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Activo en Portal"
+  },
+  {
+   "fieldname": "destacado",
+   "fieldtype": "Check",
+   "label": "Destacado"
+  },
+  {
+   "default": "0",
+   "fieldname": "orden",
+   "fieldtype": "Int",
+   "label": "Orden"
+  },
+  {
+   "fieldname": "sec_imagen",
+   "fieldtype": "Section Break",
+   "label": "Imagen y Apariencia"
+  },
+  {
+   "fieldname": "imagen",
+   "fieldtype": "Attach Image",
+   "label": "Imagen del Servicio"
+  },
+  {
+   "fieldname": "icono",
+   "fieldtype": "Select",
+   "label": "\u00cdcono (si no hay imagen)",
+   "options": "\nMalet\u00edn\nEdificio\nGr\u00e1fico\nPersonas\nComputador\nEngranaje\nDocumento\nEstrella\nCohete\nEscudo\nDinero\nCerradura"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Color del Card (si no hay imagen)"
+  },
+  {
+   "fieldname": "sec_socio",
+   "fieldtype": "Section Break",
+   "label": "Datos del Socio (si aplica)"
+  },
+  {
+   "fieldname": "nombre_socio",
+   "fieldtype": "Data",
+   "label": "Nombre del Socio"
+  },
+  {
+   "fieldname": "logo_socio",
+   "fieldtype": "Attach Image",
+   "label": "Logo del Socio"
+  },
+  {
+   "fieldname": "sec_precios",
+   "fieldtype": "Section Break",
+   "label": "Precio"
+  },
+  {
+   "fieldname": "precio",
+   "fieldtype": "Currency",
+   "label": "Precio"
+  },
+  {
+   "fieldname": "precio_oferta",
+   "fieldtype": "Currency",
+   "label": "Precio Oferta (con descuento)"
+  },
+  {
+   "description": "Ej: / mes",
+   "fieldname": "precio_unidad",
+   "fieldtype": "Data",
+   "label": "Unidad de Precio"
+  },
+  {
+   "fieldname": "sec_planes",
+   "fieldtype": "Section Break",
+   "label": "Planes"
+  },
+  {
+   "fieldname": "planes",
+   "fieldtype": "Table",
+   "label": "Planes",
+   "options": "Plan_Servicio_Portal"
+  },
+  {
+   "fieldname": "sec_accion",
+   "fieldtype": "Section Break",
+   "label": "Acci\u00f3n"
+  },
+  {
+   "default": "Formulario",
+   "fieldname": "accion",
+   "fieldtype": "Select",
+   "label": "Tipo de Acci\u00f3n",
+   "options": "Formulario\nLink Externo\nWhatsApp"
+  },
+  {
+   "fieldname": "link_externo",
+   "fieldtype": "Data",
+   "label": "Link Externo"
+  },
+  {
+   "fieldname": "whatsapp_numero",
+   "fieldtype": "Data",
+   "label": "N\u00famero WhatsApp"
+  }
+ ],
+ "links": [],
+ "modified": "2026-05-09 12:00:59.163187",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "Servicio_Portal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

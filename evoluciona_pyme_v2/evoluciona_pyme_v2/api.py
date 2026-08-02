@@ -93,24 +93,7 @@ def recalcular_asistente_f29(**kwargs):
                         result = frappe.db.sql(query, params, as_dict=True)
                         monto = result[0].total if result else 0
                     
-                    # =====================================================
-                    # CALCULAR DESDE EGRESOS
-                    # =====================================================
-                    elif fuente == "Libro_de_Egresos_Cliente":
-                        query = f"""
-                            SELECT COALESCE(SUM(`{campo}`), 0) as total
-                            FROM `tabLibro_de_Egresos_Cliente`
-                            WHERE cliente = %(cliente)s
-                            AND ano_tributario = %(ano)s
-                            AND mes_tributario = %(mes)s
-                            AND docstatus IN (0, 1)
-                        """
-                        params = {"cliente": doc.cliente, "ano": str(doc.ano), "mes": str(doc.mes)}
-                        if filtro:
-                            query += " AND tipo_egreso = %(filtro)s"
-                            params["filtro"] = filtro
-                        result = frappe.db.sql(query, params, as_dict=True)
-                        monto = result[0].total if result else 0
+                    # Libro_de_Egresos_Cliente eliminado — usar Compras/Honorarios/Gastos
 
                     # =====================================================
                     # CALCULAR DESDE LIBRO DE COMPRAS
@@ -222,8 +205,8 @@ def recalcular_asistente_f29(**kwargs):
                 ventas_query = """
                     SELECT COALESCE(SUM(
                         CASE 
-                            WHEN tipo_documento = 'NOTA DE CRÉDITO ELECTRÓNICA' THEN -neto 
-                            ELSE neto 
+                            WHEN tipo_documento LIKE 'NOTA DE CRÉDITO%%' THEN -(neto + monto_exento)
+                            ELSE (neto + monto_exento)
                         END
                     ), 0) as total
                     FROM `tabLibro_de_Ingresos_Cliente`
@@ -231,13 +214,6 @@ def recalcular_asistente_f29(**kwargs):
                     AND ano_tributario = %(ano)s
                     AND mes_tributario = %(mes)s
                     AND docstatus IN (0, 1)
-                    AND tipo_documento IN (
-                        'FACTURA ELECTRÓNICA',
-                        'NOTA DE CRÉDITO ELECTRÓNICA',
-                        'NOTA DE DÉBITO ELECTRÓNICA',
-                        'Total Oper. del mes Boleta Electr.(39)',
-                        'Total mes Comprobantes Pago Electrónico(48)'
-                    )
                 """
                 
                 ventas_result = frappe.db.sql(ventas_query, {
@@ -398,8 +374,8 @@ def preparar_datos_pdf(**kwargs):
         rut_cliente = str(cliente_doc.get("rut_cliente") or cliente_doc.get("rut") or "")
         razon_social = str(cliente_doc.get("razon_social") or cliente_doc.get("nombre_empresa") or "")
         
-        # Obtener drive_folder_id si existe
-        cliente_drive_folder_id = str(cliente_doc.get("drive_folder_id") or "")
+        # Obtener carpeta de declaraciones
+        cliente_drive_folder_id = str(cliente_doc.get("drive_declaraciones_id") or "")
         
         # Nombres de meses
         meses_nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -409,36 +385,27 @@ def preparar_datos_pdf(**kwargs):
         frappe.log_error("DATOS CLIENTE PARA DRIVE", 
             f"ID: {cliente_id}, RUT: {rut_cliente}, Folder: {cliente_drive_folder_id}")
         
-        # 3. DATOS OFICINA
+        # 3. DATOS OFICINA — desde Configuracion App
+        config_app = frappe.get_single("Configuracion App")
         datos_oficina = {
-            "nombre_empresa": "Evoluciona",
-            "rut_empresa": "77.946.744-9",
-            "banco": "Banco Chile",
-            "tipo_cuenta": "Cuenta Corriente",
-            "numero_cuenta": "408324134",
-            "nombre_titular": "",
-            "email_contacto": "pagos@evolucionapyme.cl",
-            "telefono": "",
-            "sitio_web": ""
+            "nombre_empresa": str(config_app.get("nombre_empresa") or ""),
+            "rut_empresa":    str(config_app.get("rut_empresa") or ""),
+            "banco":          str(config_app.get("banco") or ""),
+            "tipo_cuenta":    str(config_app.get("tipo_cuenta") or ""),
+            "numero_cuenta":  str(config_app.get("numero_cuenta") or ""),
+            "nombre_titular": str(config_app.get("nombre_titular") or ""),
+            "email_contacto": str(config_app.get("email_contacto") or ""),
+            "email_pago":     str(config_app.get("email_pago") or ""),
+            "telefono":       str(config_app.get("telefono") or ""),
+            "sitio_web":      str(config_app.get("sitio_web") or ""),
         }
-        
-        try:
-            oficina = frappe.get_single("Configuracion_Oficina")
-            if oficina:
-                datos_oficina["nombre_empresa"] = str(oficina.get("nombre_empresa") or "Evoluciona")
-                datos_oficina["rut_empresa"] = str(oficina.get("rut_empresa") or "77.946.744-9")
-                datos_oficina["nombre_titular"] = str(oficina.get("nombre_titular") or "")
-                datos_oficina["banco"] = str(oficina.get("banco") or "Banco Chile")
-                datos_oficina["tipo_cuenta"] = str(oficina.get("tipo_cuenta") or "Cuenta Corriente")
-                datos_oficina["numero_cuenta"] = str(oficina.get("numero_cuenta") or "408324134")
-                datos_oficina["email_contacto"] = str(oficina.get("email_contacto") or "pagos@evolucionapyme.cl")
-                datos_oficina["telefono"] = str(oficina.get("telefono") or "")
-                datos_oficina["sitio_web"] = str(oficina.get("sitio_web") or "")
-        except:
-            pass
-        
-        # 4. LOGO
-        logo_url = "http://erp.sjscuti.cl/files/logo%20pdf.png"
+
+        # 4. LOGO — desde Configuracion App (campo logo_empresa)
+        logo_url = ""
+        logo_field = config_app.get("logo_empresa")
+        if logo_field:
+            site_url = frappe.utils.get_url().rstrip("/")
+            logo_url = site_url + logo_field if logo_field.startswith("/") else logo_field
         
         # 5. FECHAS
         fecha_inicio_mes = frappe.utils.getdate(f"{ano_actual}-{mes_actual}-01")
@@ -579,7 +546,7 @@ def preparar_datos_pdf(**kwargs):
         
         try:
             sql_ventas = """
-                SELECT mes_tributario, tipo_documento, SUM(neto) as total
+                SELECT mes_tributario, tipo_documento, SUM(neto + monto_exento) as total
                 FROM `tabLibro_de_Ingresos_Cliente`
                 WHERE cliente = %s AND ano_tributario = %s
                 GROUP BY mes_tributario, tipo_documento
@@ -606,14 +573,44 @@ def preparar_datos_pdf(**kwargs):
             frappe.log_error("Error calculando ingresos", str(e))
         
         try:
+            # Compras: suma costo_empresa, resta notas de crédito
             sql_compras = """
-                SELECT mes_tributario, tipo_egreso, SUM(gasto_gerencial) as total_gerencial
-                FROM `tabLibro_de_Egresos_Cliente`
+                SELECT mes_tributario, tipo_documento, SUM(costo_empresa) as total
+                FROM `tabLibro_de_Compras_Cliente`
                 WHERE cliente = %s AND ano_tributario = %s
-                GROUP BY mes_tributario, tipo_egreso
+                GROUP BY mes_tributario, tipo_documento
             """
             res_compras = frappe.db.sql(sql_compras, (decl.cliente, decl.ano), as_dict=True)
-            
+            dict_compras = {}
+            for r in res_compras:
+                m = int(r.mes_tributario)
+                val = frappe.utils.flt(r.total)
+                if "CRÉDITO" in str(r.tipo_documento).upper():
+                    dict_compras[m] = dict_compras.get(m, 0) - val
+                else:
+                    dict_compras[m] = dict_compras.get(m, 0) + val
+
+            # Honorarios: suma costo_empresa
+            sql_honorarios = """
+                SELECT mes_tributario, SUM(costo_empresa) as total
+                FROM `tabLibro_de_Honorarios_Cliente`
+                WHERE cliente = %s AND ano_tributario = %s
+                GROUP BY mes_tributario
+            """
+            res_honorarios = frappe.db.sql(sql_honorarios, (decl.cliente, decl.ano), as_dict=True)
+            dict_honorarios = {int(r.mes_tributario): frappe.utils.flt(r.total) for r in res_honorarios}
+
+            # Gastos: suma costo_empresa
+            sql_gastos_lib = """
+                SELECT mes_tributario, SUM(costo_empresa) as total
+                FROM `tabLibro_de_Gastos_Cliente`
+                WHERE cliente = %s AND ano_tributario = %s
+                GROUP BY mes_tributario
+            """
+            res_gastos_lib = frappe.db.sql(sql_gastos_lib, (decl.cliente, decl.ano), as_dict=True)
+            dict_gastos = {int(r.mes_tributario): frappe.utils.flt(r.total) for r in res_gastos_lib}
+
+            # Remuneraciones
             sql_rrhh = """
                 SELECT mes, costo_total_empleador
                 FROM `tabRegistro_Remuneraciones`
@@ -621,24 +618,14 @@ def preparar_datos_pdf(**kwargs):
             """
             res_rrhh = frappe.db.sql(sql_rrhh, (decl.cliente, decl.ano), as_dict=True)
             dict_rrhh = {int(r.mes): frappe.utils.flt(r.costo_total_empleador) for r in res_rrhh}
-            
+
             for m in range(1, 13):
-                # Gastos positivos (Facturas, Boletas, etc)
-                gastos_positivos = sum([frappe.utils.flt(r.total_gerencial) for r in res_compras 
-                                       if int(r.mes_tributario) == m and 
-                                       "CRÉDITO" not in str(r.tipo_egreso).upper()])
-                
-                # Notas de Crédito (deben restar)
-                notas_credito = sum([frappe.utils.flt(r.total_gerencial) for r in res_compras 
-                                    if int(r.mes_tributario) == m and 
-                                    "CRÉDITO" in str(r.tipo_egreso).upper()])
-                
-                # RRHH
-                remuneraciones = dict_rrhh.get(m, 0)
-                
-                # El gasto real es: Positivos - Notas de crédito + RRHH
-                total_gasto = (gastos_positivos - notas_credito) + remuneraciones
-                
+                total_gasto = (
+                    dict_compras.get(m, 0)
+                    + dict_honorarios.get(m, 0)
+                    + dict_gastos.get(m, 0)
+                    + dict_rrhh.get(m, 0)
+                )
                 if m <= mes_actual:
                     data_gastos[m-1] = int(total_gasto)
         except Exception as e:
@@ -660,7 +647,7 @@ def preparar_datos_pdf(**kwargs):
         
         try:
             sql_categorias = """
-                SELECT mes_tributario, tipo_documento, SUM(neto) as total
+                SELECT mes_tributario, tipo_documento, SUM(neto + monto_exento) as total
                 FROM `tabLibro_de_Ingresos_Cliente`
                 WHERE cliente = %s AND ano_tributario = %s
                 GROUP BY mes_tributario, tipo_documento
@@ -673,7 +660,9 @@ def preparar_datos_pdf(**kwargs):
             for m in range(1, 13):
                 facturas = sum([frappe.utils.flt(r.total) for r in res_categorias
                                if int(r.mes_tributario) == m and
-                               r.tipo_documento == "FACTURA ELECTRÓNICA"])
+                               "FACTURA" in r.tipo_documento.upper() and
+                               "CRÉDITO" not in r.tipo_documento.upper() and
+                               "CREDITO" not in r.tipo_documento.upper()])
                 
                 boletas = sum([frappe.utils.flt(r.total) for r in res_categorias
                               if int(r.mes_tributario) == m and
@@ -751,49 +740,24 @@ def preparar_datos_pdf(**kwargs):
         }
         
         try:
-            sql_gastos = """
-                SELECT mes_tributario, tipo_egreso, SUM(gasto_gerencial) as total
-                FROM `tabLibro_de_Egresos_Cliente`
-                WHERE cliente = %s AND ano_tributario = %s
-                GROUP BY mes_tributario, tipo_egreso
-            """
-            res_gastos = frappe.db.sql(sql_gastos, (decl.cliente, decl.ano), as_dict=True)
-            
-            tipos_egreso_unicos = list(set([r.tipo_egreso for r in res_gastos]))
-            frappe.log_error("TIPOS DE EGRESO ENCONTRADOS", str(tipos_egreso_unicos))
-            
             for m in range(1, 13):
-                facturas = sum([frappe.utils.flt(r.total) for r in res_gastos
-                               if int(r.mes_tributario) == m and
-                               r.tipo_egreso in ["FACTURA ELECTRÓNICA", 
-                                                "FACTURA NO AFECTA O EXENTA ELECTRÓNICA",
-                                                "NOTA DE DÉBITO"]])
-                
-                notas_credito = sum([frappe.utils.flt(r.total) for r in res_gastos
-                                    if int(r.mes_tributario) == m and
-                                    r.tipo_egreso == "NOTA DE CRÉDITO ELECTRÓNICA"])
-                
-                facturas -= notas_credito
-                
-                honorarios = sum([frappe.utils.flt(r.total) for r in res_gastos
-                                 if int(r.mes_tributario) == m and
-                                 r.tipo_egreso == "Boleta de Honorarios"])
-                
-                otros = sum([frappe.utils.flt(r.total) for r in res_gastos
-                            if int(r.mes_tributario) == m and
-                            r.tipo_egreso == "Otros gastos"])
-                
+                # Compras (facturas) — ya con notas de crédito restadas en dict_compras
+                facturas = dict_compras.get(m, 0)
+
+                # Honorarios
+                honorarios = dict_honorarios.get(m, 0)
+
+                # Otros gastos
+                otros = dict_gastos.get(m, 0)
+
+                # Remuneraciones
                 remuneraciones = dict_rrhh.get(m, 0)
-                
+
                 if m <= mes_actual:
                     gastos_mensuales["facturas"][m-1] = int(facturas)
                     gastos_mensuales["honorarios"][m-1] = int(honorarios)
                     gastos_mensuales["otros"][m-1] = int(otros)
                     gastos_mensuales["remuneraciones"][m-1] = int(remuneraciones)
-                    
-                    if m == mes_actual:
-                        frappe.log_error(f"DESGLOSE GASTOS MES {m}", 
-                            f"Facturas: {facturas}, Honorarios: {honorarios}, Otros: {otros}, RRHH: {remuneraciones}")
             
         except Exception as e:
             frappe.log_error("Error calculando gastos por categoría", str(e))
@@ -831,22 +795,25 @@ def preparar_datos_pdf(**kwargs):
         total_f29 = float(frappe.utils.flt(f29_doc.get("total_a_pagar_f29", 0)))
         
         ppm = 0.0
-        
+        retenciones_honorarios = 0.0
+        remanente_mes_siguiente = float(frappe.utils.flt(f29_doc.get("remanente_mes_siguiente", 0)))
+        postergacion_del_periodo = float(frappe.utils.flt(f29_doc.get("postergacion_del_periodo", 0)))
+
         try:
             if f29_doc.get("tabla_impuestos"):
                 for linea in f29_doc.tabla_impuestos:
                     codigo = str(linea.get("codigo_f29", ""))
                     monto = float(frappe.utils.flt(linea.get("monto", 0)))
-                    
                     if codigo == "62":
                         ppm = monto
-                        break
-                
+                    elif codigo in ("151", "152", "153"):
+                        retenciones_honorarios += monto
+
         except Exception as e:
-            frappe.log_error("Error extrayendo PPM F29", str(e))
-        
-        # Calcular otros_impuestos restando el PPM
-        otros_impuestos = subtotal_otros_impuestos - ppm
+            frappe.log_error("Error extrayendo PPM/Retenciones F29", str(e))
+
+        # otros_impuestos = lo que resta después de PPM y retenciones
+        otros_impuestos = subtotal_otros_impuestos - ppm - retenciones_honorarios
         
         haberes_imponibles = 0
         haberes_no_imponibles = 0
@@ -991,8 +958,11 @@ def preparar_datos_pdf(**kwargs):
                 "iva_debito": iva_debito,
                 "iva_credito": iva_credito,
                 "iva_determinado": iva_determinado,
+                "remanente_mes_siguiente": remanente_mes_siguiente,
                 "ppm": ppm,
+                "retenciones_honorarios": retenciones_honorarios,
                 "otros_impuestos": otros_impuestos,
+                "postergacion_del_periodo": postergacion_del_periodo,
                 "total_f29": total_f29
             },
             "hoja5_previred_detalle": {
@@ -1010,9 +980,15 @@ def preparar_datos_pdf(**kwargs):
         
         # 16. GENERAR PDF NATIVO CON GOTENBERG
         from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf
+        from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import is_usuario_basico
 
         config = frappe.get_single('Configuracion App')
-        html = generar_html(payload, config)
+        pdf_basico_cliente = bool(int(cliente_doc.get('pdf_modo_basico') or 0))
+        _modo_basico = pdf_basico_cliente or is_usuario_basico()
+        _ocultar_opcion_a = bool(int(
+            getattr(config, 'pdf_basico_ocultar_opcion_a' if _modo_basico else 'pdf_ocultar_opcion_a', 0) or 0
+        ))
+        html = generar_html(payload, config, modo_basico=_modo_basico, ocultar_opcion_a=_ocultar_opcion_a)
         pdf_bytes = convertir_a_pdf(html)
 
         meses_nombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
@@ -1021,20 +997,19 @@ def preparar_datos_pdf(**kwargs):
         abrev = cliente_doc.abreviatura_cliente or decl.cliente
         nombre_archivo = 'Declaracion_{}_{}_{}.pdf'.format(abrev, mes_nombre, ano_actual)
 
-        # Guardar PDF como archivo adjunto en Frappe
-        file_doc = frappe.get_doc({
-            "doctype": "File",
-            "file_name": nombre_archivo,
-            "attached_to_doctype": "Declaracion_Mensual",
-            "attached_to_name": declaracion_name,
-            "content": pdf_bytes,
-            "decode": False,
-            "is_private": 0
-        })
-        file_doc.save(ignore_permissions=True)
-        pdf_url = file_doc.file_url
+        # Subir PDF a Google Drive
+        from evoluciona_pyme_v2.evoluciona_pyme_v2.drive import subir_pdf
+
+        carpeta_id = cliente_doc.get('drive_declaraciones_id') or cliente_doc.get('drive_matriz_id')
+
+        if not carpeta_id:
+            frappe.throw("El cliente no tiene carpeta de Drive configurada. Crea la carpeta primero.")
+
+        resultado = subir_pdf(pdf_bytes, nombre_archivo, carpeta_id, año=ano_actual)
+        pdf_url = resultado.get('url')
 
         decl.pdf_link_cliente = pdf_url
+        decl.pdf_drive_file_id = resultado.get('id')
         decl.pdf_generado_flag = 1
         decl.fecha_pdf_generado = frappe.utils.now_datetime()
         decl.save(ignore_permissions=True)
@@ -1042,7 +1017,7 @@ def preparar_datos_pdf(**kwargs):
 
         frappe.response['message'] = {
             "status": "success",
-            "message": "PDF generado correctamente",
+            "message": "PDF generado y subido a Google Drive correctamente",
             "pdf_url": pdf_url
         }
 
@@ -1167,7 +1142,7 @@ def enviar_pdf_cliente(**kwargs):
 # Mapa de códigos de tipo de documento SII → opciones del DocType
 TIPO_DOC_SII = {
     "33": "FACTURA ELECTRÓNICA",
-    "34": "FACTURA NO ELECTRÓNICA",
+    "34": "FACTURA EXENTA ELECTRÓNICA",
     "46": "FACTURA DE COMPRA ELECTRÓNICA",
     "43": "LIQUIDACIÓN FACTURA",
     "56": "NOTA DE DÉBITO ELECTRÓNICA",
@@ -1274,11 +1249,8 @@ def importar_libro_compras_csv(**kwargs):
             # IVA crédito solo si el cliente es afecto
             iva_credito = iva_rec if usa_iva else 0
 
-            # Costo empresa
-            if usa_iva:
-                costo = neto + exento + iva_no_rec
-            else:
-                costo = neto + iva_rec + exento + iva_no_rec
+            # Costo empresa: total menos lo que se recupera como crédito
+            costo = total - iva_credito
 
             doc = frappe.get_doc({
                 "doctype":          "Libro_de_Compras_Cliente",
@@ -1322,11 +1294,15 @@ TIPO_DOC_VENTA_SII = {
     "34": "FACTURA NO ELECTRÓNICA",
     "56": "NOTA DE DÉBITO ELECTRÓNICA",
     "61": "NOTA DE CRÉDITO ELECTRÓNICA",
+    "39": "Total Oper. del mes Boleta Electr.(39)",
+    "41": "Total Oper. del mes Boleta Exenta Electr.(41)",
+    "48": "Total mes Comprobantes Pago Electrónico(48)",
 }
 
 # Mapa del resumen: texto del SII (puede venir con encoding roto) → tipo_documento
 RESUMEN_TIPO_MAP = {
     "boleta":        "Total Oper. del mes Boleta Electr.(39)",
+    "boleta exenta": "Total Oper. del mes Boleta Exenta Electr.(41)",
     "comprobante":   "Total mes Comprobantes Pago Electrónico(48)",
 }
 
@@ -2094,3 +2070,299 @@ def resetear_declaracion(doc_name):
 @frappe.whitelist()
 def has_app_permission():
 	return frappe.session.user != "Guest"
+
+
+@frappe.whitelist()
+def publicar_en_portal(doc_name):
+	"""Toggle publicado_portal en Declaracion_Mensual. Cambia estado a Publicado/Listo y envía push."""
+	doc = frappe.get_doc("Declaracion_Mensual", doc_name)
+	nuevo_valor = 0 if doc.publicado_portal else 1
+
+	nuevo_estado = "Publicado" if nuevo_valor == 1 else "Listo"
+	frappe.db.set_value("Declaracion_Mensual", doc_name, "publicado_portal", nuevo_valor)
+	frappe.db.set_value("Declaracion_Mensual", doc_name, "estado", nuevo_estado)
+	frappe.db.commit()
+
+	if nuevo_valor == 1:
+		# Limpiar caché para que siempre pueda re-enviarse al re-publicar
+		frappe.cache().delete_value("push_publicado_{}".format(doc_name))
+		try:
+			frappe.enqueue(
+				"evoluciona_pyme_v2.evoluciona_pyme_v2.api._push_publicacion",
+				doc_name=doc_name,
+				queue="short",
+				timeout=120,
+			)
+		except Exception as e:
+			frappe.log_error(str(e), "publicar_en_portal push error")
+
+	return {
+		"status": "ok",
+		"publicado": nuevo_valor,
+		"message": "Declaración publicada en la App." if nuevo_valor else "Declaración quitada del portal.",
+	}
+
+
+def _push_publicacion(doc_name):
+	"""Envía push cuando se publica manualmente en portal. Muestra los mismos montos que el Home del portal."""
+	cache_key = "push_publicado_{}".format(doc_name)
+	if frappe.cache().get_value(cache_key):
+		return
+
+	doc = frappe.get_doc("Declaracion_Mensual", doc_name)
+	from evoluciona_pyme_v2.evoluciona_pyme_v2.portal_api import enviar_push_a_cliente
+
+	MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+	         "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+
+	def _fmt(n):
+		try:
+			return "$" + "{:,.0f}".format(float(n or 0)).replace(",", ".")
+		except Exception:
+			return "$0"
+
+	mes_nombre = MESES[int(doc.mes or 1) - 1] if doc.mes else ""
+	titulo = "Tu declaración de {} está lista 📋".format(mes_nombre)
+
+	# Misma lógica que get_resumen_portal ─────────────────────────────────────
+	cliente    = doc.cliente
+	decl_mes   = int(doc.mes or 1)
+	decl_ano   = int(doc.ano or 0)
+	decl_per   = decl_ano * 100 + decl_mes
+
+	f29      = float(doc.total_f29_a_pagar    or 0)
+	previred = float(doc.total_previred_a_pagar or 0)
+
+	# Honorarios del mes y mora (Cobranza_Cliente)
+	honorarios = 0.0
+	mora       = 0.0
+	try:
+		cobranzas = frappe.db.sql("""
+			SELECT monto_a_cobrar, periodo_mes, periodo_ano
+			FROM `tabCobranza_Cliente`
+			WHERE cliente = %(c)s
+			  AND estado_cobranza IN ('Vencido','Por Cobrar','Facturado')
+		""", {"c": cliente}, as_dict=True)
+		for cob in cobranzas:
+			cob_per = int(cob.periodo_ano) * 100 + int(cob.periodo_mes)
+			if cob_per == decl_per:
+				honorarios += float(cob.monto_a_cobrar or 0)
+			elif cob_per < decl_per:
+				mora += float(cob.monto_a_cobrar or 0)
+	except Exception:
+		pass
+
+	# Postergación IVA que vence en este período
+	post_vencida = 0.0
+	try:
+		posts = frappe.db.sql("""
+			SELECT monto_postergado FROM `tabPostergacion_IVA`
+			WHERE cliente = %(c)s
+			  AND mes_f29_pagado = %(mes)s AND ano_f29_pagado = %(ano)s
+		""", {"c": cliente, "mes": decl_mes, "ano": decl_ano}, as_dict=True)
+		post_vencida = sum(float(p.monto_postergado or 0) for p in posts)
+	except Exception:
+		pass
+
+	total = honorarios + mora + post_vencida + previred + f29
+
+	# Construir cuerpo solo con los ítems > 0 (igual que el portal)
+	partes = []
+	if f29 > 0:          partes.append("F29 {}".format(_fmt(f29)))
+	if previred > 0:     partes.append("Prev {}".format(_fmt(previred)))
+	if honorarios > 0:   partes.append("Hon {}".format(_fmt(honorarios)))
+	if mora > 0:         partes.append("Mora {}".format(_fmt(mora)))
+	if post_vencida > 0: partes.append("IVA ant. {}".format(_fmt(post_vencida)))
+	cuerpo = " · ".join(partes) + "  |  Total: {}".format(_fmt(total)) if partes else _fmt(total)
+
+	enviar_push_a_cliente(
+		cliente=cliente,
+		titulo=titulo,
+		cuerpo=cuerpo,
+		data={"tipo": "declaracion", "cliente": cliente, "mes": str(doc.mes), "ano": str(doc.ano)},
+	)
+	frappe.cache().set_value(cache_key, 1, expires_in_sec=86400)
+
+
+def _datos_privados_sii(d):
+	"""Mapea /v1/contribuyente/mis-datos a campos de Ficha_Cliente."""
+	u = {}
+
+	if d.get("razon_social"):
+		u["razon_social"] = d["razon_social"]
+	if d.get("email"):
+		u["email_sii"] = d["email"]
+	if d.get("telefono_movil"):
+		u["telefono_sii"] = d["telefono_movil"]
+	if d.get("fecha_inicio_actividades"):
+		u["fecha_inicio_actividades"] = d["fecha_inicio_actividades"]
+
+	for campo in ("tipo_contribuyente", "subtipo_contribuyente"):
+		desc = (d.get(campo) or {}).get("descripcion")
+		if desc:
+			u[campo] = desc
+
+	# El segmento no viene como campo propio: es el atributo SGMI (tramo de ingresos)
+	segmento = next((a.get("descripcion") for a in (d.get("atributos") or [])
+	                 if a.get("codigo") == "SGMI"), None)
+	if segmento:
+		u["segmento_empresa"] = segmento
+
+	direcciones = d.get("direcciones") or []
+	if direcciones:
+		dom = next((x for x in direcciones if "DOMICILIO" in str(x.get("tipo", "")).upper()),
+		           direcciones[0])
+		calle = " ".join(str(p) for p in (dom.get("calle"), dom.get("numero")) if p)
+		if calle:
+			u["direccion_fiscal"] = calle
+		if dom.get("comuna"):
+			u["comuna"] = dom["comuna"]
+		if dom.get("region"):
+			u["ciudad"] = dom["region"]
+
+	reps = d.get("representantes_legales") or []
+	if reps:
+		u["representantes_sii"] = "\n".join(
+			f"{r.get('nombre', '')} ({r.get('rut', '')})"
+			+ (f" — desde {r['desde']}" if r.get("desde") else "")
+			for r in reps
+		)
+
+	socios = d.get("socios") or []
+	if socios:
+		u["socios_sii"] = "\n".join(
+			f"{s.get('nombre', '')} ({s.get('rut', '')})"
+			+ (f" — {s['participacion_capital']}% capital" if s.get("participacion_capital") is not None else "")
+			+ (f", {s['participacion_utilidades']}% utilidades" if s.get("participacion_utilidades") is not None else "")
+			for s in socios
+		)
+
+	return u
+
+
+@frappe.whitelist()
+def actualizar_desde_sii(cliente):
+	"""Actualiza Ficha_Cliente desde el SII.
+
+	Combina dos fuentes: /v1/contribuyente (público, sin clave) para los giros, que
+	es lo único que mis-datos no entrega; y /v1/contribuyente/mis-datos (con la
+	clave del propio contribuyente) para email, teléfono, segmento, tipo/subtipo,
+	direcciones, representantes y socios.
+	"""
+	from evoluciona_pyme_v2.evoluciona_pyme_v2 import sii_gateway
+
+	ficha = frappe.get_doc("Ficha_Cliente", cliente)
+	if not ficha.rut_cliente:
+		frappe.throw("La ficha no tiene RUT configurado.")
+
+	publico = sii_gateway.post("/v1/contribuyente", {"rut": ficha.rut_cliente})
+	if not publico.get("registrado"):
+		frappe.throw(f"El SII no reconoce el RUT {ficha.rut_cliente}.")
+
+	updates = {}
+
+	if publico.get("razon_social"):
+		updates["razon_social"] = publico["razon_social"]
+	if publico.get("giro_principal"):
+		updates["giro"] = publico["giro_principal"]
+
+	giros = publico.get("giros") or []
+	if giros:
+		updates["actividades_economicas"] = "\n".join(
+			f"{g.get('descripcion', '')} ({'Afecto IVA' if g.get('afecto_iva') else 'Exento IVA'})"
+			for g in giros
+		)
+
+	# El público entrega la fecha como DD-MM-YYYY; mis-datos ya la manda en ISO.
+	fecha_raw = str(publico.get("fecha_inicio_actividades") or "")
+	if fecha_raw:
+		partes = fecha_raw.split("-")
+		updates["fecha_inicio_actividades"] = (
+			f"{partes[2]}-{partes[1]}-{partes[0]}" if len(partes) == 3 else fecha_raw[:10]
+		)
+
+	if ficha.clave_sii:
+		try:
+			mios = sii_gateway.post("/v1/contribuyente/mis-datos",
+			                        {"login": sii_gateway.login_de(ficha)})
+		except Exception as e:
+			frappe.log_error(str(e), f"mis-datos {cliente}")
+		else:
+			updates.update(_datos_privados_sii(mios))
+
+	ficha.update(updates)
+	ficha.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	campos = list(updates.keys())
+	return {"ok": True, "actualizados": campos, "total": len(campos)}
+
+
+# ── Libros RCV — endpoints para página libro_rcv ──────────────────────────────
+
+@frappe.whitelist()
+def get_resumen_libros(cliente, ano, mes, libro):
+    """Totales agrupados por tipo de documento para el período."""
+    # (dt, campo_monto, campo_tipo, campo_total)
+    mapa = {
+        "compras":    ("Libro_de_Compras_Cliente",    "neto",        "tipo_documento", "total_documento"),
+        "ventas":     ("Libro_de_Ingresos_Cliente",   "neto",        "tipo_documento", "total"),
+        "honorarios": ("Libro_de_Honorarios_Cliente", "monto_bruto", "tipo_boleta",    "total_documento"),
+    }
+    libro = libro.lower()
+    if libro not in mapa:
+        frappe.throw(f"Libro inválido: {libro}")
+    dt, campo_monto, campo_tipo, campo_total = mapa[libro]
+    return frappe.db.sql(f"""
+        SELECT {campo_tipo} AS tipo,
+               COUNT(*)     AS cantidad,
+               SUM({campo_monto})    AS total_neto,
+               SUM({campo_total})    AS total
+        FROM `tab{dt}`
+        WHERE cliente       = %s
+          AND ano_tributario = %s
+          AND mes_tributario = %s
+        GROUP BY {campo_tipo}
+        ORDER BY total DESC
+    """, (cliente, str(ano), str(mes)), as_dict=True)
+
+
+@frappe.whitelist()
+def get_documentos_libro(cliente, ano, mes, libro, tipo_doc=""):
+    """Lista de documentos de un libro para el período, con filtro opcional por tipo."""
+    mapa = {
+        "compras": ("Libro_de_Compras_Cliente", [
+            "name", "fecha_documento", "tipo_documento", "folio",
+            "rut_proveedor", "razon_social_proveedor",
+            "monto_exento", "neto", "iva_credito", "total_documento", "costo_empresa",
+        ]),
+        "ventas": ("Libro_de_Ingresos_Cliente", [
+            "name", "fecha_documento", "tipo_documento", "folio",
+            "rut_receptor", "razon_social_receptor",
+            "monto_exento", "neto", "iva", "total",
+        ]),
+        "honorarios": ("Libro_de_Honorarios_Cliente", [
+            "name", "fecha_documento", "tipo_boleta", "folio",
+            "rut_prestador", "nombre_prestador",
+            "monto_bruto", "retencion_honorarios", "monto_liquido",
+            "total_documento", "costo_empresa",
+        ]),
+    }
+    libro = libro.lower()
+    if libro not in mapa:
+        frappe.throw(f"Libro inválido: {libro}")
+    dt, fields = mapa[libro]
+    filters = {
+        "cliente":        cliente,
+        "ano_tributario": str(ano),
+        "mes_tributario": str(mes),
+    }
+    if tipo_doc:
+        campo_tipo = "tipo_boleta" if libro == "honorarios" else "tipo_documento"
+        filters[campo_tipo] = tipo_doc
+    return frappe.get_all(
+        dt, filters=filters, fields=fields,
+        order_by="fecha_documento asc, name asc",
+        limit_page_length=1000,
+        ignore_permissions=True,
+    )

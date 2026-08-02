@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:codigo_f29",
- "creation": "2025-11-11 16:42:15.377753",
+ "creation": "2026-05-09 12:00:56.537128",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -26,14 +26,14 @@
   {
    "fieldname": "codigo_f29",
    "fieldtype": "Data",
-   "label": "Código F29",
+   "label": "C\u00f3digo F29",
    "unique": 1
   },
   {
-   "description": "La descripción oficial (ej: \"IVA por Facturas Emitidas\").",
+   "description": "La descripci\u00f3n oficial (ej: \"IVA por Facturas Emitidas\").",
    "fieldname": "descripcion",
    "fieldtype": "Data",
-   "label": "Descripción"
+   "label": "Descripci\u00f3n"
   },
   {
    "fieldname": "tabla_destino",
@@ -44,14 +44,14 @@
   {
    "fieldname": "tipo_operacion_subtotal",
    "fieldtype": "Select",
-   "label": "Tipo de Operación (Subtotal)",
+   "label": "Tipo de Operaci\u00f3n (Subtotal)",
    "options": "Suma\nResta\nInformativo"
   },
   {
    "default": "0",
    "fieldname": "es_calculado",
    "fieldtype": "Check",
-   "label": "¿Es Calculado?"
+   "label": "\u00bfEs Calculado?"
   },
   {
    "fieldname": "instrucciones_solo_si_es_calculado_section",
@@ -62,7 +62,7 @@
    "fieldname": "fuente_doctype",
    "fieldtype": "Select",
    "label": "Fuente de Datos",
-   "options": "\nLibro_de_Ingresos_Cliente\nLibro_de_Compras_Cliente\nLibro_de_Honorarios_Cliente\nLibro_de_Gastos_Cliente\nLibro_de_Egresos_Cliente\nRegistro_Remuneraciones",
+   "options": "\nLibro_de_Ingresos_Cliente\nLibro_de_Compras_Cliente\nLibro_de_Honorarios_Cliente\nLibro_de_Gastos_Cliente\nRegistro_Remuneraciones",
    "read_only_depends_on": "eval:!doc.es_calculado"
   },
   {
@@ -81,12 +81,12 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-16 06:42:35.318986",
+ "modified": "2026-05-09 12:00:56.513786",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion_Codigo_F29",
  "naming_rule": "By fieldname",
- "owner": "sromero1808@gmail.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
