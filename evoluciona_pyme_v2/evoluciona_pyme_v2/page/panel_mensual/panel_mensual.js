@@ -73,6 +73,30 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .pm-table td { padding:8px 7px; border-bottom:1px solid #eef0f3; vertical-align:middle; }
         .pm-table tr:hover td { background:#f7fafc; }
         .pm-table tr.pm-hidden { display:none; }
+
+        /* ── Fila expandida ─────────────────────────────────────────── */
+        .pm-expand-toggle { display:inline-block; width:14px; cursor:pointer; color:#999; font-size:10px;
+                             transition:transform .15s; user-select:none; }
+        .pm-expand-toggle.open { transform:rotate(90deg); color:#005f6b; }
+        .pm-detail-row td { background:#f4f7f9; padding:16px 20px; border-bottom:2px solid #dde3e8; }
+        .pm-detail-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+        .pm-detail-card { background:#fff; border-radius:8px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+        .pm-detail-card h5 { margin:0 0 8px; font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+                              color:#8a9bb0; font-weight:700; }
+        .pm-cred-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:12px; }
+        .pm-cred-label { color:#888; width:38px; flex-shrink:0; }
+        .pm-cred-val { font-family:monospace; background:#f0f2f5; padding:3px 8px; border-radius:4px;
+                       flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pm-copy-btn { border:none; background:#e9ecef; border-radius:4px; padding:3px 7px; cursor:pointer;
+                       font-size:11px; flex-shrink:0; }
+        .pm-copy-btn:hover { background:#dde1e5; }
+        .pm-open-btn { display:inline-block; margin-top:4px; font-size:11px; padding:4px 10px; border-radius:5px;
+                       background:#005f6b; color:#fff; text-decoration:none; }
+        .pm-open-btn:hover { background:#004a54; color:#fff; }
+        .pm-import-btn { display:block; width:100%; text-align:left; border:none; background:#f0f2f5;
+                         border-radius:6px; padding:7px 10px; margin-bottom:6px; cursor:pointer; font-size:12px; }
+        .pm-import-btn:hover { background:#e4e8ec; }
+        .pm-import-btn:last-child { margin-bottom:0; }
         .badge-est { padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; white-space:nowrap; }
         .est-borrador { background:#ffc107; color:#000; }
         .est-validar  { background:#ff9800; color:#fff; }
@@ -135,7 +159,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
     // ── Estado global ─────────────────────────────────────────────────────────
     let _clientes = [], _dec_map = {}, _cobro_map = {}, _cobro_pendiente_map = {}, _f29_map = {}, _remu_map = {},
-        _post_map = {}, _post_vence_map = {}, _ano, _mes;
+        _post_map = {}, _post_vence_map = {}, _ano, _mes, _expandido = null;
 
     // ── Cargar datos ──────────────────────────────────────────────────────────
     // Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos del
@@ -230,6 +254,177 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             }
         });
     }
+
+    // ── Fila expandida por cliente (solo una a la vez) ──────────────────────────
+    function toggle_expand_cliente(cliente, $toggle) {
+        const fila_existente = $(`#pm-content tr.pm-detail-row[data-cliente="${cliente}"]`);
+
+        if (_expandido === cliente) {
+            fila_existente.remove();
+            $toggle.removeClass('open');
+            _expandido = null;
+            return;
+        }
+
+        // Colapsar cualquier otra fila abierta
+        $('#pm-content tr.pm-detail-row').remove();
+        $('#pm-content .pm-expand-toggle').removeClass('open');
+        _expandido = cliente;
+        $toggle.addClass('open');
+
+        const $fila_cliente = $(`#pm-content tr[data-cliente="${cliente}"]`).not('.pm-detail-row');
+        const $detalle = $(`<tr class="pm-detail-row" data-cliente="${esc(cliente)}">
+            <td colspan="11"><div class="pm-loading"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></td>
+        </tr>`);
+        $fila_cliente.after($detalle);
+
+        cargar_detalle_cliente(cliente, $detalle);
+    }
+
+    function cargar_detalle_cliente(cliente, $detalle) {
+        frappe.call({
+            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_credenciales_cliente',
+            args: { cliente },
+            callback(r) {
+                const cred = r.message || {};
+                const d = _dec_map[cliente];
+                const f29_name = d ? d.borrador_f29_vinculado : null;
+
+                const fila_copiable = (label, val, id) => val
+                    ? `<div class="pm-cred-row">
+                           <span class="pm-cred-label">${label}</span>
+                           <span class="pm-cred-val" id="${id}">${esc(val)}</span>
+                           <button class="pm-copy-btn" onclick="pm_copiar('${id}')">📋</button>
+                       </div>`
+                    : `<div class="pm-cred-row"><span class="pm-cred-label">${label}</span><span style="color:#ccc;">—</span></div>`;
+
+                const sii_html = `
+                    <div class="pm-detail-card">
+                        <h5>Acceso SII</h5>
+                        ${fila_copiable('RUT', cred.rut_sii, `sii-rut-${cliente}`)}
+                        ${fila_copiable('Clave', cred.clave_sii, `sii-clave-${cliente}`)}
+                        ${cred.rut_sii ? `<a class="pm-open-btn" href="https://zeusr.sii.cl/AUT2000/InicioAutenticacion/IngresoRutClave.html" target="_blank">Abrir SII ↗</a>` : ''}
+                    </div>`;
+
+                const previred_html = `
+                    <div class="pm-detail-card">
+                        <h5>Acceso Previred</h5>
+                        ${fila_copiable('RUT', cred.rut_previred, `prev-rut-${cliente}`)}
+                        ${fila_copiable('Clave', cred.clave_previred, `prev-clave-${cliente}`)}
+                        ${cred.rut_previred ? `<a class="pm-open-btn" href="https://www.previred.com" target="_blank">Abrir Previred ↗</a>` : ''}
+                    </div>`;
+
+                const import_html = `
+                    <div class="pm-detail-card">
+                        <h5>Cargar Documentos — ${_mes}/${_ano}</h5>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','compras')">📥 Compras (API SII)</button>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','ventas')">📥 Ventas (API SII)</button>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','honorarios')">📥 Honorarios (API SII)</button>
+                        <button class="pm-import-btn" onclick="pm_importar_lre('${cliente}')">📄 Remuneraciones (CSV LRE)</button>
+                        ${f29_name?'':'<small style="color:#e67e22;">Crea la declaración primero para cargar por API.</small>'}
+                    </div>`;
+
+                const cobranza_html = `
+                    <div class="pm-detail-card">
+                        <h5>Cobranza</h5>
+                        <button class="pm-import-btn" onclick="pm_ver_cobranzas_pendientes('${cliente}')">💰 Ver cobranzas pendientes</button>
+                    </div>`;
+
+                $detalle.find('td').html(`<div class="pm-detail-grid">${sii_html}${previred_html}${import_html}${cobranza_html}</div>`);
+            }
+        });
+    }
+
+    // Botones de importar API para una sola de las 3 fuentes a la vez
+    window.pm_cargar_api = function(cliente, f29_name, fuente) {
+        if (!f29_name) { frappe.msgprint('Este cliente no tiene declaración creada para este período.'); return; }
+        const args = { doc_name: f29_name, compras:0, ventas:0, honorarios:0 };
+        args[fuente] = 1;
+        frappe.show_alert({message:`Cargando ${fuente}...`, indicator:'blue'}, 3);
+        frappe.call({
+            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.cargar_documentos_api',
+            args,
+            callback(r) {
+                const res = r.message || {};
+                frappe.show_alert({message: res.ok!==false ? `✅ ${res.detalle||'Cargado'}` : 'Error al cargar', indicator: res.ok!==false?'green':'red'}, 5);
+            }
+        });
+    };
+
+    window.pm_importar_lre = function(cliente) {
+        const d = new frappe.ui.Dialog({
+            title: 'Importar LRE — Libro de Remuneraciones Electrónico',
+            fields: [
+                { fieldtype:'HTML', options:`<div style="margin-bottom:8px;font-size:12px;color:#555;">Sube el CSV del LRE descargado de Previred. Período <b>${_mes}/${_ano}</b>.</div>` },
+                { label:'Archivo CSV', fieldname:'archivo', fieldtype:'Attach', reqd:1, options:{restrictions:{allowed_file_types:['.csv','.CSV']}} }
+            ],
+            primary_action_label: 'Importar',
+            primary_action(values) {
+                if (!values.archivo) { frappe.msgprint('Selecciona un archivo CSV.'); return; }
+                d.hide();
+                frappe.dom.freeze('Procesando archivo...');
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.importar_lre_csv',
+                    args: { cliente, mes:_mes, ano:_ano, file_url: values.archivo },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        if (res.status === 'ok') {
+                            frappe.msgprint({title:'Importación exitosa', indicator:'green',
+                                message:`<b>${res.empleados}</b> trabajadores, Total Previred: <b>$${(res.total_previred||0).toLocaleString('es-CL')}</b>`});
+                            cargar_panel();
+                        } else {
+                            frappe.msgprint({title:'Error', message:res.message, indicator:'red'});
+                        }
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        });
+        d.show();
+    };
+
+    window.pm_ver_cobranzas_pendientes = function(cliente) {
+        frappe.call({
+            method: 'frappe.client.get_list',
+            args: { doctype:'Cobranza_Cliente', filters:{cliente, estado_cobranza:['not in',['Pagado','Anulado']]},
+                     fields:['name','periodo_mes','periodo_ano','monto_a_cobrar','estado_cobranza','fecha_vencimiento'],
+                     order_by:'periodo_ano asc, periodo_mes asc', limit_page_length:50, ignore_permissions:1 },
+            callback(r) {
+                const filas = r.message || [];
+                if (!filas.length) { frappe.msgprint('Este cliente no tiene cobranzas pendientes.'); return; }
+
+                const html = filas.map(f => `
+                    <tr>
+                        <td>${f.periodo_mes}/${f.periodo_ano}</td>
+                        <td>$${fmt_num(f.monto_a_cobrar)}</td>
+                        <td>${esc(f.estado_cobranza)}</td>
+                        <td>${f.fecha_vencimiento||''}</td>
+                        <td><button class="btn btn-xs btn-primary" onclick="pm_pagar_desde_dialog('${f.name}')">Pagar</button></td>
+                    </tr>`).join('');
+
+                frappe.msgprint({
+                    title: `Cobranzas pendientes — ${cliente}`,
+                    message: `<table class="table table-bordered" style="font-size:12px;">
+                        <thead><tr><th>Período</th><th>Monto</th><th>Estado</th><th>Vence</th><th></th></tr></thead>
+                        <tbody>${html}</tbody></table>`,
+                    wide: true
+                });
+            }
+        });
+    };
+
+    window.pm_pagar_desde_dialog = function(cobro) {
+        if (cur_dialog) cur_dialog.hide();
+        pagar_cobranza(cobro);
+    };
+
+    window.pm_copiar = function(id) {
+        const texto = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(texto).then(() => {
+            frappe.show_alert({message:'Copiado', indicator:'green'}, 1.5);
+        });
+    };
 
     function cargar_panel() {
         _ano = sel_ano.get_value();
@@ -439,8 +634,11 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}">
                 <td><input class="pm-chk" type="checkbox" data-cliente="${esc(c.name)}" data-doc="${d?esc(d.name):''}" onchange="pm_chk_change()"></td>
-                <td><a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
-                    <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small></td>
+                <td>
+                    <span class="pm-expand-toggle" data-cliente="${esc(c.name)}" title="Ver más">▸</span>
+                    <a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
+                    <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small>
+                </td>
                 <td>${cred_sii}</td>
                 <td>${estado_html}</td>
                 <td style="white-space:nowrap;font-size:13px;letter-spacing:2px;">${checks}</td>
@@ -492,7 +690,12 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                             $(this).data('cobro')||'');
         });
 
+        $('#pm-content').off('click','.pm-expand-toggle').on('click','.pm-expand-toggle', function() {
+            toggle_expand_cliente($(this).data('cliente'), $(this));
+        });
+
         aplicar_filtro();
+        _expandido = null;
     }
 
     // ── Generar botones de acción ─────────────────────────────────────────────

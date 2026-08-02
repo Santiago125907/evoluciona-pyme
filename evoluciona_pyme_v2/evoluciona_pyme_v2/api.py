@@ -2080,6 +2080,30 @@ def marcar_cobranza_pagada(cobranza_name, aplicar_recargo=0, fecha_pago=None,
     return {"status": "ok", "pago_atrasado": bool(doc.pago_atrasado)}
 
 
+@frappe.whitelist()
+def get_credenciales_cliente(cliente):
+    """
+    Credenciales de acceso del cliente para la fila expandida del Panel Mensual.
+    clave_previred es tipo Password -- hay que desencriptarla explícitamente,
+    a diferencia de clave_sii que es Data y viene directo en el doc.
+    """
+    from frappe.utils.password import get_decrypted_password
+
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    clave_previred = None
+    if ficha.rut_usuario:
+        clave_previred = get_decrypted_password(
+            "Ficha_Cliente", cliente, "clave_previred", raise_exception=False
+        )
+
+    return {
+        "rut_sii": ficha.rut_cliente,
+        "clave_sii": ficha.clave_sii,
+        "rut_previred": ficha.rut_usuario,
+        "clave_previred": clave_previred,
+    }
+
+
 # ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
 
 @frappe.whitelist()
