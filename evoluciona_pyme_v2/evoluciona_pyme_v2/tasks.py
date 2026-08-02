@@ -1,6 +1,5 @@
 import frappe
-from frappe.utils import add_months, getdate, now_datetime
-import pytz
+from frappe.utils import add_months, getdate, now_datetime, get_datetime
 
 
 def _log(msg):
@@ -11,9 +10,12 @@ def _log(msg):
 
 
 def _now_local():
-	"""Datetime actual en zona horaria del site (America/Santiago)."""
-	tz_name = frappe.db.get_single_value("System Settings", "time_zone") or "America/Santiago"
-	return now_datetime().replace(tzinfo=pytz.utc).astimezone(pytz.timezone(tz_name))
+	"""Datetime actual en la zona horaria configurada del site.
+
+	now_datetime() ya devuelve la hora local del site (System Settings > Time Zone),
+	no UTC — no hay que volver a convertirla o el horario queda corrido.
+	"""
+	return now_datetime()
 
 
 def _cargar_cfg():
@@ -41,14 +43,17 @@ def dispatcher_cron():
 	if now.day != dia_cfg or now.hour != hora_cfg:
 		return
 
-	ultima = cfg.ultima_ejecucion_tareas
+	ultima = get_datetime(cfg.ultima_ejecucion_tareas) if cfg.ultima_ejecucion_tareas else None
 	if ultima and ultima.month == now.month and ultima.year == now.year:
 		return  # ya se ejecutó este mes
 
-	crear_tareas_mensuales()
-	cfg.ultima_ejecucion_tareas = now_datetime()
-	cfg.save(ignore_permissions=True)
-	frappe.db.commit()
+	try:
+		crear_tareas_mensuales()
+		cfg.ultima_ejecucion_tareas = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_cron", frappe.get_traceback())
 
 
 # ── CRON 2: Descarga de libros contables ────────────────────────────────────
@@ -69,30 +74,33 @@ def dispatcher_libros():
 	if now.day != dia_cfg or now.hour != hora_cfg:
 		return
 
-	ultima = cfg.ultima_ejecucion_libros
+	ultima = get_datetime(cfg.ultima_ejecucion_libros) if cfg.ultima_ejecucion_libros else None
 	if ultima and ultima.month == now.month and ultima.year == now.year:
 		return  # ya se ejecutó este mes
 
-	fecha_anterior = add_months(getdate(), -1)
-	periodo = fecha_anterior.strftime("%Y-%m")
-	ano  = fecha_anterior.year
-	mes  = fecha_anterior.month
+	try:
+		fecha_anterior = add_months(getdate(), -1)
+		periodo = fecha_anterior.strftime("%Y-%m")
+		ano  = fecha_anterior.year
+		mes  = fecha_anterior.month
 
-	from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api
 
-	rcv_api.descargar_rcv_todos(periodo)
+		rcv_api.descargar_rcv_todos(periodo)
 
-	for fila in (cfg.get("tabla_rcv_empresas") or []):
-		if fila.descargar_honorarios:
-			try:
-				bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
-			except Exception as e:
-				frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
-			frappe.db.commit()
+		for fila in (cfg.get("tabla_rcv_empresas") or []):
+			if fila.descargar_honorarios:
+				try:
+					bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
+				except Exception as e:
+					frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
+				frappe.db.commit()
 
-	cfg.ultima_ejecucion_libros = now_datetime()
-	cfg.save(ignore_permissions=True)
-	frappe.db.commit()
+		cfg.ultima_ejecucion_libros = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_libros", frappe.get_traceback())
 
 
 def _disparar_webhook(nombre, url, payload):
