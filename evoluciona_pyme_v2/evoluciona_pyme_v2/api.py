@@ -1013,6 +1013,12 @@ def preparar_datos_pdf(**kwargs):
         decl.pdf_generado_flag = 1
         decl.fecha_pdf_generado = frappe.utils.now_datetime()
         decl.save(ignore_permissions=True)
+
+        # Avanzar el estado a "PDF Generado" (a menos que ya esté más adelante en
+        # el flujo, ej. si se regenera el PDF de una declaración ya publicada/enviada).
+        if decl.estado not in ("Publicado", "Enviado"):
+            frappe.db.set_value("Declaracion_Mensual", declaracion_name, "estado", "PDF Generado")
+
         frappe.db.commit()
 
         frappe.response['message'] = {

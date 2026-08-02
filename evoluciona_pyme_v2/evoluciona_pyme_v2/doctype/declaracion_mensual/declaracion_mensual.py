@@ -35,7 +35,7 @@ class Declaracion_Mensual(Document):
 
 	def actualizar_estado_declaracion(self):
 		# No sobreescribir estados especiales gestionados manualmente
-		if self.estado in ("Publicado", "Enviado"):
+		if self.estado in ("Publicado", "Enviado", "PDF Generado"):
 			return
 
 		check_rrhh = 1 if self.get('check_gasto_rem_cargado') else 0
