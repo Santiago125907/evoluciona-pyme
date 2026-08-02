@@ -37,3 +37,7 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
 
 - Commits en español, descriptivos, explicando el *por qué* cuando no es obvio.
 - No commitear `site_config.json`, tokens, ni credenciales — nunca deben vivir en el repo de la app.
+- Al terminar de trabajar una rama `feature/xxx` y antes de abrir el PR: escribir un resumen breve
+  (causa del problema, qué se cambió, cómo se probó, pendientes) y entregárselo al usuario para que lo
+  pegue como descripción del PR. No commitear ese resumen dentro del repo de la app — es contenido del
+  PR, no código del proyecto.
