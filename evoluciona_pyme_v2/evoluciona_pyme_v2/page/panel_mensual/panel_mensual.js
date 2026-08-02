@@ -75,9 +75,13 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .pm-table tr.pm-hidden { display:none; }
 
         /* ── Fila expandida ─────────────────────────────────────────── */
-        .pm-expand-toggle { display:inline-block; width:14px; cursor:pointer; color:#999; font-size:10px;
-                             transition:transform .15s; user-select:none; }
-        .pm-expand-toggle.open { transform:rotate(90deg); color:#005f6b; }
+        .pm-expand-toggle { display:inline-flex; align-items:center; gap:3px; cursor:pointer; user-select:none;
+                             background:#e8f0f2; color:#005f6b; border:1px solid #cfe0e3; border-radius:12px;
+                             padding:2px 8px; font-size:10px; font-weight:700; margin-bottom:3px; }
+        .pm-expand-toggle:hover { background:#d7e6e9; }
+        .pm-expand-toggle .arrow { transition:transform .15s; display:inline-block; }
+        .pm-expand-toggle.open .arrow { transform:rotate(90deg); }
+        .pm-expand-toggle.open { background:#005f6b; color:#fff; border-color:#005f6b; }
         .pm-detail-row td { background:#f4f7f9; padding:16px 20px; border-bottom:2px solid #dde3e8; }
         .pm-detail-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
         .pm-detail-card { background:#fff; border-radius:8px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
@@ -667,7 +671,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}">
                 <td><input class="pm-chk" type="checkbox" data-cliente="${esc(c.name)}" data-doc="${d?esc(d.name):''}" onchange="pm_chk_change()"></td>
                 <td>
-                    <span class="pm-expand-toggle" data-cliente="${esc(c.name)}" title="Ver más">▸</span>
+                    <span class="pm-expand-toggle" data-cliente="${esc(c.name)}" title="Ver más"><span class="arrow">▶</span> Ver más</span><br>
                     <a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
                     <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small>
                 </td>
