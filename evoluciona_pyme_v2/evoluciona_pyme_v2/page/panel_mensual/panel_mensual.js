@@ -134,7 +134,8 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     </div>`);
 
     // ── Estado global ─────────────────────────────────────────────────────────
-    let _clientes = [], _dec_map = {}, _cobro_map = {}, _f29_map = {}, _remu_map = {}, _post_map = {}, _ano, _mes;
+    let _clientes = [], _dec_map = {}, _cobro_map = {}, _cobro_pendiente_map = {}, _f29_map = {}, _remu_map = {},
+        _post_map = {}, _post_vence_map = {}, _ano, _mes;
 
     // ── Cargar datos ──────────────────────────────────────────────────────────
     // Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos del
@@ -230,31 +231,65 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                                 _cobro_map = {};
                                 (r3.message||[]).forEach(c => _cobro_map[c.cliente] = c);
 
+                                // Todas las cobranzas pendientes del cliente, no solo las de este período.
                                 frappe.call({
-                                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_f29_panel_data',
-                                    args: { ano:_ano, mes:_mes },
-                                    callback(r4) {
-                                        _f29_map = r4.message || {};
-                                        frappe.call({
-                                            method: 'frappe.client.get_list',
-                                            args: { doctype:'Registro_Remuneraciones',
-                                                    filters:{ano:_ano, mes:_mes},
-                                                    fields:['name','cliente','total_previred_a_pagar'],
-                                                    limit_page_length:300, ignore_permissions:1 },
-                                            callback(r5) {
-                                                _remu_map = {};
-                                                (r5.message||[]).forEach(r => _remu_map[r.cliente] = r);
+                                    method: 'frappe.client.get_list',
+                                    args: { doctype:'Cobranza_Cliente',
+                                            filters:{estado_cobranza:['not in', ['Pagado','Anulado']]},
+                                            fields:['cliente','monto_a_cobrar','estado_cobranza'],
+                                            limit_page_length:1000, ignore_permissions:1 },
+                                    callback(r3b) {
+                                        _cobro_pendiente_map = {};
+                                        (r3b.message||[]).forEach(c => {
+                                            const acc = _cobro_pendiente_map[c.cliente] || {monto:0, n:0};
+                                            acc.monto += parseFloat(c.monto_a_cobrar||0);
+                                            acc.n += 1;
+                                            _cobro_pendiente_map[c.cliente] = acc;
+                                        });
 
+                                        frappe.call({
+                                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_f29_panel_data',
+                                            args: { ano:_ano, mes:_mes },
+                                            callback(r4) {
+                                                _f29_map = r4.message || {};
                                                 frappe.call({
                                                     method: 'frappe.client.get_list',
-                                                    args: { doctype:'Postergacion_IVA',
-                                                            filters:{ano_origen:_ano, mes_origen:_mes},
-                                                            fields:['name','cliente','estado','monto_postergado'],
+                                                    args: { doctype:'Registro_Remuneraciones',
+                                                            filters:{ano:_ano, mes:_mes},
+                                                            fields:['name','cliente','total_previred_a_pagar'],
                                                             limit_page_length:300, ignore_permissions:1 },
-                                                    callback(r6) {
-                                                        _post_map = {};
-                                                        (r6.message||[]).forEach(p => _post_map[p.cliente] = p);
-                                                        renderizar();
+                                                    callback(r5) {
+                                                        _remu_map = {};
+                                                        (r5.message||[]).forEach(r => _remu_map[r.cliente] = r);
+
+                                                        frappe.call({
+                                                            method: 'frappe.client.get_list',
+                                                            args: { doctype:'Postergacion_IVA',
+                                                                    filters:{ano_origen:_ano, mes_origen:_mes},
+                                                                    fields:['name','cliente','estado','monto_postergado'],
+                                                                    limit_page_length:300, ignore_permissions:1 },
+                                                            callback(r6) {
+                                                                _post_map = {};
+                                                                (r6.message||[]).forEach(p => _post_map[p.cliente] = p);
+
+                                                                // Postergaciones que vencen (hay que pagarlas) justo en el período seleccionado.
+                                                                frappe.call({
+                                                                    method: 'frappe.client.get_list',
+                                                                    args: { doctype:'Postergacion_IVA',
+                                                                            filters:{ano_f29_pagado:_ano, mes_f29_pagado:_mes,
+                                                                                     estado:['not in', ['Pagada']]},
+                                                                            fields:['cliente','monto_postergado'],
+                                                                            limit_page_length:300, ignore_permissions:1 },
+                                                                    callback(r7) {
+                                                                        _post_vence_map = {};
+                                                                        (r7.message||[]).forEach(p => {
+                                                                            _post_vence_map[p.cliente] = (_post_vence_map[p.cliente]||0) + parseFloat(p.monto_postergado||0);
+                                                                        });
+                                                                        renderizar();
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
                                                     }
                                                 });
                                             }
@@ -338,9 +373,11 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 </div>`;
             })();
 
-            const cobro_html = co
-                ? `<div class="cobro-monto">$${fmt_num(co.monto_a_cobrar)}</div>
-                   <div class="cobro-est">${co.estado_cobranza||'Pendiente'}</div>`
+            // Cobranza: todo lo pendiente del cliente (no solo lo de este período).
+            const cobro_pend = _cobro_pendiente_map[c.name];
+            const cobro_html = cobro_pend
+                ? `<div class="cobro-monto">$${fmt_num(cobro_pend.monto)}</div>
+                   <div class="cobro-est">${cobro_pend.n>1 ? cobro_pend.n+' pendientes' : 'Pendiente'}</div>`
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación de IVA: ¿el cliente postergó el pago de este período?
@@ -350,10 +387,14 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 ? `<span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};" title="Postergado: $${fmt_num(post.monto_postergado||0)}">${esc(post.estado)}</span>`
                 : '<span style="color:#ddd">—</span>';
 
-            const total_mes = (f29_pagar !== null ? f29_pagar : 0) + (prev_monto !== null ? prev_monto : 0);
-            const total_html = (f29_pagar !== null || prev_monto !== null)
+            // Postergación que vence (hay que pagarla) justo este período.
+            const post_vence = _post_vence_map[c.name] || 0;
+
+            const total_mes = (f29_pagar !== null ? f29_pagar : 0) + (prev_monto !== null ? prev_monto : 0)
+                             + (cobro_pend ? cobro_pend.monto : 0) + post_vence;
+            const total_html = (f29_pagar !== null || prev_monto !== null || cobro_pend || post_vence)
                 ? `<div style="font-size:12px;font-weight:800;color:#1a3a4a;">$${fmt_num(total_mes)}</div>
-                   <div style="font-size:9px;color:#aaa;">F29+Prev</div>`
+                   <div style="font-size:9px;color:#aaa;">F29+Prev+Cobr${post_vence ? '+Post' : ''}</div>`
                 : '<span style="color:#ddd">—</span>';
 
             const acciones = d ? gen_acciones(d, c, co) : gen_sin_dec(c);
