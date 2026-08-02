@@ -84,7 +84,7 @@ def dispatcher_libros():
 		ano  = fecha_anterior.year
 		mes  = fecha_anterior.month
 
-		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api, sii_gateway
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api, sii_gateway, api as evo_api
 
 		rcv_api.descargar_rcv_todos(periodo)
 
@@ -100,6 +100,18 @@ def dispatcher_libros():
 				sii_gateway.actualizar_remanente_cliente(fila.empresa, ano, mes)
 			except Exception as e:
 				frappe.log_error(str(e), f"Remanente F29 {fila.empresa}")
+			frappe.db.commit()
+
+			# Con libros y remanente ya al día, calcular el F29 del período.
+			try:
+				f29_name = frappe.db.get_value(
+					"Borrador_F29", {"cliente": fila.empresa, "ano": str(ano), "mes": str(mes)}, "name"
+				)
+				if f29_name:
+					frappe.form_dict["doc_name"] = f29_name
+					evo_api.recalcular_asistente_f29()
+			except Exception as e:
+				frappe.log_error(str(e), f"Calculo F29 {fila.empresa}")
 			frappe.db.commit()
 
 		cfg.ultima_ejecucion_libros = now_datetime()
