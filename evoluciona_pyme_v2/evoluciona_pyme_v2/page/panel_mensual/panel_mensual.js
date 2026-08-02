@@ -320,6 +320,24 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     </div>`
                     : '';
 
+                const ESTADOS_PAGO = ['Pendiente de Pago','Pagado','Postergado','Vencido sin Pagar'];
+                const select_estado = (doctype, name, valor_actual) => `
+                    <select class="form-control" style="font-size:12px;padding:3px 6px;height:auto;"
+                            onchange="pm_set_estado_pago('${doctype}','${name}',this.value)">
+                        ${ESTADOS_PAGO.map(v => `<option value="${v}" ${v===valor_actual?'selected':''}>${v}</option>`).join('')}
+                    </select>`;
+
+                const f29_data = f29_name ? _f29_map[f29_name] : null;
+                const estado_pago_html = (f29_name || tiene_previred_este_mes)
+                    ? `<div class="pm-detail-card">
+                        <h5>Estado de Pago</h5>
+                        ${f29_name ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">F29</span>
+                            ${select_estado('Borrador_F29', f29_name, f29_data ? f29_data.estado_pago_f29 : 'Pendiente de Pago')}</div>` : ''}
+                        ${tiene_previred_este_mes ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Previred</span>
+                            ${select_estado('Registro_Remuneraciones', remu.name, remu.estado_pago_previred || 'Pendiente de Pago')}</div>` : ''}
+                    </div>`
+                    : '';
+
                 const import_html = `
                     <div class="pm-detail-card">
                         <h5>Cargar Documentos — ${_mes}/${_ano}</h5>
@@ -336,7 +354,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                         <button class="pm-import-btn" onclick="pm_ver_cobranzas_pendientes('${cliente}')">💰 Ver cobranzas pendientes</button>
                     </div>`;
 
-                $detalle.find('td').html(`<div class="pm-detail-grid">${sii_html}${previred_html}${import_html}${cobranza_html}</div>`);
+                $detalle.find('td').html(`<div class="pm-detail-grid">${sii_html}${previred_html}${estado_pago_html}${import_html}${cobranza_html}</div>`);
             }
         });
     }
@@ -432,6 +450,14 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         });
     };
 
+    window.pm_set_estado_pago = function(doctype, name, valor) {
+        frappe.call({
+            method: 'frappe.client.set_value',
+            args: { doctype, name, fieldname: doctype === 'Borrador_F29' ? 'estado_pago_f29' : 'estado_pago_previred', value: valor },
+            callback() { frappe.show_alert({message:`✅ ${valor}`, indicator:'green'}, 2); }
+        });
+    };
+
     function cargar_panel() {
         _ano = sel_ano.get_value();
         _mes = sel_mes.get_value();
@@ -493,7 +519,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                                                     method: 'frappe.client.get_list',
                                                     args: { doctype:'Registro_Remuneraciones',
                                                             filters:{ano:_ano, mes:_mes},
-                                                            fields:['name','cliente','total_previred_a_pagar'],
+                                                            fields:['name','cliente','total_previred_a_pagar','estado_pago_previred'],
                                                             limit_page_length:300, ignore_permissions:1 },
                                                     callback(r5) {
                                                         _remu_map = {};

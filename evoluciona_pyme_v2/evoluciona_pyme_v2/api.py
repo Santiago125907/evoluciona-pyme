@@ -2119,6 +2119,7 @@ def get_f29_panel_data(ano, mes):
             f.subtotal_otros_impuestos,
             f.impuesto_determinado,
             f.total_a_pagar_f29,
+            f.estado_pago_f29,
             SUM(CASE WHEN i.codigo_f29 = '151' THEN i.monto ELSE 0 END) AS honorarios_a_pagar,
             SUM(CASE WHEN i.codigo_f29 = '62'  THEN i.monto ELSE 0 END) AS ppm_a_pagar
         FROM `tabBorrador_F29` f
