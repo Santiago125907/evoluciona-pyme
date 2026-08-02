@@ -306,13 +306,19 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                         ${cred.rut_sii ? `<a class="pm-open-btn" href="https://zeusr.sii.cl/AUT2000/InicioAutenticacion/IngresoRutClave.html" target="_blank">Abrir SII ↗</a>` : ''}
                     </div>`;
 
-                const previred_html = `
-                    <div class="pm-detail-card">
+                // Solo se muestra si el cliente tiene obligación real de Previred este
+                // período (monto > 0) -- tener las credenciales guardadas no basta, puede
+                // no tener empleados ese mes.
+                const remu = _remu_map[cliente];
+                const tiene_previred_este_mes = remu && parseFloat(remu.total_previred_a_pagar || 0) > 0;
+                const previred_html = tiene_previred_este_mes
+                    ? `<div class="pm-detail-card">
                         <h5>Acceso Previred</h5>
                         ${fila_copiable('RUT', cred.rut_previred, `prev-rut-${cliente}`)}
                         ${fila_copiable('Clave', cred.clave_previred, `prev-clave-${cliente}`)}
                         ${cred.rut_previred ? `<a class="pm-open-btn" href="https://www.previred.com" target="_blank">Abrir Previred ↗</a>` : ''}
-                    </div>`;
+                    </div>`
+                    : '';
 
                 const import_html = `
                     <div class="pm-detail-card">
