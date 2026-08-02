@@ -32,6 +32,15 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
   backup --with-files`).
 - Confiar en el flujo estándar de Frappe (sync por timestamp + `fixtures` declarado en `hooks.py`) en vez de
   forzar sincronizaciones manuales.
+- **Ojo con el campo `modified` del JSON de cada DocType.** Frappe decide si sincroniza un DocType comparando
+  ese timestamp contra la DB — si se edita el `.json` a mano (fuera del Desk en developer mode, que es lo que
+  normalmente lo actualiza solo) sin tocar `modified`, el campo nuevo queda en el archivo pero `bench migrate`
+  lo salta para siempre pensando que no cambió nada. Pasó con `publicado_portal` en Declaracion_Mensual y otros
+  3 campos en otros DocTypes (agosto 2026) — la columna ya existía en la tabla pero no estaba registrada como
+  campo del DocType, y el código que la usaba tiraba `AttributeError`. Se arregló puntualmente con
+  `bench --site comando.evolucionapyme.cl reload-doctype "<DocType>"` para cada uno (seguro: solo agrega
+  metadata, no toca columnas que ya existen). Si un campo nuevo no aparece después de un migrate, sospechar de
+  esto antes que nada.
 
 ## Convenciones
 

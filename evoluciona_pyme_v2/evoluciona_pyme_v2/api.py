@@ -1942,19 +1942,26 @@ def crear_declaraciones_periodo(cliente, mes, ano):
 
 
 @frappe.whitelist()
-def procesar_mes_actual():
+def procesar_mes_actual(mes=None, ano=None):
     """
     Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos
-    en el período del mes anterior (misma lógica que el cron mensual).
-    Idempotente — omite los que ya existen.
-    Llamado manualmente desde el Workspace para procesar clientes nuevos.
+    en el período indicado (por defecto, el mes anterior — misma lógica que
+    el cron mensual). Idempotente — omite los que ya existen.
+    Llamado manualmente desde el botón "Crear Todas" del Panel Mensual, o
+    para el período que se le pase (ej: para ponerse al día con un mes
+    que el cron automático no haya generado).
     """
-    from frappe.utils import add_months, getdate, nowdate
+    from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import _get_rol_usuario
+    if _get_rol_usuario() != "admin":
+        frappe.throw("Sin permiso para ejecutar esta acción.")
 
-    hoy           = getdate(nowdate())
-    fecha_periodo = add_months(hoy, -1)
-    mes           = str(fecha_periodo.month)
-    ano           = str(fecha_periodo.year)
+    if not mes or not ano:
+        from frappe.utils import add_months, getdate, nowdate
+        fecha_periodo = add_months(getdate(nowdate()), -1)
+        mes = str(fecha_periodo.month)
+        ano = str(fecha_periodo.year)
+    else:
+        mes, ano = str(mes), str(ano)
 
     clientes = frappe.get_all(
         "Ficha_Cliente",

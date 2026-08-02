@@ -32,6 +32,17 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
     page.add_button('Cargar', cargar_panel, {btn_class: 'btn-primary'});
 
+    // "Crear Todas" — creación masiva para el período seleccionado arriba.
+    // Solo visible para rol admin: crea registros reales para todos los clientes.
+    let btn_crear_todas = page.add_button('🗓️ Crear Todas', crear_todas_periodo, {btn_class: 'btn-default'});
+    btn_crear_todas.hide();
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_rol_usuario',
+        callback(r) {
+            if (r.message === 'admin') btn_crear_todas.show();
+        }
+    });
+
     // ── HTML base ─────────────────────────────────────────────────────────────
     $(wrapper).find('.page-content').append(`
     <style>
@@ -121,6 +132,35 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     let _clientes = [], _dec_map = {}, _cobro_map = {}, _f29_map = {}, _remu_map = {}, _ano, _mes;
 
     // ── Cargar datos ──────────────────────────────────────────────────────────
+    // Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos del
+    // período seleccionado (año/mes de arriba). Idempotente — no duplica lo que ya existe.
+    function crear_todas_periodo() {
+        if (!_ano || !_mes) { frappe.msgprint('Selecciona un período primero.'); return; }
+
+        frappe.confirm(
+            `Esto va a crear la Declaración Mensual y el Borrador F29 de <b>${_mes}/${_ano}</b> para ` +
+            `todos los clientes activos que todavía no lo tengan. No duplica los que ya existen. ¿Continuar?`,
+            () => {
+                frappe.dom.freeze(`Creando declaraciones de ${_mes}/${_ano}...`);
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.procesar_mes_actual',
+                    args: { mes: _mes, ano: _ano },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        frappe.msgprint({
+                            title: __('Listo'),
+                            indicator: res.errores ? 'orange' : 'green',
+                            message: res.message || 'Proceso terminado.'
+                        });
+                        cargar_panel();
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        );
+    }
+
     function cargar_panel() {
         _ano = sel_ano.get_value();
         _mes = sel_mes.get_value();
