@@ -41,6 +41,14 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
   `bench --site comando.evolucionapyme.cl reload-doctype "<DocType>"` para cada uno (seguro: solo agrega
   metadata, no toca columnas que ya existen). Si un campo nuevo no aparece después de un migrate, sospechar de
   esto antes que nada.
+- **El mismo problema aplica a las Pages del Desk** (ej. `panel_mensual.json`, `panel_app.json`): el campo
+  `modified` de esos JSON controla el cache-busting del script de la página. Si editas el `.js` de una Page
+  y el cambio "no aparece" pese a `bench build` + reiniciar procesos, sospecha de esto primero: bumpear
+  `modified` en el `.json` de la Page y correr `frappe.reload_doc("evoluciona_pyme_v2", "page", "<nombre>", force=True)`
+  puntual para esa página (en consola), más `bench clear-cache`.
+- **Después de editar cualquier `.py` del backend** (hooks, tasks, api, etc.): hace falta reiniciar los
+  procesos de supervisor (`frappe-bench-web`, los `frappe-bench-workers`) además de comitear — el código
+  Python vive en memoria en los workers y no se recarga solo. `bench build` es solo para JS/CSS.
 
 ## Convenciones
 

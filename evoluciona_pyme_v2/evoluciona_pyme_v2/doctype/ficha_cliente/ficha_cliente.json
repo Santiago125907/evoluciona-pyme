@@ -5,7 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "informaci\u00f3n_principal_section",
+  "información_principal_section",
   "razon_social",
   "rut_cliente",
   "asesor_asignado",
@@ -28,7 +28,7 @@
   "habilitar_portal",
   "estado_portal",
   "fecha_creacion_portal",
-  "informaci\u00f3n_tributaria_y_operativa_section",
+  "información_tributaria_y_operativa_section",
   "tipo_contabilidad",
   "tasa_ppm",
   "fecha_inicio_actividades",
@@ -54,7 +54,7 @@
   "clave_dt",
   "panel_de_control_mensual_tab",
   "panel_control_mensual",
-  "facturaci\u00f3n_y_cobranza_tab",
+  "facturación_y_cobranza_tab",
   "panel_facturacion_cobranza",
   "condiciones_del_servicio_tab",
   "seccion_cobros",
@@ -85,9 +85,9 @@
  ],
  "fields": [
   {
-   "fieldname": "informaci\u00f3n_principal_section",
+   "fieldname": "información_principal_section",
    "fieldtype": "Section Break",
-   "label": "Informaci\u00f3n Principal"
+   "label": "Información Principal"
   },
   {
    "fieldname": "asesor_asignado",
@@ -102,14 +102,14 @@
    "description": "Activar para ocultar datos bancarios, footer y hoja promocional en el PDF",
    "fieldname": "pdf_modo_basico",
    "fieldtype": "Check",
-   "label": "PDF B\u00e1sico"
+   "label": "PDF Básico"
   },
   {
    "description": "Nombre de empresa",
    "fieldname": "razon_social",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Raz\u00f3n Social",
+   "label": "Razón Social",
    "no_copy": 1,
    "reqd": 1
   },
@@ -153,7 +153,7 @@
   {
    "fieldname": "direccion_fiscal",
    "fieldtype": "Data",
-   "label": "Direcci\u00f3n Fiscal"
+   "label": "Dirección Fiscal"
   },
   {
    "fieldname": "comuna",
@@ -214,22 +214,22 @@
   {
    "fieldname": "fecha_creacion_portal",
    "fieldtype": "Datetime",
-   "label": "Fecha Creaci\u00f3n Portal",
+   "label": "Fecha Creación Portal",
    "read_only": 1
   },
   {
-   "fieldname": "informaci\u00f3n_tributaria_y_operativa_section",
+   "fieldname": "información_tributaria_y_operativa_section",
    "fieldtype": "Section Break",
-   "label": "Informaci\u00f3n Tributaria y Operativa"
+   "label": "Información Tributaria y Operativa"
   },
   {
    "fieldname": "tipo_contabilidad",
    "fieldtype": "Select",
    "label": "Tipo de Contabilidad",
-   "options": "Simplificada\nCompleta B\u00e1sica"
+   "options": "Simplificada\nCompleta Básica"
   },
   {
-   "description": "Tasa de PPM para el c\u00e1lculo mensual",
+   "description": "Tasa de PPM para el cálculo mensual",
    "fieldname": "tasa_ppm",
    "fieldtype": "Percent",
    "label": "Tasa PPM (%)"
@@ -241,7 +241,7 @@
   {
    "fieldname": "regimen_tributario",
    "fieldtype": "Select",
-   "label": "R\u00e9gimen Tributario",
+   "label": "Régimen Tributario",
    "options": "Pro Pyme General\nPro Pyme Transparente\nRenta Presunta\nGeneral (Semi Integrado)"
   },
   {
@@ -249,7 +249,7 @@
    "description": "Desmarcar para clientes con giro 100% exento: el IVA pagado en compras se trata como costo empresa.",
    "fieldname": "usa_iva_credito",
    "fieldtype": "Check",
-   "label": "Usa IVA Cr\u00e9dito Fiscal"
+   "label": "Usa IVA Crédito Fiscal"
   },
   {
    "fieldname": "segmento_empresa",
@@ -358,9 +358,9 @@
    "fieldtype": "HTML"
   },
   {
-   "fieldname": "facturaci\u00f3n_y_cobranza_tab",
+   "fieldname": "facturación_y_cobranza_tab",
    "fieldtype": "Tab Break",
-   "label": "Facturaci\u00f3n y Cobranza"
+   "label": "Facturación y Cobranza"
   },
   {
    "fieldname": "panel_facturacion_cobranza",
@@ -440,13 +440,13 @@
   {
    "fieldname": "carga_historica_tab",
    "fieldtype": "Tab Break",
-   "label": "Carga Hist\u00f3rica"
+   "label": "Carga Histórica"
   },
   {
    "fieldname": "panel_carga_historica",
    "fieldtype": "HTML",
-   "label": "Panel Carga Hist\u00f3rica",
-   "options": "<div id=\"panel-carga-historica\" style=\"padding:20px 0;\">\n  <div style=\"background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:20px 24px;max-width:640px;\">\n    <h5 style=\"margin:0 0 4px;color:#333;font-weight:600;\">Carga Hist\u00f3rica</h5>\n    <p style=\"margin:0 0 16px;font-size:12px;color:#888;\">Selecciona el per\u00edodo y usa los botones seg\u00fan lo que necesites.</p>\n    <div style=\"display:flex;gap:16px;margin-bottom:20px;align-items:flex-end;\">\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">A\u00f1o</label>\n        <select id=\"ch-ano\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">\u2014 A\u00f1o \u2014</option>\n          <option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option>\n        </select>\n      </div>\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Mes</label>\n        <select id=\"ch-mes\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">\u2014 Mes \u2014</option>\n          <option value=\"1\">Enero</option><option value=\"2\">Febrero</option><option value=\"3\">Marzo</option>\n          <option value=\"4\">Abril</option><option value=\"5\">Mayo</option><option value=\"6\">Junio</option>\n          <option value=\"7\">Julio</option><option value=\"8\">Agosto</option><option value=\"9\">Septiembre</option>\n          <option value=\"10\">Octubre</option><option value=\"11\">Noviembre</option><option value=\"12\">Diciembre</option>\n        </select>\n      </div>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Crear declaraciones</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;\">\n      <button onclick=\"ch_crear_declaraciones()\" style=\"background:#1a6e3c;color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udccb Crear Declaracion Mensual + F29</button>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Importar documentos tributarios</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;\">\n      <button onclick=\"ch_importar('compras')\" style=\"background:#e67e22;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Compras</button>\n      <button onclick=\"ch_importar('ventas')\" style=\"background:#27ae60;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Ventas</button>\n      <button onclick=\"ch_importar('honorarios')\" style=\"background:#8e44ad;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 Honorarios</button>\n      <button onclick=\"ch_importar('lre')\" style=\"background:#2980b9;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">\ud83d\udce5 LRE (Previred)</button>\n    </div>\n  </div>\n</div>"
+   "label": "Panel Carga Histórica",
+   "options": "<div id=\"panel-carga-historica\" style=\"padding:20px 0;\">\n  <div style=\"background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:20px 24px;max-width:640px;\">\n    <h5 style=\"margin:0 0 4px;color:#333;font-weight:600;\">Carga Histórica</h5>\n    <p style=\"margin:0 0 16px;font-size:12px;color:#888;\">Selecciona el período y usa los botones según lo que necesites.</p>\n    <div style=\"display:flex;gap:16px;margin-bottom:20px;align-items:flex-end;\">\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Año</label>\n        <select id=\"ch-ano\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Año —</option>\n          <option>2023</option><option>2024</option><option>2025</option><option>2026</option><option>2027</option>\n        </select>\n      </div>\n      <div style=\"flex:1;\">\n        <label style=\"font-size:12px;color:#666;display:block;margin-bottom:4px;\">Mes</label>\n        <select id=\"ch-mes\" style=\"width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;\">\n          <option value=\"\">— Mes —</option>\n          <option value=\"1\">Enero</option><option value=\"2\">Febrero</option><option value=\"3\">Marzo</option>\n          <option value=\"4\">Abril</option><option value=\"5\">Mayo</option><option value=\"6\">Junio</option>\n          <option value=\"7\">Julio</option><option value=\"8\">Agosto</option><option value=\"9\">Septiembre</option>\n          <option value=\"10\">Octubre</option><option value=\"11\">Noviembre</option><option value=\"12\">Diciembre</option>\n        </select>\n      </div>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Crear declaraciones</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;\">\n      <button onclick=\"ch_crear_declaraciones()\" style=\"background:#1a6e3c;color:#fff;border:none;border-radius:5px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;\">📋 Crear Declaracion Mensual + F29</button>\n    </div>\n    <p style=\"font-size:11px;color:#999;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;\">Importar documentos tributarios</p>\n    <div style=\"display:flex;flex-wrap:wrap;gap:10px;\">\n      <button onclick=\"ch_importar('compras')\" style=\"background:#e67e22;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Compras</button>\n      <button onclick=\"ch_importar('ventas')\" style=\"background:#27ae60;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Ventas</button>\n      <button onclick=\"ch_importar('honorarios')\" style=\"background:#8e44ad;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 Honorarios</button>\n      <button onclick=\"ch_importar('lre')\" style=\"background:#2980b9;color:#fff;border:none;border-radius:5px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;\">📥 LRE (Previred)</button>\n    </div>\n  </div>\n</div>"
   },
   {
    "fieldname": "drive_tab",
@@ -459,7 +459,7 @@
    "label": "Carpeta Declaraciones"
   },
   {
-   "description": "ID de la carpeta ra\u00edz del cliente en Google Drive",
+   "description": "ID de la carpeta raíz del cliente en Google Drive",
    "fieldname": "drive_folder_id_display",
    "fieldtype": "Data",
    "label": "ID Carpeta Declaraciones",
@@ -519,16 +519,16 @@
    "label": "Nombre del Asesor / Contador"
   },
   {
-   "description": "Ej: 56912345678 \u2014 sin +, sin espacios",
+   "description": "Ej: 56912345678 — sin +, sin espacios",
    "fieldname": "whatsapp_asesor",
    "fieldtype": "Data",
-   "label": "WhatsApp del Asesor (con c\u00f3digo pa\u00eds)"
+   "label": "WhatsApp del Asesor (con código país)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 12:00:57.358203",
+ "modified": "2026-08-02 10:41:36.365115",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Ficha_Cliente",

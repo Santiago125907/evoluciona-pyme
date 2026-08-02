@@ -681,77 +681,56 @@ function marcar_check(doc_name, field_name, frm) {
 // FUNCIÓN: GENERAR PDF
 // ===================================================================
 function generar_pdf_declaracion(doc_name, frm) {
-    
-    // Confirmación
-    frappe.confirm(
-        '¿Generar el Informe Mensual en PDF?<br><br>' +
-        '<small>Este proceso creará un PDF profesional con:<br>' +
-        '• Resumen de pagos (2 opciones)<br>' +
-        '• Análisis financiero del mes<br>' +
-        '• Desglose de ventas y gastos<br>' +
-        '• Detalle tributario (F29 + RRHH)<br>' +
-        '• Programa de socios</small>',
-        function() {
-            
-            // Mostrar progreso
-            frappe.show_alert({
-                message: 'Generando PDF en Google Drive...',
-                indicator: 'blue'
-            }, 5);
-            
-            // Llamar API para generar PDF
-            frappe.call({
-                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
-                args: {
-                    declaracion_name: doc_name
-                },
-                freeze: true,
-                freeze_message: __('Generando PDF... Por favor espera (puede tomar 30-60 segundos)'),
-                callback: function(r) {
-                    
-                    if (r.message && r.message.status === 'success') {
-                        
-                        frappe.show_alert({
-                            message: '✅ PDF generado exitosamente en Google Drive',
-                            indicator: 'green'
-                        }, 5);
-                        
-                        // Refrescar panel
-                        setTimeout(function() {
-                            renderizar_panel_declaraciones(frm);
-                        }, 1000);
-                        
-                        // Si hay URL del PDF, ofrecer abrirlo
-                        if (r.message.pdf_url) {
-                            frappe.confirm(
-                                '¿Deseas abrir el PDF en Google Drive?',
-                                function() {
-                                    window.open(r.message.pdf_url, '_blank');
-                                }
-                            );
-                        }
-                        
-                    } else if (r.message && r.message.status === 'error') {
-                        
-                        frappe.msgprint({
-                            title: 'Error al generar PDF',
-                            message: r.message.message || 'Error desconocido',
-                            indicator: 'red'
-                        });
-                        
-                    }
-                },
-                error: function(err) {
-                    console.error('Error en generar_pdf_declaracion:', err);
-                    frappe.msgprint({
-                        title: 'Error',
-                        message: 'Ocurrió un error al generar el PDF. Revisa la consola.',
-                        indicator: 'red'
-                    });
+
+    frappe.show_alert({
+        message: 'Generando PDF en Google Drive...',
+        indicator: 'blue'
+    }, 5);
+
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
+        args: {
+            declaracion_name: doc_name
+        },
+        freeze: true,
+        freeze_message: __('Generando PDF... Por favor espera (puede tomar 30-60 segundos)'),
+        callback: function(r) {
+
+            if (r.message && r.message.status === 'success') {
+
+                frappe.show_alert({
+                    message: '✅ PDF generado exitosamente en Google Drive',
+                    indicator: 'green'
+                }, 5);
+
+                // Refrescar panel
+                setTimeout(function() {
+                    renderizar_panel_declaraciones(frm);
+                }, 1000);
+
+                if (r.message.pdf_url) {
+                    window.open(r.message.pdf_url, '_blank');
                 }
+
+            } else if (r.message && r.message.status === 'error') {
+
+                frappe.msgprint({
+                    title: 'Error al generar PDF',
+                    message: r.message.message || 'Error desconocido',
+                    indicator: 'red'
+                });
+
+            }
+        },
+        error: function(err) {
+            console.error('Error en generar_pdf_declaracion:', err);
+            frappe.msgprint({
+                title: 'Error',
+                message: 'Ocurrió un error al generar el PDF. Revisa la consola.',
+                indicator: 'red'
             });
         }
-    );
+    });
 }
 
 // ===================================================================
@@ -761,13 +740,6 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
     
     
     
-    // Mensaje de confirmación
-    let mensaje_confirmacion = es_reenvio 
-        ? '¿Reenviar declaración al cliente por Email y WhatsApp?<br><br><small>Se enviará nuevamente el PDF con el resumen del mes.</small>'
-        : '¿Enviar declaración al cliente por Email y WhatsApp?<br><br><small>Se enviará el PDF con el resumen financiero del mes.<br>Este proceso puede tomar 10-20 segundos.</small>';
-    
-    frappe.confirm(mensaje_confirmacion, function() {
-        
         // PASO 1: Obtener datos de la Declaracion_Mensual
         frappe.call({
             method: 'frappe.client.get',
@@ -986,7 +958,6 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
                 });
             }
         });
-    });
 }
 
 // ===================================================================
@@ -1031,27 +1002,22 @@ function reenviar_declaracion(doc_name, frm) {
 // ===================================================================
 function publicar_declaracion(doc_name, estado, frm) {
     const ya_publicado = estado === 'Publicado';
-    const msg = ya_publicado
-        ? '¿Despublicar esta declaración del portal del cliente?'
-        : '¿Publicar esta declaración en el portal del cliente? Se enviará notificación push.';
 
-    frappe.confirm(msg, function() {
-        frappe.show_alert({ message: 'Procesando...', indicator: 'blue' }, 2);
-        frappe.call({
-            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
-            args: { doc_name: doc_name },
-            callback: function(res) {
-                if (res.message && res.message.status === 'ok') {
-                    frappe.show_alert({
-                        message: ya_publicado ? '🔒 Declaración despublicada' : '📱 Declaración publicada en App',
-                        indicator: ya_publicado ? 'orange' : 'green'
-                    }, 4);
-                    setTimeout(function() { renderizar_panel_declaraciones(frm); }, 500);
-                } else {
-                    frappe.msgprint({ title: 'Error', message: (res.message && res.message.error) || 'No se pudo procesar.', indicator: 'red' });
-                }
+    frappe.show_alert({ message: 'Procesando...', indicator: 'blue' }, 2);
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+        args: { doc_name: doc_name },
+        callback: function(res) {
+            if (res.message && res.message.status === 'ok') {
+                frappe.show_alert({
+                    message: ya_publicado ? '🔒 Declaración despublicada' : '📱 Declaración publicada en App',
+                    indicator: ya_publicado ? 'orange' : 'green'
+                }, 4);
+                setTimeout(function() { renderizar_panel_declaraciones(frm); }, 500);
+            } else {
+                frappe.msgprint({ title: 'Error', message: (res.message && res.message.error) || 'No se pudo procesar.', indicator: 'red' });
             }
-        });
+        }
     });
 }
 
