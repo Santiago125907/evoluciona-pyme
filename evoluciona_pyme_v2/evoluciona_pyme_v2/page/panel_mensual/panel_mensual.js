@@ -612,17 +612,15 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             case 'calc-f29':
                 if (!f29) { frappe.msgprint('Sin F29 vinculado.'); break; }
-                frappe.confirm('¿Calcular F29 automáticamente desde documentos tributarios?', () => {
-                    frappe.show_alert({message:'Calculando...', indicator:'blue'}, 3);
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29', args:{doc_name:f29},
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
-                                               indicator: res.status==='ok'?'green':'red'}, 4);
-                            if (res.status==='ok') setTimeout(cargar_panel, 600);
-                        }
-                    });
+                frappe.show_alert({message:'Calculando...', indicator:'blue'}, 3);
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29', args:{doc_name:f29},
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
+                                           indicator: res.status==='ok'?'green':'red'}, 4);
+                        if (res.status==='ok') setTimeout(cargar_panel, 600);
+                    }
                 }); break;
 
             case 'check-rrhh': set_check(doc,'check_gasto_rem_cargado'); break;
@@ -630,18 +628,16 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             case 'check-prev': set_check(doc,'check_previred_cuadrado'); break;
 
             case 'gen-pdf':
-                frappe.confirm('¿Generar PDF del informe mensual?', () => {
-                    frappe.show_alert({message:'Generando PDF...', indicator:'blue'}, 5);
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf', args:{declaracion_name:doc},
-                        freeze:true, freeze_message:'Generando PDF... puede tomar 30-60 segundos',
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message:res.status==='success'?'✅ PDF generado':'Error al generar PDF',
-                                               indicator:res.status==='success'?'green':'red'}, 4);
-                            if (res.status==='success') setTimeout(cargar_panel, 1200);
-                        }
-                    });
+                frappe.show_alert({message:'Generando PDF...', indicator:'blue'}, 5);
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf', args:{declaracion_name:doc},
+                    freeze:true, freeze_message:'Generando PDF... puede tomar 30-60 segundos',
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message:res.status==='success'?'✅ PDF generado':'Error al generar PDF',
+                                           indicator:res.status==='success'?'green':'red'}, 4);
+                        if (res.status==='success') setTimeout(cargar_panel, 1200);
+                    }
                 }); break;
 
             case 'ver-pdf':
@@ -656,43 +652,38 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             case 'enviar':
             case 'reenviar':
-                const es_reenvio = action==='reenviar';
-                frappe.confirm(es_reenvio?'¿Reenviar al cliente?':'¿Enviar declaración al cliente?', () => {
-                    frappe.call({
-                        method:'frappe.client.get', args:{doctype:'Declaracion_Mensual',name:doc},
-                        callback(r_dm) {
-                            frappe.call({
-                                method:'frappe.client.get', args:{doctype:'Ficha_Cliente',name:cliente},
-                                callback(r_cli) {
-                                    frappe.db.get_single_value('Configuracion App','webhook_envio_declaracion').then(wh => {
-                                        if (!wh) { frappe.msgprint('Webhook no configurado.'); return; }
-                                        frappe.show_alert({message:'Enviando...',indicator:'blue'},5);
-                                        fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
-                                            body:JSON.stringify({declaracion:doc,cliente:r_cli.message,
-                                                                 declaracion_data:r_dm.message,es_reenvio})
-                                        }).then(()=>{frappe.show_alert({message:'✅ Enviado',indicator:'green'},4);setTimeout(cargar_panel,1000);})
-                                          .catch(e=>frappe.msgprint({message:'Error: '+e,indicator:'red'}));
-                                    });
-                                }
-                            });
-                        }
-                    });
+                frappe.call({
+                    method:'frappe.client.get', args:{doctype:'Declaracion_Mensual',name:doc},
+                    callback(r_dm) {
+                        frappe.call({
+                            method:'frappe.client.get', args:{doctype:'Ficha_Cliente',name:cliente},
+                            callback(r_cli) {
+                                frappe.db.get_single_value('Configuracion App','webhook_envio_declaracion').then(wh => {
+                                    if (!wh) { frappe.msgprint('Webhook no configurado.'); return; }
+                                    frappe.show_alert({message:'Enviando...',indicator:'blue'},5);
+                                    fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
+                                        body:JSON.stringify({declaracion:doc,cliente:r_cli.message,
+                                                             declaracion_data:r_dm.message,es_reenvio:action==='reenviar'})
+                                    }).then(()=>{frappe.show_alert({message:'✅ Enviado',indicator:'green'},4);setTimeout(cargar_panel,1000);})
+                                      .catch(e=>frappe.msgprint({message:'Error: '+e,indicator:'red'}));
+                                });
+                            }
+                        });
+                    }
                 }); break;
 
             case 'publicar': {
                 const dec_actual = _dec_map[cliente];
                 const ya_publicado = dec_actual && dec_actual.estado === 'Publicado';
-                frappe.confirm(ya_publicado ? '¿Despublicar esta declaración del portal?' : '¿Publicar en la App del cliente? Se enviará notificación push.', () => {
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
-                        args:{doc_name:doc},
-                        callback(res) {
-                            const ok = res.message && res.message.status === 'ok';
-                            frappe.show_alert({message: ok ? (ya_publicado?'🔒 Despublicado':'📱 Publicado en App') : 'Error al publicar',
-                                               indicator: ok ? (ya_publicado?'orange':'green') : 'red'}, 4);
-                            if (ok) setTimeout(cargar_panel, 600);
-                        }
-                    });
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                    args:{doc_name:doc},
+                    callback(res) {
+                        const ok = res.message && res.message.status === 'ok';
+                        frappe.show_alert({message: ok ? (ya_publicado?'🔒 Despublicado':'📱 Publicado en App') : 'Error al publicar',
+                                           indicator: ok ? (ya_publicado?'orange':'green') : 'red'}, 4);
+                        if (ok) setTimeout(cargar_panel, 600);
+                    }
                 }); break;
             }
 
@@ -711,37 +702,31 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 }); break;
 
             case 'crear-dec':
-                frappe.confirm(`¿Crear Declaración Mensual + F29 para este cliente en ${_mes}/${_ano}?`, () => {
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.crear_declaraciones_periodo',
-                        args:{cliente, mes:_mes, ano:_ano},
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message:res.status==='exists'?'Ya existe para este período.':'✅ Creado.',
-                                               indicator:res.status==='exists'?'orange':'green'}, 4);
-                            setTimeout(cargar_panel, 800);
-                        }
-                    });
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.crear_declaraciones_periodo',
+                    args:{cliente, mes:_mes, ano:_ano},
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message:res.status==='exists'?'Ya existe para este período.':'✅ Creado.',
+                                           indicator:res.status==='exists'?'orange':'green'}, 4);
+                        setTimeout(cargar_panel, 800);
+                    }
                 }); break;
 
             case 'facturar':
                 if (!cobro) { frappe.msgprint('Sin cobranza vinculada.'); break; }
-                frappe.confirm('¿Marcar cobranza como <b>Facturada</b>?', () => {
-                    frappe.call({
-                        method:'frappe.client.set_value',
-                        args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Facturado'},
-                        callback() { frappe.show_alert({message:'🧾 Marcado como Facturado',indicator:'purple'},3); setTimeout(cargar_panel,500); }
-                    });
+                frappe.call({
+                    method:'frappe.client.set_value',
+                    args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Facturado'},
+                    callback() { frappe.show_alert({message:'🧾 Marcado como Facturado',indicator:'purple'},3); setTimeout(cargar_panel,500); }
                 }); break;
 
             case 'pagar':
                 if (!cobro) { frappe.msgprint('Sin cobranza vinculada.'); break; }
-                frappe.confirm('¿Marcar cobranza como <b>Pagada</b>?', () => {
-                    frappe.call({
-                        method:'frappe.client.set_value',
-                        args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Pagado'},
-                        callback() { frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3); setTimeout(cargar_panel,500); }
-                    });
+                frappe.call({
+                    method:'frappe.client.set_value',
+                    args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Pagado'},
+                    callback() { frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3); setTimeout(cargar_panel,500); }
                 }); break;
         }
     }
