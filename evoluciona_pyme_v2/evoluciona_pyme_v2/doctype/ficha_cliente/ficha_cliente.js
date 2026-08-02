@@ -1296,67 +1296,90 @@ function ejecutar_accion_cobranza(action, doc_name, factura_name, frm, pdf_url) 
 // FUNCIÓN: MARCAR COMO PAGADO
 // ===================================================================
 function marcar_como_pagado(doc_name, frm) {
-    
-    let d = new frappe.ui.Dialog({
-        title: 'Marcar como Pagado',
-        fields: [
-            {
-                label: 'Fecha de Pago',
-                fieldname: 'fecha_pago',
-                fieldtype: 'Date',
-                reqd: 1,
-                default: frappe.datetime.get_today()
-            },
-            {
-                label: 'Monto Pagado',
-                fieldname: 'monto_pagado',
-                fieldtype: 'Currency',
-                reqd: 1
-            },
-            {
-                label: 'Método de Pago',
-                fieldname: 'metodo_pago',
-                fieldtype: 'Select',
-                options: 'Transferencia\nEfectivo\nCheque\nTarjeta\nOtro',
-                reqd: 1
-            },
-            {
-                label: 'Comprobante',
-                fieldname: 'comprobante_pago',
-                fieldtype: 'Attach'
-            }
-        ],
-        primary_action_label: 'Marcar Pagado',
-        primary_action: function(values) {
-            
-            frappe.call({
-                method: 'frappe.client.set_value',
-                args: {
-                    doctype: 'Cobranza_Cliente',
-                    name: doc_name,
-                    fieldname: {
-                        'estado_cobranza': 'Pagado',
-                        'fecha_pago': values.fecha_pago,
-                        'monto_pagado': values.monto_pagado,
-                        'metodo_pago': values.metodo_pago,
-                        'comprobante_pago': values.comprobante_pago || ''
+
+    frappe.call({
+        method: 'frappe.client.get',
+        args: { doctype: 'Cobranza_Cliente', name: doc_name },
+        callback: function(r_cob) {
+            const cob = r_cob.message || {};
+            const fecha_vencimiento = cob.fecha_vencimiento;
+
+            let d = new frappe.ui.Dialog({
+                title: 'Marcar como Pagado',
+                fields: [
+                    {
+                        label: 'Fecha de Pago',
+                        fieldname: 'fecha_pago',
+                        fieldtype: 'Date',
+                        reqd: 1,
+                        default: frappe.datetime.get_today()
+                    },
+                    {
+                        label: 'Monto Pagado',
+                        fieldname: 'monto_pagado',
+                        fieldtype: 'Currency',
+                        reqd: 1,
+                        default: cob.monto_a_cobrar || 0
+                    },
+                    {
+                        label: 'Método de Pago',
+                        fieldname: 'metodo_pago',
+                        fieldtype: 'Select',
+                        options: 'Transferencia\nEfectivo\nCheque\nTarjeta\nOtro',
+                        reqd: 1
+                    },
+                    {
+                        label: 'Comprobante',
+                        fieldname: 'comprobante_pago',
+                        fieldtype: 'Attach'
                     }
-                },
-                callback: function() {
-                    frappe.show_alert({
-                        message: '✅ Marcado como pagado',
-                        indicator: 'green'
-                    }, 3);
-                    
-                    d.hide();
-                    renderizar_panel_cobranza(frm);
+                ],
+                primary_action_label: 'Marcar Pagado',
+                primary_action: function(values) {
+
+                    const guardar = (aplicar_recargo) => {
+                        frappe.call({
+                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
+                            args: {
+                                cobranza_name: doc_name,
+                                aplicar_recargo: aplicar_recargo ? 1 : 0,
+                                fecha_pago: values.fecha_pago,
+                                monto_pagado: values.monto_pagado,
+                                metodo_pago: values.metodo_pago,
+                                comprobante_pago: values.comprobante_pago || ''
+                            },
+                            callback: function() {
+                                frappe.show_alert({
+                                    message: '✅ Marcado como pagado',
+                                    indicator: 'green'
+                                }, 3);
+
+                                d.hide();
+                                renderizar_panel_cobranza(frm);
+                            }
+                        });
+                    };
+
+                    // ¿La fecha de pago ingresada es posterior al vencimiento?
+                    const atrasado = fecha_vencimiento &&
+                        frappe.datetime.get_diff(values.fecha_pago, fecha_vencimiento) > 0;
+
+                    if (!atrasado) { guardar(false); return; }
+
+                    frappe.db.get_single_value('Configuracion App', 'monto_recargo_pago_atrasado').then(monto => {
+                        frappe.confirm(
+                            `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(fecha_vencimiento)}).<br><br>` +
+                            `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
+                            () => guardar(true),
+                            () => guardar(false)
+                        );
+                    });
                 }
             });
+
+            d.show();
         }
     });
-    
-    d.show();
-            d.set_value('monto_pagado', monto_sugerido);
 }
 
 // ===================================================================

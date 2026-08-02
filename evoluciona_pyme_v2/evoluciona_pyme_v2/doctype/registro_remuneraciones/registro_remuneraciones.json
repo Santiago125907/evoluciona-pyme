@@ -21,6 +21,7 @@
   "total_seguro_cesantia",
   "total_sis_mutual",
   "total_previred_a_pagar",
+  "estado_pago_previred",
   "section_break_urzt",
   "retencion_prestamo_solidario",
   "impuesto_unico"
@@ -41,7 +42,7 @@
   {
    "fieldname": "ano",
    "fieldtype": "Select",
-   "label": "A\u00f1o",
+   "label": "Año",
    "options": "2023\n2024\n2025\n2026\n2027",
    "reqd": 1
   },
@@ -104,7 +105,7 @@
    "default": "0",
    "fieldname": "total_seguro_cesantia",
    "fieldtype": "Currency",
-   "label": "Total Seguro Cesant\u00eda"
+   "label": "Total Seguro Cesantía"
   },
   {
    "default": "0",
@@ -119,6 +120,15 @@
    "label": "TOTAL A PAGAR PREVIRED"
   },
   {
+   "fieldname": "estado_pago_previred",
+   "fieldtype": "Select",
+   "label": "Estado de Pago Previred",
+   "options": "Pendiente de Pago\nPagado\nPostergado\nVencido sin Pagar",
+   "default": "Pendiente de Pago",
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
    "fieldname": "section_break_urzt",
    "fieldtype": "Section Break"
   },
@@ -131,13 +141,13 @@
   {
    "fieldname": "impuesto_unico",
    "fieldtype": "Currency",
-   "label": "Impuesto \u00danico"
+   "label": "Impuesto Único"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 12:00:59.005252",
+ "modified": "2026-08-02 11:41:17.214422",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Registro_Remuneraciones",

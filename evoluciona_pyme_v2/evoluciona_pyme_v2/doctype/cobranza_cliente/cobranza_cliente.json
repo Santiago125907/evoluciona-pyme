@@ -26,7 +26,7 @@
   "fecha_vencimiento",
   "column_break_xgew",
   "dias_para_vencer",
-  "facturaci\u00f3n_section",
+  "facturación_section",
   "factura_generada",
   "factura_vinculada",
   "folio_factura",
@@ -39,6 +39,8 @@
   "section_break_dafq",
   "fecha_pago",
   "monto_pagado",
+  "pago_atrasado",
+  "recargo_aplicado",
   "column_break_hjzx",
   "metodo_pago",
   "comprobante_pago",
@@ -50,7 +52,8 @@
   "ultimo_whatsapp",
   "notas_y_observaciones_section",
   "notas_cobranza",
-  "monto_adicionales"
+  "monto_adicionales",
+  "recargo_por_atraso"
  ],
  "fields": [
   {
@@ -77,7 +80,7 @@
   {
    "fieldname": "periodo_ano",
    "fieldtype": "Int",
-   "label": "A\u00f1o",
+   "label": "Año",
    "read_only": 1
   },
   {
@@ -99,7 +102,7 @@
   {
    "fieldname": "numero_empleados",
    "fieldtype": "Int",
-   "label": "N\u00famero de Empleados",
+   "label": "Número de Empleados",
    "read_only": 1
   },
   {
@@ -146,7 +149,7 @@
    "default": "Today",
    "fieldname": "fecha_emision",
    "fieldtype": "Date",
-   "label": "Fecha Emisi\u00f3n"
+   "label": "Fecha Emisión"
   },
   {
    "fieldname": "fecha_vencimiento",
@@ -158,15 +161,15 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Positivo: d\u00edas restantes / Negativo: d\u00edas vencido\"",
+   "description": "Positivo: días restantes / Negativo: días vencido\"",
    "fieldname": "dias_para_vencer",
    "fieldtype": "Int",
-   "label": "D\u00edas para Vencer"
+   "label": "Días para Vencer"
   },
   {
-   "fieldname": "facturaci\u00f3n_section",
+   "fieldname": "facturación_section",
    "fieldtype": "Section Break",
-   "label": "Facturaci\u00f3n"
+   "label": "Facturación"
   },
   {
    "default": "0",
@@ -210,13 +213,13 @@
   {
    "fieldname": "fecha_facturacio",
    "fieldtype": "Date",
-   "label": "Fecha Facturaci\u00f3n",
+   "label": "Fecha Facturación",
    "read_only": 1
   },
   {
    "fieldname": "numero_factura",
    "fieldtype": "Data",
-   "label": "N\u00famero Factura"
+   "label": "Número Factura"
   },
   {
    "fieldname": "section_break_dafq",
@@ -236,13 +239,27 @@
    "label": "monto_pagado"
   },
   {
+   "fieldname": "pago_atrasado",
+   "fieldtype": "Check",
+   "label": "Pago Atrasado",
+   "read_only": 1,
+   "description": "Se marca solo si se pago despues de la fecha de vencimiento."
+  },
+  {
+   "fieldname": "recargo_aplicado",
+   "fieldtype": "Check",
+   "label": "Recargo ya Aplicado",
+   "read_only": 1,
+   "description": "Evita cobrar el recargo dos veces por el mismo atraso."
+  },
+  {
    "fieldname": "column_break_hjzx",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "metodo_pago",
    "fieldtype": "Select",
-   "label": "M\u00e9todo de Pago",
+   "label": "Método de Pago",
    "options": "Transferencia\nEfectivo\nCheque\nTarjeta\nOtro"
   },
   {
@@ -266,7 +283,7 @@
   {
    "fieldname": "ultimo_email",
    "fieldtype": "Datetime",
-   "label": "\u00daltimo Email",
+   "label": "Último Email",
    "read_only": 1
   },
   {
@@ -283,7 +300,7 @@
   {
    "fieldname": "ultimo_whatsapp",
    "fieldtype": "Datetime",
-   "label": "\u00daltimo WhatsApp",
+   "label": "Último WhatsApp",
    "read_only": 1
   },
   {
@@ -301,12 +318,19 @@
    "fieldtype": "Currency",
    "label": "Monto Adicionales y Cuotas",
    "read_only": 1
+  },
+  {
+   "fieldname": "recargo_por_atraso",
+   "fieldtype": "Currency",
+   "label": "Recargo por Atraso (mes anterior)",
+   "read_only": 1,
+   "description": "Recargo aplicado por haber pagado atrasada la cobranza del mes anterior."
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 12:00:56.274265",
+ "modified": "2026-08-02 11:41:55.926025",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Cobranza_Cliente",

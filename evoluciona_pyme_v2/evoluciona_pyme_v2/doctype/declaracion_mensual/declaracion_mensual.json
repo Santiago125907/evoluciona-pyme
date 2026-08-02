@@ -6,7 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "informaci\u00f3n_principal_section",
+  "información_principal_section",
   "cliente",
   "ano",
   "mes",
@@ -24,18 +24,18 @@
   "fecha_vencimiento_previred",
   "documentos_de_trabajo_vinculados_section",
   "borrador_f29_vinculado",
-  "checklist_de_validaci\u00f3n_manua_section",
+  "checklist_de_validación_manua_section",
   "check_gasto_rem_cargado",
   "check_previred_cuadrado",
   "check_f29_cuadrado",
   "postegar_pago_iva",
-  "postergaci\u00f3n_de_iva_section",
+  "postergación_de_iva_section",
   "monto_iva_postergar",
   "column_break_dkfk",
   "fecha_vencimiento_postergacion",
   "column_break_muye",
   "postergacion_vinculada",
-  "control_de_env\u00edos_section",
+  "control_de_envíos_section",
   "pdf_generado",
   "pdf_generado_flag",
   "emails_enviados",
@@ -52,9 +52,9 @@
  ],
  "fields": [
   {
-   "fieldname": "informaci\u00f3n_principal_section",
+   "fieldname": "información_principal_section",
    "fieldtype": "Section Break",
-   "label": "Informaci\u00f3n Principal"
+   "label": "Información Principal"
   },
   {
    "fieldname": "cliente",
@@ -67,7 +67,7 @@
   {
    "fieldname": "ano",
    "fieldtype": "Select",
-   "label": "A\u00d1O",
+   "label": "AÑO",
    "options": "2023\n2024\n2025\n2026\n2027"
   },
   {
@@ -81,7 +81,7 @@
    "fieldname": "estado",
    "fieldtype": "Select",
    "label": "ESTADO",
-   "options": "Borrador\nEn Validaci\u00f3n\nListo\nEnviado\nPublicado",
+   "options": "Borrador\nEn Validación\nListo\nPDF Generado\nEnviado\nPublicado",
    "reqd": 1
   },
   {
@@ -154,9 +154,9 @@
    "options": "Borrador_F29"
   },
   {
-   "fieldname": "checklist_de_validaci\u00f3n_manua_section",
+   "fieldname": "checklist_de_validación_manua_section",
    "fieldtype": "Section Break",
-   "label": "Checklist de Validaci\u00f3n Manua"
+   "label": "Checklist de Validación Manua"
   },
   {
    "default": "0",
@@ -184,9 +184,9 @@
    "label": "Postergar Pago de IVA"
   },
   {
-   "fieldname": "postergaci\u00f3n_de_iva_section",
+   "fieldname": "postergación_de_iva_section",
    "fieldtype": "Section Break",
-   "label": "Postergaci\u00f3n de IVA"
+   "label": "Postergación de IVA"
   },
   {
    "fieldname": "monto_iva_postergar",
@@ -199,7 +199,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Fecha de vencimiento de la postergaci\u00f3n (2 meses despu\u00e9s)",
+   "description": "Fecha de vencimiento de la postergación (2 meses después)",
    "fieldname": "fecha_vencimiento_postergacion",
    "fieldtype": "Date",
    "label": "Vence en",
@@ -212,14 +212,14 @@
   {
    "fieldname": "postergacion_vinculada",
    "fieldtype": "Link",
-   "label": "Registro de Postergaci\u00f3n",
+   "label": "Registro de Postergación",
    "options": "Postergacion_IVA",
    "read_only": 1
   },
   {
-   "fieldname": "control_de_env\u00edos_section",
+   "fieldname": "control_de_envíos_section",
    "fieldtype": "Section Break",
-   "label": "Control de Env\u00edos"
+   "label": "Control de Envíos"
   },
   {
    "fieldname": "pdf_generado",
@@ -254,19 +254,19 @@
   {
    "fieldname": "fecha_pdf_generado",
    "fieldtype": "Datetime",
-   "label": "Fecha Generaci\u00f3n PDF",
+   "label": "Fecha Generación PDF",
    "read_only": 1
   },
   {
    "fieldname": "fecha_ultimo_email",
    "fieldtype": "Datetime",
-   "label": "\u00daltimo Email Enviado",
+   "label": "Último Email Enviado",
    "read_only": 1
   },
   {
    "fieldname": "fecha_ultimo_whatsapp",
    "fieldtype": "Datetime",
-   "label": "\u00daltimo whatsapp Enviado",
+   "label": "Último whatsapp Enviado",
    "read_only": 1
   },
   {
@@ -290,16 +290,16 @@
    "label": "ANALISIS_Y_RECOMENDACIONES"
   },
   {
-   "description": "An\u00e1lisis generado por IA (se llenar\u00e1 autom\u00e1ticamente)",
+   "description": "Análisis generado por IA (se llenará automáticamente)",
    "fieldname": "analisis_ia_texto",
    "fieldtype": "Text Editor",
-   "label": "An\u00e1lisis IA"
+   "label": "Análisis IA"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-12 10:26:50.943017",
+ "modified": "2026-08-02 11:41:27.482762",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Declaracion_Mensual",

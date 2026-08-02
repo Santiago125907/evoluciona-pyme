@@ -195,6 +195,42 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         );
     }
 
+    // Marca una Cobranza_Cliente como Pagada. Si llegó atrasada, pregunta si
+    // aplicar el recargo configurado a la cobranza del mes siguiente -- lo
+    // decide quien paga, no se infiere solo de la fecha.
+    function pagar_cobranza(cobro) {
+        frappe.call({
+            method: 'frappe.client.get',
+            args: { doctype:'Cobranza_Cliente', name:cobro },
+            callback(r_cob) {
+                const venc = r_cob.message && r_cob.message.fecha_vencimiento;
+                const atrasado = venc && frappe.datetime.get_diff(frappe.datetime.nowdate(), venc) > 0;
+
+                const marcar = (aplicar_recargo) => {
+                    frappe.call({
+                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
+                        args: { cobranza_name:cobro, aplicar_recargo: aplicar_recargo ? 1 : 0 },
+                        callback() {
+                            frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3);
+                            setTimeout(cargar_panel,500);
+                        }
+                    });
+                };
+
+                if (!atrasado) { marcar(false); return; }
+
+                frappe.db.get_single_value('Configuracion App','monto_recargo_pago_atrasado').then(monto => {
+                    frappe.confirm(
+                        `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(venc)}).<br><br>` +
+                        `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
+                        () => marcar(true),
+                        () => marcar(false)
+                    );
+                });
+            }
+        });
+    }
+
     function cargar_panel() {
         _ano = sel_ano.get_value();
         _mes = sel_mes.get_value();
@@ -723,11 +759,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             case 'pagar':
                 if (!cobro) { frappe.msgprint('Sin cobranza vinculada.'); break; }
-                frappe.call({
-                    method:'frappe.client.set_value',
-                    args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Pagado'},
-                    callback() { frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3); setTimeout(cargar_panel,500); }
-                }); break;
+                pagar_cobranza(cobro); break;
         }
     }
 

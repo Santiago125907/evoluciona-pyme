@@ -26,6 +26,7 @@
   "impuesto_determinado",
   "remanente_mes_siguiente",
   "total_a_pagar_f29",
+  "estado_pago_f29",
   "subtotal_postergacion_iva",
   "postergacion_vencida",
   "seccion_datos_backend",
@@ -156,6 +157,15 @@
    "read_only": 1
   },
   {
+   "fieldname": "estado_pago_f29",
+   "fieldtype": "Select",
+   "label": "Estado de Pago F29",
+   "options": "Pendiente de Pago\nPagado\nPostergado\nVencido sin Pagar",
+   "default": "Pendiente de Pago",
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
    "fieldname": "subtotal_postergacion_iva",
    "fieldtype": "Currency",
    "label": "postergacion iva",
@@ -197,7 +207,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-02 10:41:36.398293",
+ "modified": "2026-08-02 11:41:07.371880",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Borrador_F29",

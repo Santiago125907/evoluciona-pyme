@@ -287,6 +287,37 @@ class Declaracion_Mensual(Document):
 						f"{ano_venc}-{str(mes_venc).zfill(2)}-28"
 					)
 
+			# 7. Recargo por haber pagado atrasada la cobranza del mes anterior
+			# (se decide al momento de marcar "Pagado", no se infiere solo de la fecha)
+			mes_ant = int(self.mes) - 1
+			ano_ant = int(self.ano)
+			if mes_ant < 1:
+				mes_ant = 12
+				ano_ant -= 1
+
+			recargo_por_atraso = 0
+			cobranza_previa = frappe.db.get_value(
+				"Cobranza_Cliente",
+				{
+					"cliente": self.cliente,
+					"periodo_ano": ano_ant,
+					"periodo_mes": mes_ant,
+					"pago_atrasado": 1,
+					"recargo_aplicado": 0,
+				},
+				"name",
+			)
+			if cobranza_previa:
+				recargo_por_atraso = float(
+					frappe.db.get_single_value("Configuracion App", "monto_recargo_pago_atrasado") or 0
+				)
+				if recargo_por_atraso:
+					frappe.logger().info(
+						f"Recargo por atraso de {mes_ant}/{ano_ant}: ${recargo_por_atraso:,.0f} (cobranza previa {cobranza_previa})"
+					)
+					monto_a_cobrar += recargo_por_atraso
+					frappe.db.set_value("Cobranza_Cliente", cobranza_previa, "recargo_aplicado", 1)
+
 			abreviatura = cliente_doc.get('abreviatura_cliente') or cliente_doc.name[:3]
 			id_cob = f"COB-{abreviatura}-{self.ano}-{str(self.mes).zfill(2)}"
 
@@ -305,6 +336,7 @@ class Declaracion_Mensual(Document):
 				"subtotal": subtotal,
 				"total_descuentos": total_descuentos,
 				"monto_adicionales": monto_adicionales,
+				"recargo_por_atraso": recargo_por_atraso,
 				"monto_a_cobrar": monto_a_cobrar,
 				"fecha_emision": fecha_emision,
 				"fecha_vencimiento": fecha_vencimiento,

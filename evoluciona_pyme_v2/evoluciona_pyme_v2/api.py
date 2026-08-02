@@ -2046,6 +2046,34 @@ def calcular_todos_periodo(mes, ano):
     }
 
 
+@frappe.whitelist()
+def marcar_cobranza_pagada(cobranza_name, aplicar_recargo=0, fecha_pago=None,
+                            monto_pagado=None, metodo_pago=None, comprobante_pago=None):
+    """
+    Marca una Cobranza_Cliente como Pagado (botón "Pagar" del panel, o el
+    dialog "Marcar como Pagado" de Ficha_Cliente). aplicar_recargo lo decide
+    el usuario al momento de pagar (el frontend le pregunta solo si detecta
+    que ya venció) -- no se infiere solo de la fecha. Si queda marcado,
+    crear_cobranza_si_corresponde le agrega el recargo configurado a la
+    cobranza del mes siguiente.
+    """
+    doc = frappe.get_doc("Cobranza_Cliente", cobranza_name)
+    doc.estado_cobranza = "Pagado"
+    doc.fecha_pago = fecha_pago or frappe.utils.nowdate()
+    if monto_pagado is not None:
+        doc.monto_pagado = monto_pagado
+    if metodo_pago:
+        doc.metodo_pago = metodo_pago
+    if comprobante_pago:
+        doc.comprobante_pago = comprobante_pago
+    doc.pago_atrasado = 1 if frappe.utils.cint(aplicar_recargo) else 0
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "ok", "pago_atrasado": bool(doc.pago_atrasado)}
+
+
 # ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
 
 @frappe.whitelist()

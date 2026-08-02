@@ -73,7 +73,9 @@
   "pdf_texto_promocion",
   "sb_pdf_instrucciones",
   "pdf_ocultar_opcion_a",
-  "pdf_basico_ocultar_opcion_a"
+  "pdf_basico_ocultar_opcion_a",
+  "sb_cobranza",
+  "monto_recargo_pago_atrasado"
  ],
  "fields": [
   {
@@ -480,11 +482,23 @@
    "fieldname": "sii_api_token",
    "fieldtype": "Password",
    "label": "Token SII Gateway (X-API-Key)"
+  },
+  {
+   "fieldname": "sb_cobranza",
+   "fieldtype": "Section Break",
+   "label": "Cobranza"
+  },
+  {
+   "fieldname": "monto_recargo_pago_atrasado",
+   "fieldtype": "Currency",
+   "label": "Recargo por Pago Atrasado",
+   "default": "5000",
+   "description": "Se agrega automaticamente a la cobranza del mes siguiente si el cliente paga despues de la fecha de vencimiento."
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-05-10 13:00:00.000000",
+ "modified": "2026-08-02 11:41:44.175465",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion App",
