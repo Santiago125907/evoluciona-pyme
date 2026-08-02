@@ -2001,6 +2001,51 @@ def procesar_mes_actual(mes=None, ano=None):
     }
 
 
+@frappe.whitelist()
+def calcular_todos_periodo(mes, ano):
+    """
+    Corre recalcular_asistente_f29 para TODOS los Borrador_F29 del período
+    indicado. Botón "Calcular Todas" del Panel Mensual.
+    """
+    from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import _get_rol_usuario
+    if _get_rol_usuario() != "admin":
+        frappe.throw("Sin permiso para ejecutar esta acción.")
+
+    mes, ano = str(mes), str(ano)
+    f29s = frappe.get_all("Borrador_F29", filters={"ano": ano, "mes": mes}, fields=["name"])
+
+    calculados = errores = 0
+    detalle_errores = []
+
+    for f in f29s:
+        try:
+            frappe.form_dict["doc_name"] = f.name
+            recalcular_asistente_f29()
+            res = frappe.response.get("message") or {}
+            if res.get("status") == "ok":
+                calculados += 1
+            else:
+                errores += 1
+                detalle_errores.append(f"{f.name}: {str(res.get('message',''))[:80]}")
+        except Exception as e:
+            errores += 1
+            detalle_errores.append(f"{f.name}: {str(e)[:80]}")
+        finally:
+            # recalcular_asistente_f29 hace frappe.msgprint por cliente -- lo
+            # limpiamos en cada vuelta para no acumular popups del lote entero.
+            frappe.local.message_log = []
+
+    frappe.response["message"] = {
+        "status":     "ok",
+        "periodo":    f"{mes}/{ano}",
+        "calculados": calculados,
+        "errores":    errores,
+        "detalle_errores": detalle_errores[:10],
+        "message":    f"Período {mes}/{ano} — {calculados} calculados"
+                      + (f", {errores} con errores." if errores else "."),
+    }
+
+
 # ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
 
 @frappe.whitelist()

@@ -32,14 +32,19 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
     page.add_button('Cargar', cargar_panel, {btn_class: 'btn-primary'});
 
-    // "Crear Todas" — creación masiva para el período seleccionado arriba.
-    // Solo visible para rol admin: crea registros reales para todos los clientes.
+    // "Crear Todas" / "Calcular Todas" — masivo para el período seleccionado arriba.
+    // Solo visibles para rol admin: escriben datos reales para todos los clientes.
     let btn_crear_todas = page.add_button('🗓️ Crear Todas', crear_todas_periodo, {btn_class: 'btn-default'});
+    let btn_calcular_todas = page.add_button('🧮 Calcular Todas', calcular_todos_periodo, {btn_class: 'btn-default'});
     btn_crear_todas.hide();
+    btn_calcular_todas.hide();
     frappe.call({
         method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_rol_usuario',
         callback(r) {
-            if (r.message === 'admin') btn_crear_todas.show();
+            if (r.message === 'admin') {
+                btn_crear_todas.show();
+                btn_calcular_todas.show();
+            }
         }
     });
 
@@ -144,6 +149,34 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 frappe.dom.freeze(`Creando declaraciones de ${_mes}/${_ano}...`);
                 frappe.call({
                     method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.procesar_mes_actual',
+                    args: { mes: _mes, ano: _ano },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        frappe.msgprint({
+                            title: __('Listo'),
+                            indicator: res.errores ? 'orange' : 'green',
+                            message: res.message || 'Proceso terminado.'
+                        });
+                        cargar_panel();
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        );
+    }
+
+    // Corre "Calcular F29" para TODOS los Borrador_F29 del período seleccionado arriba.
+    function calcular_todos_periodo() {
+        if (!_ano || !_mes) { frappe.msgprint('Selecciona un período primero.'); return; }
+
+        frappe.confirm(
+            `Esto va a calcular el F29 de <b>${_mes}/${_ano}</b> para todos los clientes que ya ` +
+            `tengan declaración creada, usando los documentos tributarios ya cargados. ¿Continuar?`,
+            () => {
+                frappe.dom.freeze(`Calculando F29 de ${_mes}/${_ano}...`);
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.calcular_todos_periodo',
                     args: { mes: _mes, ano: _ano },
                     callback(r) {
                         frappe.dom.unfreeze();
