@@ -1828,6 +1828,7 @@ def registrar_postergacion_iva(doc_name, monto, meses_diferidos=2):
     # Actualizar Borrador_F29
     doc_f29.postergar_iva_periodo    = 1
     doc_f29.postergacion_del_periodo = monto
+    doc_f29.estado_pago_f29          = "Postergado"
     doc_f29.save(ignore_permissions=True)
     frappe.db.commit()
 
@@ -1857,6 +1858,8 @@ def cancelar_postergacion_iva(doc_name):
 
     doc_f29.postergar_iva_periodo    = 0
     doc_f29.postergacion_del_periodo = 0
+    if doc_f29.estado_pago_f29 == "Postergado":
+        doc_f29.estado_pago_f29 = "Pendiente de Pago"
     doc_f29.save(ignore_permissions=True)
     frappe.db.commit()
 

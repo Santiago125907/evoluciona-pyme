@@ -326,20 +326,23 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     : '';
 
                 const ESTADOS_PAGO = ['Pendiente de Pago','Pagado','Postergado','Vencido sin Pagar'];
-                const select_estado = (doctype, name, valor_actual) => `
+                const select_estado = (doctype, name, valor_actual, extra) => `
                     <select class="form-control" style="font-size:12px;padding:3px 6px;height:auto;"
-                            onchange="pm_set_estado_pago('${doctype}','${name}',this.value)">
+                            onchange="pm_set_estado_pago('${doctype}','${name}',this.value,'${valor_actual}',${extra})">
                         ${ESTADOS_PAGO.map(v => `<option value="${v}" ${v===valor_actual?'selected':''}>${v}</option>`).join('')}
                     </select>`;
 
+                // El estado de pago del F29 solo tiene sentido una vez que la declaración
+                // está lista (evita marcar pagado/postergado algo que ni siquiera está calculado).
                 const f29_data = f29_name ? _f29_map[f29_name] : null;
-                const estado_pago_html = (f29_name || tiene_previred_este_mes)
+                const mostrar_estado_f29 = f29_name && d && ['Listo','PDF Generado','Publicado'].includes(d.estado);
+                const estado_pago_html = (mostrar_estado_f29 || tiene_previred_este_mes)
                     ? `<div class="pm-detail-card">
                         <h5>Estado de Pago</h5>
-                        ${f29_name ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">F29</span>
-                            ${select_estado('Borrador_F29', f29_name, f29_data ? f29_data.estado_pago_f29 : 'Pendiente de Pago')}</div>` : ''}
+                        ${mostrar_estado_f29 ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">F29</span>
+                            ${select_estado('Borrador_F29', f29_name, f29_data ? f29_data.estado_pago_f29 : 'Pendiente de Pago', f29_data ? (f29_data.impuesto_determinado||0) : 0)}</div>` : ''}
                         ${tiene_previred_este_mes ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Previred</span>
-                            ${select_estado('Registro_Remuneraciones', remu.name, remu.estado_pago_previred || 'Pendiente de Pago')}</div>` : ''}
+                            ${select_estado('Registro_Remuneraciones', remu.name, remu.estado_pago_previred || 'Pendiente de Pago', 0)}</div>` : ''}
                     </div>`
                     : '';
 
@@ -455,12 +458,86 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         });
     };
 
-    window.pm_set_estado_pago = function(doctype, name, valor) {
-        frappe.call({
-            method: 'frappe.client.set_value',
-            args: { doctype, name, fieldname: doctype === 'Borrador_F29' ? 'estado_pago_f29' : 'estado_pago_previred', value: valor },
-            callback() { frappe.show_alert({message:`✅ ${valor}`, indicator:'green'}, 2); }
+    // valor_anterior e iva_det solo aplican a Borrador_F29 (Previred no tiene postergación).
+    window.pm_set_estado_pago = function(doctype, name, valor, valor_anterior, iva_det) {
+        const fieldname = doctype === 'Borrador_F29' ? 'estado_pago_f29' : 'estado_pago_previred';
+
+        const set_simple = () => {
+            frappe.call({
+                method: 'frappe.client.set_value',
+                args: { doctype, name, fieldname, value: valor },
+                callback() { frappe.show_alert({message:`✅ ${valor}`, indicator:'green'}, 2); }
+            });
+        };
+
+        if (doctype !== 'Borrador_F29') { set_simple(); return; }
+
+        // Pasar A Postergado: pide monto y meses, y crea la Postergacion_IVA real.
+        if (valor === 'Postergado') {
+            pm_dialog_postergar_iva(name, iva_det);
+            return;
+        }
+
+        // Salir de Postergado hacia otro estado (se corrigió un error): cancela
+        // la Postergacion_IVA asociada para que quede coordinado.
+        if (valor_anterior === 'Postergado') {
+            frappe.confirm(
+                `Este F29 tenía una postergación de IVA registrada. Cambiar a "${valor}" la va a <b>cancelar</b>. ¿Continuar?`,
+                () => {
+                    frappe.call({
+                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.cancelar_postergacion_iva',
+                        args: { doc_name: name },
+                        callback() {
+                            // La cancelación ya deja estado_pago_f29 en "Pendiente de Pago";
+                            // si el usuario eligió otro valor distinto, lo aplicamos encima.
+                            if (valor !== 'Pendiente de Pago') set_simple();
+                            else { frappe.show_alert({message:'Postergación cancelada', indicator:'orange'}, 3); cargar_panel(); }
+                        }
+                    });
+                },
+                () => cargar_panel() // canceló el confirm -> refresca para volver a dejar el select en "Postergado"
+            );
+            return;
+        }
+
+        set_simple();
+    };
+
+    window.pm_dialog_postergar_iva = function(f29_name, iva_det) {
+        const MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const mesLabel = (m, a) => `${MESES[((m-1)%12)+1]} ${m > 12 ? a+1 : a}`;
+        const mes = parseInt(_mes), ano = parseInt(_ano);
+        const m1 = ((mes) % 12) + 1;   const a1 = mes === 12 ? ano+1 : ano;
+        const m2 = ((mes+1) % 12) + 1; const a2 = mes >= 11 ? ano+1 : ano;
+
+        const d = new frappe.ui.Dialog({
+            title: '⏳ Postergar IVA — Art. 64 D.L. 825',
+            fields: [
+                { fieldtype:'HTML', options:`<div style="background:#fff8ec;border-left:3px solid #b45309;border-radius:4px;padding:10px 14px;margin-bottom:4px;font-size:12px;color:#7d4e00;">Permite diferir el pago del IVA determinado por <b>1 o 2 meses</b>. Solo Pro Pyme.</div>` },
+                { label:'IVA Determinado del período', fieldname:'iva_det_info', fieldtype:'HTML', options:`<div style="font-size:22px;font-weight:800;color:#b45309;padding:6px 0 10px;">$${(iva_det||0).toLocaleString('es-CL')}</div>` },
+                { label:'Monto a Postergar ($)', fieldname:'monto', fieldtype:'Currency', default: iva_det||0, reqd:1, description:'Máximo: IVA determinado del período' },
+                { label:'Diferir hasta', fieldname:'meses_diferidos', fieldtype:'Select', options:'1\n2', default:'2', reqd:1,
+                  description:`1 mes → F29 de ${mesLabel(m1,a1)} | 2 meses → F29 de ${mesLabel(m2,a2)}` }
+            ],
+            primary_action_label: 'Registrar Postergación',
+            primary_action(values) {
+                if (values.monto <= 0) { frappe.msgprint('El monto debe ser mayor a 0.'); return; }
+                if (values.monto > (iva_det||0)) { frappe.msgprint('El monto no puede superar el IVA determinado.'); return; }
+                d.hide();
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.registrar_postergacion_iva',
+                    args: { doc_name: f29_name, monto: values.monto, meses_diferidos: values.meses_diferidos },
+                    freeze: true, freeze_message: 'Registrando postergación...',
+                    callback(r) {
+                        const res = r.message;
+                        if (res?.status === 'ok') { frappe.show_alert({message:res.message, indicator:'orange'}, 6); cargar_panel(); }
+                        else { frappe.msgprint({title:'Error', message:res?.message, indicator:'red'}); cargar_panel(); }
+                    }
+                });
+            }
         });
+        d.onhide = () => cargar_panel(); // si cancela el dialog, refresca para no dejar el select mal seleccionado
+        d.show();
     };
 
     function cargar_panel() {
