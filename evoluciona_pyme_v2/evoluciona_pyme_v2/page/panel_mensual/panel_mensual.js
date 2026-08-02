@@ -134,7 +134,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     </div>`);
 
     // ── Estado global ─────────────────────────────────────────────────────────
-    let _clientes = [], _dec_map = {}, _cobro_map = {}, _f29_map = {}, _remu_map = {}, _ano, _mes;
+    let _clientes = [], _dec_map = {}, _cobro_map = {}, _f29_map = {}, _remu_map = {}, _post_map = {}, _ano, _mes;
 
     // ── Cargar datos ──────────────────────────────────────────────────────────
     // Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos del
@@ -244,7 +244,19 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                                             callback(r5) {
                                                 _remu_map = {};
                                                 (r5.message||[]).forEach(r => _remu_map[r.cliente] = r);
-                                                renderizar();
+
+                                                frappe.call({
+                                                    method: 'frappe.client.get_list',
+                                                    args: { doctype:'Postergacion_IVA',
+                                                            filters:{ano_origen:_ano, mes_origen:_mes},
+                                                            fields:['name','cliente','estado','monto_postergado'],
+                                                            limit_page_length:300, ignore_permissions:1 },
+                                                    callback(r6) {
+                                                        _post_map = {};
+                                                        (r6.message||[]).forEach(p => _post_map[p.cliente] = p);
+                                                        renderizar();
+                                                    }
+                                                });
                                             }
                                         });
                                     }
@@ -331,6 +343,13 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                    <div class="cobro-est">${co.estado_cobranza||'Pendiente'}</div>`
                 : '<span style="color:#ddd">—</span>';
 
+            // Postergación de IVA: ¿el cliente postergó el pago de este período?
+            const post = _post_map[c.name];
+            const post_clase = { Vigente:'#2980b9', 'Por Vencer':'#f39c12', Vencida:'#e74c3c', Pagada:'#95a5a6' };
+            const post_html = post
+                ? `<span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};" title="Postergado: $${fmt_num(post.monto_postergado||0)}">${esc(post.estado)}</span>`
+                : '<span style="color:#ddd">—</span>';
+
             const total_mes = (f29_pagar !== null ? f29_pagar : 0) + (prev_monto !== null ? prev_monto : 0);
             const total_html = (f29_pagar !== null || prev_monto !== null)
                 ? `<div style="font-size:12px;font-weight:800;color:#1a3a4a;">$${fmt_num(total_mes)}</div>
@@ -349,6 +368,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 <td>${estado_html}</td>
                 <td style="white-space:nowrap;font-size:13px;letter-spacing:2px;">${checks}</td>
                 <td>${f29_html}</td>
+                <td>${post_html}</td>
                 <td>${prev_html}</td>
                 <td>${cobro_html}</td>
                 <td>${total_html}</td>
@@ -380,6 +400,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     <th style="width:7%;">Estado</th>
                     <th style="width:9%;">RRHH · F29 · Prev · PDF</th>
                     <th style="width:7%;">Total F29</th>
+                    <th style="width:6%;">Post.</th>
                     <th style="width:7%;">Previred</th>
                     <th style="width:7%;">Cobranza</th>
                     <th style="width:7%;">Total Mes</th>
