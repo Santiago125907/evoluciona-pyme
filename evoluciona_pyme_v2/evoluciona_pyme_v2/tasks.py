@@ -117,6 +117,25 @@ def _disparar_webhook(nombre, url, payload):
 		frappe.log_error(str(e), f"Error Webhook {nombre}")
 
 
+# ── Botón manual del panel ───────────────────────────────────────────────────
+@frappe.whitelist()
+def crear_tareas_mensuales_manual():
+	"""
+	Dispara manualmente la creación de Declaracion_Mensual + Borrador_F29 del
+	mes anterior para todos los clientes activos. Pensado para el botón del
+	panel — usa la misma función que el cron automático, así que es idempotente:
+	si una declaración ya existe no la duplica.
+	"""
+	from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import _get_rol_usuario
+	if _get_rol_usuario() != "admin":
+		frappe.throw("Sin permiso para ejecutar esta acción.")
+
+	antes = frappe.db.count("Declaracion_Mensual")
+	crear_tareas_mensuales()
+	despues = frappe.db.count("Declaracion_Mensual")
+	return {"creadas": despues - antes}
+
+
 # ── Creación de tareas mensuales ─────────────────────────────────────────────
 def crear_tareas_mensuales():
 	"""

@@ -469,6 +469,12 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
                     <span class="pa-sc-sub">Asignar clientes</span>
                     <span class="pa-sc-dot"></span>
                 </a>
+                <a class="pa-sc pa-sc-crear-declaraciones" style="--sc-color:#c0392b;display:none" onclick="pa_crear_declaraciones_mes()">
+                    <span class="pa-sc-icon">🗓️</span>
+                    <span class="pa-sc-label">Crear Declaraciones</span>
+                    <span class="pa-sc-sub">Forzar creación del mes</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
                 <a class="pa-sc" style="--sc-color:#6c757d" onclick="frappe.set_route('List','Plan_Servicio_Portal')">
                     <span class="pa-sc-icon">💼</span>
                     <span class="pa-sc-label">Planes Portal</span>
@@ -524,6 +530,11 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
             // Mostrar shortcut Gestión Asesores solo a admin/supervisor
             if (rol === 'admin' || rol === 'supervisor') {
                 $('.pa-sc-asesores').show();
+            }
+
+            // Crear Declaraciones a mano: solo admin, crea registros reales para todos los clientes
+            if (rol === 'admin') {
+                $('.pa-sc-crear-declaraciones').show();
             }
 
             // Hero stats
@@ -599,3 +610,37 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
         }
     });
 };
+
+// Botón "Crear Declaraciones": fuerza la creación de Declaracion_Mensual + Borrador_F29
+// del mes anterior para todos los clientes activos. Es idempotente (no duplica lo que
+// ya existe), pensado para poner al día un mes que el cron automático no haya generado.
+function pa_crear_declaraciones_mes() {
+    const hoy   = new Date();
+    const prev  = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const mes_nom = `${meses[prev.getMonth() + 1]} ${prev.getFullYear()}`;
+
+    frappe.confirm(
+        `Esto va a crear la Declaración Mensual y el Borrador F29 de <b>${mes_nom}</b> para todos los ` +
+        `clientes activos que todavía no lo tengan. No duplica los que ya existen. ¿Continuar?`,
+        () => {
+            frappe.dom.freeze(`Creando declaraciones de ${mes_nom}...`);
+            frappe.call({
+                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.crear_tareas_mensuales_manual',
+                callback(r) {
+                    frappe.dom.unfreeze();
+                    const creadas = (r.message || {}).creadas || 0;
+                    frappe.msgprint({
+                        title: __('Listo'),
+                        indicator: 'green',
+                        message: `Se crearon <b>${creadas}</b> declaraciones nuevas de ${mes_nom}.`
+                    });
+                },
+                error() {
+                    frappe.dom.unfreeze();
+                }
+            });
+        }
+    );
+}
