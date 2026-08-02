@@ -84,7 +84,7 @@ def dispatcher_libros():
 		ano  = fecha_anterior.year
 		mes  = fecha_anterior.month
 
-		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api, sii_gateway
 
 		rcv_api.descargar_rcv_todos(periodo)
 
@@ -95,6 +95,12 @@ def dispatcher_libros():
 				except Exception as e:
 					frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
 				frappe.db.commit()
+
+			try:
+				sii_gateway.actualizar_remanente_cliente(fila.empresa, ano, mes)
+			except Exception as e:
+				frappe.log_error(str(e), f"Remanente F29 {fila.empresa}")
+			frappe.db.commit()
 
 		cfg.ultima_ejecucion_libros = now_datetime()
 		cfg.save(ignore_permissions=True)
