@@ -12,7 +12,7 @@ class Declaracion_Mensual(Document):
 		if not self.is_new():
 			self.crear_cobranza_si_corresponde()
 		else:
-			frappe.msgprint("ℹ️ Documento nuevo, no se crea cobranza aún", indicator='blue')
+			frappe.logger().info("Documento nuevo, no se crea cobranza aún")
 
 		# Guardar en flags si se está publicando (más robusto que atributo de instancia)
 		old_publicado = 0
@@ -55,9 +55,8 @@ class Declaracion_Mensual(Document):
 		else:
 			self.estado = "En Validación"
 
-		frappe.msgprint(
-			f"📊 Checks: RRHH={check_rrhh}, F29={check_f29}, Prev={check_prev} (req={usa_previred}) → Estado: {self.estado}",
-			indicator='blue'
+		frappe.logger().info(
+			f"Checks: RRHH={check_rrhh}, F29={check_f29}, Prev={check_prev} (req={usa_previred}) → Estado: {self.estado}"
 		)
 
 	def calcular_vencimientos_impuestos(self):
@@ -86,13 +85,10 @@ class Declaracion_Mensual(Document):
 		self.fecha_vencimiento_f29 = venc_f29
 
 	def crear_cobranza_si_corresponde(self):
-		frappe.msgprint(
-			f"🔍 Verificando creación de cobranza...<br>Estado actual: <strong>{self.estado}</strong>",
-			indicator='blue'
-		)
+		frappe.logger().info(f"Verificando creación de cobranza... Estado actual: {self.estado}")
 
 		if self.estado not in ["Listo", "Enviado"]:
-			frappe.msgprint(f"⏸️ Estado '{self.estado}' no dispara creación de cobranza", indicator='orange')
+			frappe.logger().info(f"Estado '{self.estado}' no dispara creación de cobranza")
 			return
 
 		existe = frappe.db.exists("Cobranza_Cliente", {
@@ -102,10 +98,10 @@ class Declaracion_Mensual(Document):
 		})
 
 		if existe:
-			frappe.msgprint(f"⚠️ Ya existe cobranza para este período: {existe}", indicator='orange')
+			frappe.logger().info(f"Ya existe cobranza para este período: {existe}")
 			return
 
-		frappe.msgprint("✅ Procediendo a crear cobranza...", indicator='green')
+		frappe.logger().info("Procediendo a crear cobranza...")
 
 		try:
 			cliente_doc = frappe.get_doc("Ficha_Cliente", self.cliente)
@@ -143,21 +139,20 @@ class Declaracion_Mensual(Document):
 					else:
 						total_ventas += float(d.neto)
 
-			frappe.msgprint(f"📈 Ventas Netas del Mes: ${total_ventas:,.0f}", indicator='blue')
+			frappe.logger().info(f"Ventas Netas del Mes: ${total_ventas:,.0f}")
 
 			# 2. Determinar monto base: precio fijo o plan por tramos
 			if cliente_doc.get('precio_fijo'):
 				monto_contable = float(cliente_doc.get('monto_base_fijo') or 0)
-				frappe.msgprint(f"💲 Precio Base Fijo: ${monto_contable:,.0f}", indicator='blue')
+				frappe.logger().info(f"Precio Base Fijo: ${monto_contable:,.0f}")
 			elif cliente_doc.get('plan_contable'):
 				plan = frappe.get_doc("Plan_Contable", cliente_doc.plan_contable)
-				frappe.msgprint(f"📑 Plan Asignado: {plan.nombre_del_plan}", indicator='blue')
+				frappe.logger().info(f"Plan Asignado: {plan.nombre_del_plan}")
 				for tramo in plan.tramos:
 					if tramo.venta_minima <= total_ventas <= tramo.venta_maxima:
 						monto_contable = tramo.valor_mensual
-						frappe.msgprint(
-							f"🎯 Tramo ${tramo.venta_minima:,.0f} a ${tramo.venta_maxima:,.0f} → Valor: ${monto_contable:,.0f}",
-							indicator='blue'
+						frappe.logger().info(
+							f"Tramo ${tramo.venta_minima:,.0f} a ${tramo.venta_maxima:,.0f} → Valor: ${monto_contable:,.0f}"
 						)
 						break
 
@@ -165,13 +160,13 @@ class Declaracion_Mensual(Document):
 					frappe.msgprint("⚠️ ADVERTENCIA: Las ventas no cayeron en ningún tramo.", indicator='red')
 			else:
 				monto_contable = float(cliente_doc.get('monto_base_plan') or 0)
-				frappe.msgprint("⚠️ Cliente no tiene Plan por Tramos. Usando Monto Base antiguo.", indicator='orange')
+				frappe.logger().info("Cliente no tiene Plan por Tramos. Usando Monto Base antiguo.")
 
 			# 3. RRHH
 			monto_rrhh = 0
 			if float(cliente_doc.get('monto_rrhh') or 0) > 0:
 				monto_rrhh = float(cliente_doc.monto_rrhh)
-				frappe.msgprint(f"👥 RRHH (Fijo): ${monto_rrhh:,.0f}", indicator='blue')
+				frappe.logger().info(f"RRHH (Fijo): ${monto_rrhh:,.0f}")
 			elif cliente_doc.get('cobra_rrhh_variable'):
 				registro_rrhh = frappe.db.get_value(
 					"Registro_Remuneraciones",
@@ -182,7 +177,7 @@ class Declaracion_Mensual(Document):
 					numero_empleados = int(registro_rrhh or 0)
 					tarifa = float(cliente_doc.get('monto_por_empleado') or 0)
 					monto_rrhh = numero_empleados * tarifa
-					frappe.msgprint(f"👥 RRHH Variable: {numero_empleados} x ${tarifa} = ${monto_rrhh:,.0f}", indicator='blue')
+					frappe.logger().info(f"RRHH Variable: {numero_empleados} x ${tarifa} = ${monto_rrhh:,.0f}")
 
 			# 4. Servicios adicionales
 			monto_adicionales = 0
@@ -197,9 +192,8 @@ class Declaracion_Mensual(Document):
 					meses_transcurridos = ((int(self.ano) - ano_ini) * 12) + (int(self.mes) - mes_ini)
 
 					if meses_transcurridos < 0:
-						frappe.msgprint(
-							f"⏭️ Adicional omitido: {adicional.nombre_servicio} (comienza en {mes_ini}/{ano_ini})",
-							indicator='gray'
+						frappe.logger().info(
+							f"Adicional omitido: {adicional.nombre_servicio} (comienza en {mes_ini}/{ano_ini})"
 						)
 						continue
 
@@ -207,22 +201,19 @@ class Declaracion_Mensual(Document):
 
 					if tipo_duracion == "Infinito":
 						monto_adicionales += float(adicional.valor_mensual or 0)
-						frappe.msgprint(
-							f"➕ Adicional (Mensual Fijo): {adicional.nombre_servicio} → ${adicional.valor_mensual:,.0f}",
-							indicator='blue'
+						frappe.logger().info(
+							f"Adicional (Mensual Fijo): {adicional.nombre_servicio} → ${adicional.valor_mensual:,.0f}"
 						)
 					else:
 						cuotas_totales = int(adicional.get('cuotas_totales') or 1)
 						if meses_transcurridos < cuotas_totales:
 							monto_adicionales += float(adicional.valor_mensual or 0)
-							frappe.msgprint(
-								f"➕ Adicional (Cuota {meses_transcurridos + 1} de {cuotas_totales}): {adicional.nombre_servicio} → ${adicional.valor_mensual:,.0f}",
-								indicator='blue'
+							frappe.logger().info(
+								f"Adicional (Cuota {meses_transcurridos + 1} de {cuotas_totales}): {adicional.nombre_servicio} → ${adicional.valor_mensual:,.0f}"
 							)
 						else:
-							frappe.msgprint(
-								f"⏭️ Adicional omitido: {adicional.nombre_servicio} (finalizó sus {cuotas_totales} cuotas)",
-								indicator='gray'
+							frappe.logger().info(
+								f"Adicional omitido: {adicional.nombre_servicio} (finalizó sus {cuotas_totales} cuotas)"
 							)
 
 			subtotal = monto_contable + monto_rrhh + monto_adicionales
@@ -299,10 +290,7 @@ class Declaracion_Mensual(Document):
 			abreviatura = cliente_doc.get('abreviatura_cliente') or cliente_doc.name[:3]
 			id_cob = f"COB-{abreviatura}-{self.ano}-{str(self.mes).zfill(2)}"
 
-			frappe.msgprint(
-				f"📝 Creando cobranza {id_cob} por ${monto_a_cobrar:,.0f}",
-				indicator='green'
-			)
+			frappe.logger().info(f"Creando cobranza {id_cob} por ${monto_a_cobrar:,.0f}")
 
 			cob = frappe.get_doc({
 				"doctype": "Cobranza_Cliente",
@@ -336,7 +324,7 @@ class Declaracion_Mensual(Document):
 			cob.insert(ignore_permissions=True)
 			self.cobranza_vinculada = cob.name
 
-			frappe.msgprint(f"✅ Cobranza {cob.name} registrada.", indicator='green')
+			frappe.logger().info(f"Cobranza {cob.name} registrada.")
 
 		except Exception as e:
 			frappe.log_error(str(e), "Error Cobranza Declaracion_Mensual")
