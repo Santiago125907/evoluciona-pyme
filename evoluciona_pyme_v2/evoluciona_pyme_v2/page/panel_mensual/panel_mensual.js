@@ -525,6 +525,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                             const res = r.message||{};
                             frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
                                                indicator: res.status==='ok'?'green':'red'}, 4);
+                            if (res.status==='ok') setTimeout(cargar_panel, 600);
                         }
                     });
                 }); break;
