@@ -328,6 +328,7 @@ function renderizar_panel_declaraciones(frm) {
                     .estado-borrador { background: #ffc107; color: #000; }
                     .estado-validar { background: #ff9800; color: #fff; }
                     .estado-listo { background: #28a745; color: #fff; }
+                    .estado-pdf { background: #0984e3; color: #fff; }
                     .estado-publicado { background: #6f42c1; color: #fff; }
                     .estado-enviado { background: #17a2b8; color: #fff; }
                     .btn-accion {
@@ -384,6 +385,7 @@ function renderizar_panel_declaraciones(frm) {
                 if (estado_texto === 'Borrador') estado_class = 'estado-borrador';
                 else if (estado_texto === 'En Validación') estado_class = 'estado-validar';
                 else if (estado_texto === 'Listo') estado_class = 'estado-listo';
+                else if (estado_texto === 'PDF Generado') estado_class = 'estado-pdf';
                 else if (estado_texto === 'Publicado') estado_class = 'estado-publicado';
                 else if (estado_texto === 'Enviado') estado_class = 'estado-enviado';
                 
@@ -455,8 +457,8 @@ function generar_acciones_declaracion(d, frm) {
         acciones += `<button class="btn-accion btn-declaracion" data-action="ver-pdf" data-doc="${d.name}" data-pdf="${pdf_url}">Ver PDF</button>`;
     }
 
-    // Si está listo: gen PDF si no tiene, y siempre botón Publicar
-    if (d.estado === 'Listo') {
+    // Si está listo (o el PDF ya se generó automático): gen PDF si no tiene, y siempre botón Publicar
+    if (d.estado === 'Listo' || d.estado === 'PDF Generado') {
         if (!tiene_pdf) {
             acciones += `<button class="btn-accion btn-declaracion" data-action="gen-pdf" data-doc="${d.name}" style="background:#28a745; color:white;">Gen.PDF</button>`;
         }

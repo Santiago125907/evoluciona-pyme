@@ -105,6 +105,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .est-borrador { background:#ffc107; color:#000; }
         .est-validar  { background:#ff9800; color:#fff; }
         .est-listo    { background:#28a745; color:#fff; }
+        .est-pdf      { background:#0984e3; color:#fff; }
         .est-publicado{ background:#6f42c1; color:#fff; }
         .est-enviado  { background:#17a2b8; color:#fff; }
         .est-sin      { background:#e9ecef; color:#888; }
@@ -742,14 +743,14 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
         a += btn('ver-f29',  d.name, d.borrador_f29_vinculado||'', c.name, 'F29');
         a += btn('ing-rrhh', d.name, '', c.name, 'RRHH');
-        if (!d.check_f29_cuadrado && d.estado !== 'Listo' && d.estado !== 'Enviado')
+        if (!d.check_f29_cuadrado && d.estado !== 'Listo' && d.estado !== 'PDF Generado' && d.estado !== 'Enviado')
             a += btn('calc-f29', d.name, d.borrador_f29_vinculado||'', c.name, '⚡Calc', '#1a6e3c');
 
         if (!d.check_gasto_rem_cargado) a += btn('check-rrhh', d.name, '', c.name, '✓RRHH', '#e67e22');
         if (!d.check_f29_cuadrado)      a += btn('check-f29',  d.name, '', c.name, '✓F29',  '#e67e22');
         if (!d.check_previred_cuadrado) a += btn('check-prev', d.name, '', c.name, '✓Prev', '#e67e22');
 
-        if (d.estado === 'Listo') {
+        if (d.estado === 'Listo' || d.estado === 'PDF Generado') {
             if (!tiene_pdf) a += btn('gen-pdf', d.name, '', c.name, 'Gen.PDF', '#27ae60');
             else            a += btn('ver-pdf', d.name, '', c.name, 'PDF', '#0984e3');
             a += btn('publicar', d.name, '', c.name, '📱 Publicar', '#6f42c1');
@@ -1026,6 +1027,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         if (!e||e==='Borrador')      return 'est-borrador';
         if (e==='En Validación')     return 'est-validar';
         if (e==='Listo')             return 'est-listo';
+        if (e==='PDF Generado')      return 'est-pdf';
         if (e==='Publicado')         return 'est-publicado';
         if (e==='Enviado')           return 'est-enviado';
         return 'est-borrador';
