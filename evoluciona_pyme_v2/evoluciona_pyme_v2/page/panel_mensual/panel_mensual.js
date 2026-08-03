@@ -23,12 +23,6 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         default: String(mes_def),
         change() { cargar_panel(); }
     });
-    let sel_filtro = page.add_field({
-        fieldname: 'filtro', label: 'Filtrar por', fieldtype: 'Select',
-        options: 'Todos\nSin declaración\nBorrador\nEn Validación\nListo\nPublicado\nEnviado',
-        default: 'Todos',
-        change() { aplicar_filtro(); }
-    });
 
     page.add_button('Cargar', cargar_panel, {btn_class: 'btn-primary'});
 
@@ -134,8 +128,33 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         input.pm-chk { width:15px; height:15px; cursor:pointer; }
         .btn-bulk { padding:4px 12px; font-size:11px; border-radius:5px; border:none;
                     cursor:pointer; font-weight:600; }
+
+        /* ── Filtros ─────────────────────────────────────────────────── */
+        .pm-filtros { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+        .pm-filtro-estados-wrap { position:relative; }
+        .pm-filtro-btn { background:#fff; border:1px solid #d5dbe0; border-radius:6px; padding:6px 12px;
+                         font-size:12px; cursor:pointer; color:#333; }
+        .pm-filtro-btn:hover { background:#f4f7f9; }
+        .pm-filtro-panel { position:absolute; top:100%; left:0; margin-top:4px; background:#fff;
+                           border:1px solid #d5dbe0; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.12);
+                           padding:10px; z-index:50; min-width:190px; display:none; }
+        .pm-filtro-panel.abierto { display:block; }
+        .pm-filtro-panel label { display:flex; align-items:center; gap:6px; font-size:12px;
+                                 padding:3px 2px; cursor:pointer; }
+        .pm-filtro-panel .acciones { display:flex; gap:8px; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:8px; }
+        .pm-filtro-panel .acciones a { font-size:11px; color:#005f6b; cursor:pointer; text-decoration:underline; }
+        .pm-filtro-input, .pm-filtro-select { border:1px solid #d5dbe0; border-radius:6px; padding:6px 10px;
+                                              font-size:12px; }
     </style>
     <div class="pm-wrap">
+        <div class="pm-filtros">
+            <div class="pm-filtro-estados-wrap">
+                <button type="button" class="pm-filtro-btn" id="pm-filtro-estados-btn">Estados ▾</button>
+                <div class="pm-filtro-panel" id="pm-filtro-estados-panel"></div>
+            </div>
+            <select class="pm-filtro-select" id="pm-filtro-asesor"><option value="">Todos los asesores</option></select>
+            <input type="text" class="pm-filtro-input" id="pm-filtro-cliente" placeholder="Buscar cliente...">
+        </div>
         <div id="pm-stats"  class="pm-stats"  style="display:none;">
             <div class="pm-stat"><strong id="pm-total">—</strong><span>Clientes</span></div>
             <div class="pm-stat"><strong id="pm-con-dec">—</strong><span>Con declaración</span></div>
@@ -574,7 +593,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         frappe.call({
             method: 'frappe.client.get_list',
             args: { doctype:'Ficha_Cliente', filters:{estado_cliente:'Activo'},
-                    fields:['name','razon_social','clave_sii','rut_usuario'],
+                    fields:['name','razon_social','clave_sii','rut_usuario','asesor_asignado'],
                     order_by:'razon_social asc', limit_page_length:200, ignore_permissions:1 },
             callback(r) {
                 _clientes = r.message || [];
@@ -813,7 +832,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             const estado_key = d ? (d.estado||'Borrador') : 'Sin declaración';
 
-            return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}">
+            return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}" data-asesor="${esc(c.asesor_asignado||'')}" data-nombre="${esc((c.razon_social||c.name).toLowerCase())}">
                 <td><input class="pm-chk" type="checkbox" data-cliente="${esc(c.name)}" data-doc="${d?esc(d.name):''}" onchange="pm_chk_change()"></td>
                 <td>
                     <span class="pm-expand-toggle" data-cliente="${esc(c.name)}" title="Ver más"><span class="arrow">▶</span> Ver más</span><br>
@@ -951,14 +970,71 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     }
 
     // ── Filtro ────────────────────────────────────────────────────────────────
+    // Combina 3 condiciones a la vez: estados marcados, asesor elegido, texto de cliente.
     function aplicar_filtro() {
-        const f = sel_filtro.get_value() || 'Todos';
-        $('#pm-content tbody tr').each(function() {
-            const est = $(this).data('estado') || '';
-            const show = f === 'Todos' || est === f;
-            $(this).toggleClass('pm-hidden', !show);
+        const asesor  = $('#pm-filtro-asesor').val() || '';
+        const busca   = ($('#pm-filtro-cliente').val() || '').trim().toLowerCase();
+
+        $('#pm-content tbody tr').not('.pm-detail-row').each(function() {
+            const est    = $(this).data('estado') || '';
+            const ases   = $(this).data('asesor') || '';
+            const nombre = ($(this).data('nombre') || '') + ' ' + ($(this).data('cliente') || '').toLowerCase();
+
+            const pasa_estado = _estados_visibles[est] !== false;
+            const pasa_asesor = !asesor || ases === asesor;
+            const pasa_nombre = !busca || nombre.indexOf(busca) !== -1;
+
+            $(this).toggleClass('pm-hidden', !(pasa_estado && pasa_asesor && pasa_nombre));
         });
     }
+
+    // ── Filtro de Estados (checkboxes) ──────────────────────────────────────────
+    const ESTADOS_FILTRO = ['Sin declaración','Borrador','En Validación','Listo','PDF Generado','Enviado','Publicado'];
+    let _estados_visibles = {};
+    ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = true);
+
+    function armar_panel_estados() {
+        const filas = ESTADOS_FILTRO.map(e => `
+            <label><input type="checkbox" class="pm-chk-estado" value="${esc(e)}" ${_estados_visibles[e]!==false?'checked':''}> ${esc(e)}</label>
+        `).join('');
+        $('#pm-filtro-estados-panel').html(`
+            <div class="acciones"><a id="pm-estados-todos">Mostrar todo</a><a id="pm-estados-ninguno">Ninguno</a></div>
+            ${filas}
+        `);
+    }
+    armar_panel_estados();
+
+    $('#pm-filtro-estados-btn').on('click', () => $('#pm-filtro-estados-panel').toggleClass('abierto'));
+    $(document).on('click', (e) => {
+        if (!$(e.target).closest('.pm-filtro-estados-wrap').length) $('#pm-filtro-estados-panel').removeClass('abierto');
+    });
+    $('#pm-filtro-estados-panel').on('change', '.pm-chk-estado', function() {
+        _estados_visibles[this.value] = this.checked;
+        aplicar_filtro();
+    });
+    $('#pm-filtro-estados-panel').on('click', '#pm-estados-todos', () => {
+        ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = true);
+        armar_panel_estados();
+        aplicar_filtro();
+    });
+    $('#pm-filtro-estados-panel').on('click', '#pm-estados-ninguno', () => {
+        ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = false);
+        armar_panel_estados();
+        aplicar_filtro();
+    });
+
+    $('#pm-filtro-asesor').on('change', aplicar_filtro);
+    $('#pm-filtro-cliente').on('input', aplicar_filtro);
+
+    // Lista de asesores para el select -- se carga una vez.
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_asesores',
+        callback(r) {
+            (r.message||[]).forEach(a => {
+                $('#pm-filtro-asesor').append(`<option value="${esc(a.name)}">${esc(a.full_name||a.name)}</option>`);
+            });
+        }
+    });
 
     // ── Checkboxes y acciones masivas ─────────────────────────────────────────
     window.pm_chk_all = function(el) {
