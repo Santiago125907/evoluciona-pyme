@@ -116,19 +116,19 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .cred-val    { font-family:monospace; font-size:11px; color:#555; }
         .cred-toggle { font-size:10px; color:#aaa; cursor:pointer; text-decoration:underline; margin-left:3px; }
         .pm-loading  { text-align:center; padding:40px; color:#999; }
-        .pm-f29-wrap { position:relative; display:inline-block; cursor:help; }
-        .pm-f29-total { font-size:11px; font-weight:700; }
-        .pm-f29-positivo { color:#c0392b; }
-        .pm-f29-cero     { color:#27ae60; }
-        .pm-f29-hint { font-size:10px; color:#bbb; margin-left:2px; }
-        .pm-f29-wrap:hover .pm-f29-hint { color:#005f6b; }
-        .pm-f29-wrap[title]:hover::after {
+        /* Hover-detail genérico: usado en Total F29, Postergación, Previred y Cobranza */
+        .pm-hover-wrap { position:relative; display:inline-block; cursor:help; }
+        .pm-hover-wrap:hover, .pm-hover-wrap:hover * { color:#005f6b !important; }
+        .pm-hover-wrap[title]:hover::after {
             content: attr(title); white-space:pre;
             position:absolute; left:0; top:100%; z-index:999;
-            background:#2c3e50; color:#fff; font-size:11px; line-height:1.6;
+            background:#2c3e50; color:#fff !important; font-size:11px; line-height:1.6;
             padding:6px 10px; border-radius:6px; min-width:160px;
             box-shadow:0 4px 12px rgba(0,0,0,.3); pointer-events:none;
         }
+        .pm-f29-total { font-size:11px; font-weight:700; }
+        .pm-f29-positivo { color:#c0392b; }
+        .pm-f29-cero     { color:#27ae60; }
         .cobro-monto { font-size:11px; font-weight:700; color:#005f6b; }
         .cobro-est   { font-size:10px; color:#888; }
         input.pm-chk { width:15px; height:15px; cursor:pointer; }
@@ -593,7 +593,9 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                         frappe.call({
                             method: 'frappe.client.get_list',
                             args: { doctype:'Cobranza_Cliente', filters:{periodo_ano:_ano, periodo_mes:_mes},
-                                    fields:['name','cliente','monto_a_cobrar','estado_cobranza'],
+                                    fields:['name','cliente','monto_a_cobrar','estado_cobranza','monto_base',
+                                            'monto_rrhh','monto_adicionales','total_descuentos',
+                                            'recargo_por_atraso','fecha_vencimiento'],
                                     limit_page_length:300, ignore_permissions:1 },
                             callback(r3) {
                                 _cobro_map = {};
@@ -624,7 +626,8 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                                                     method: 'frappe.client.get_list',
                                                     args: { doctype:'Registro_Remuneraciones',
                                                             filters:{ano:_ano, mes:_mes},
-                                                            fields:['name','cliente','total_previred_a_pagar','estado_pago_previred'],
+                                                            fields:['name','cliente','total_previred_a_pagar','estado_pago_previred',
+                                                                    'total_empleados_activos','costo_total_empleador'],
                                                             limit_page_length:300, ignore_permissions:1 },
                                                     callback(r5) {
                                                         _remu_map = {};
@@ -634,7 +637,8 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                                                             method: 'frappe.client.get_list',
                                                             args: { doctype:'Postergacion_IVA',
                                                                     filters:{ano_origen:_ano, mes_origen:_mes},
-                                                                    fields:['name','cliente','estado','monto_postergado'],
+                                                                    fields:['name','cliente','estado','monto_postergado',
+                                                                            'fecha_vencimiento','mes_f29_pagado','ano_f29_pagado'],
                                                                     limit_page_length:300, ignore_permissions:1 },
                                                             callback(r6) {
                                                                 _post_map = {};
@@ -700,7 +704,18 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             const remu = _remu_map[c.name];
             const prev_monto = remu ? parseFloat(remu.total_previred_a_pagar || 0) : null;
             const prev_html = prev_monto !== null
-                ? `<div class="cobro-monto" style="color:#2980b9;">$${fmt_num(prev_monto)}</div>`
+                ? (() => {
+                    const lineas_prev = [
+                        `N° empleados:   ${remu.total_empleados_activos||0}`,
+                        `Costo empleador:$${fmt_num(remu.costo_total_empleador||0)}`,
+                        `──────────────────────`,
+                        `Total Previred: $${fmt_num(prev_monto)}`,
+                        `Estado:         ${remu.estado_pago_previred||'Pendiente de Pago'}`,
+                    ].join('\n');
+                    return `<div class="pm-hover-wrap" title="${lineas_prev}">
+                        <span class="cobro-monto" style="color:#2980b9;">$${fmt_num(prev_monto)}</span>
+                    </div>`;
+                })()
                 : '<span style="color:#ddd">—</span>';
 
             // F29 totales con tooltip
@@ -735,17 +750,34 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     `TOTAL MES:      $${fmt_num(total_mes_tt)}`,
                 ].filter(Boolean).join('\n');
                 const cls = pagar > 0 ? 'pm-f29-positivo' : 'pm-f29-cero';
-                return `<div class="pm-f29-wrap" title="${lines}">
+                return `<div class="pm-hover-wrap" title="${lines}">
                     <span class="pm-f29-total ${cls}">$${fmt_num(pagar)}</span>
-                    <span class="pm-f29-hint"> ℹ</span>
                 </div>`;
             })();
 
-            // Cobranza: todo lo pendiente del cliente (no solo lo de este período).
+            // Cobranza: todo lo pendiente del cliente (no solo lo de este período), con
+            // detalle del cobro de ESTE período en el hover si existe.
             const cobro_pend = _cobro_pendiente_map[c.name];
+            const co_periodo = _cobro_map[c.name];
             const cobro_html = cobro_pend
-                ? `<div class="cobro-monto">$${fmt_num(cobro_pend.monto)}</div>
-                   <div class="cobro-est">${cobro_pend.n>1 ? cobro_pend.n+' pendientes' : 'Pendiente'}</div>`
+                ? (() => {
+                    const lineas_cob = co_periodo ? [
+                        `Base:           $${fmt_num(co_periodo.monto_base||0)}`,
+                        `RRHH:           $${fmt_num(co_periodo.monto_rrhh||0)}`,
+                        co_periodo.monto_adicionales   ? `Adicionales:    $${fmt_num(co_periodo.monto_adicionales)}` : null,
+                        co_periodo.total_descuentos     ? `Descuentos:    -$${fmt_num(co_periodo.total_descuentos)}` : null,
+                        co_periodo.recargo_por_atraso   ? `Recargo atraso: $${fmt_num(co_periodo.recargo_por_atraso)}` : null,
+                        `──────────────────────`,
+                        `Este período:   $${fmt_num(co_periodo.monto_a_cobrar||0)}`,
+                        `Vence:          ${co_periodo.fecha_vencimiento||'—'}`,
+                        `══════════════════════`,
+                        `Total pendiente:$${fmt_num(cobro_pend.monto)} (${cobro_pend.n} período${cobro_pend.n>1?'s':''})`,
+                    ].filter(Boolean).join('\n') : `Total pendiente: $${fmt_num(cobro_pend.monto)} (${cobro_pend.n} período${cobro_pend.n>1?'s':''})`;
+                    return `<div class="pm-hover-wrap" title="${lineas_cob}">
+                        <div class="cobro-monto">$${fmt_num(cobro_pend.monto)}</div>
+                        <div class="cobro-est">${cobro_pend.n>1 ? cobro_pend.n+' pendientes' : 'Pendiente'}</div>
+                    </div>`;
+                })()
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación de IVA: ¿el cliente postergó el pago de este período?
@@ -754,7 +786,17 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             const post = _post_map[c.name];
             const post_clase = { Vigente:'#2980b9', 'Por Vencer':'#f39c12', Vencida:'#e74c3c', Pagada:'#95a5a6' };
             const post_html = post
-                ? `<span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};" title="Postergado: $${fmt_num(post.monto_postergado||0)}">${esc(post.estado)}</span>`
+                ? (() => {
+                    const lineas_post = [
+                        `Monto postergado:$${fmt_num(post.monto_postergado||0)}`,
+                        `Estado:          ${post.estado}`,
+                        `Se paga en F29:  ${post.mes_f29_pagado}/${post.ano_f29_pagado}`,
+                        `Vence:           ${post.fecha_vencimiento||'—'}`,
+                    ].join('\n');
+                    return `<div class="pm-hover-wrap" title="${lineas_post}">
+                        <span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};">${esc(post.estado)}</span>
+                    </div>`;
+                })()
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación que vence (hay que pagarla) justo este período.
