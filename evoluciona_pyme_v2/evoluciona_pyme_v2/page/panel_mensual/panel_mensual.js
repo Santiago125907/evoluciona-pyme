@@ -336,11 +336,25 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 // está lista (evita marcar pagado/postergado algo que ni siquiera está calculado).
                 const f29_data = f29_name ? _f29_map[f29_name] : null;
                 const mostrar_estado_f29 = f29_name && d && ['Listo','PDF Generado','Publicado'].includes(d.estado);
+
+                // La postergación solo se muestra si existe (tiene monto) para este período,
+                // y bajo la misma regla de estado que el F29 -- son parte del mismo flujo.
+                const post_detalle = _post_map[cliente];
+                const mostrar_postergacion = mostrar_estado_f29 && post_detalle;
+                const postergacion_html = mostrar_postergacion ? `
+                    <div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Posterg.</span>
+                        <button class="form-control" style="font-size:12px;padding:3px 6px;height:auto;text-align:left;cursor:pointer;"
+                                onclick="pm_toggle_postergacion_pagada('${post_detalle.name}','${post_detalle.estado}')">
+                            ${post_detalle.estado === 'Pagada' ? '✅ Pagada' : '⏳ Pendiente'} — $${fmt_num(post_detalle.monto_postergado||0)}
+                        </button>
+                    </div>` : '';
+
                 const estado_pago_html = (mostrar_estado_f29 || tiene_previred_este_mes)
                     ? `<div class="pm-detail-card">
                         <h5>Estado de Pago</h5>
                         ${mostrar_estado_f29 ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">F29</span>
                             ${select_estado('Borrador_F29', f29_name, f29_data ? f29_data.estado_pago_f29 : 'Pendiente de Pago', f29_data ? (f29_data.impuesto_determinado||0) : 0)}</div>` : ''}
+                        ${postergacion_html}
                         ${tiene_previred_este_mes ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Previred</span>
                             ${select_estado('Registro_Remuneraciones', remu.name, remu.estado_pago_previred || 'Pendiente de Pago', 0)}</div>` : ''}
                     </div>`
@@ -735,15 +749,12 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación de IVA: ¿el cliente postergó el pago de este período?
-            // Clickeable: alterna entre Pagada y Vigente (pendiente), aparece siempre
-            // que exista la postergación, sin importar el estado de la declaración.
+            // Solo indicador visual acá -- el control para cambiarla vive junto a
+            // F29/Previred en la tarjeta "Estado de Pago" de la fila expandida.
             const post = _post_map[c.name];
             const post_clase = { Vigente:'#2980b9', 'Por Vencer':'#f39c12', Vencida:'#e74c3c', Pagada:'#95a5a6' };
             const post_html = post
-                ? `<span style="font-size:10px;font-weight:700;cursor:pointer;padding:2px 6px;border-radius:8px;
-                          background:${post_clase[post.estado]||'#888'}22;color:${post_clase[post.estado]||'#888'};"
-                        title="Postergado: $${fmt_num(post.monto_postergado||0)} — click para ${post.estado==='Pagada'?'marcar pendiente':'marcar pagada'}"
-                        onclick="pm_toggle_postergacion_pagada('${post.name}','${post.estado}')">${esc(post.estado)}</span>`
+                ? `<span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};" title="Postergado: $${fmt_num(post.monto_postergado||0)}">${esc(post.estado)}</span>`
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación que vence (hay que pagarla) justo este período.
