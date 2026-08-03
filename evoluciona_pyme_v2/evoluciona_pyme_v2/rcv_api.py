@@ -326,10 +326,15 @@ def cargar_anio_cliente(cliente, ano, compras=1, ventas=1, honorarios=0, meses_b
 
 def agregar_cliente_a_tabla_rcv(doc, method=None):
     """
-    Hook after_insert de Ficha_Cliente. Suma el cliente nuevo a
+    Hook after_insert Y on_update de Ficha_Cliente. Suma el cliente a
     tabla_rcv_empresas en Configuracion App con compras/ventas/honorarios
     activados, para que el cron mensual de RCV (dispatcher_libros) lo
     cubra automaticamente sin tener que agregarlo a mano.
+    Solo actua si el cliente esta Activo (no Inactivo/Potencial) y si
+    todavia no esta en la tabla -- cubre tanto el alta directa como el
+    caso de un cliente que nace Inactivo/Potencial y luego pasa a Activo
+    (ese nunca entra por after_insert, lo agarra este mismo chequeo en
+    on_update).
     """
     try:
         if doc.get("estado_cliente") != "Activo":

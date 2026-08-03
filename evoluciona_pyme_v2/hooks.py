@@ -147,6 +147,7 @@ doc_events = {
 		],
 		"on_update": [
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_auth.enviar_bienvenida_portal",
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.agregar_cliente_a_tabla_rcv",
 		]
 	},
 	"Declaracion_Mensual": {
