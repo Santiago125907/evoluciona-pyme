@@ -320,3 +320,28 @@ def cargar_anio_cliente(cliente, ano, compras=1, ventas=1, honorarios=0, meses_b
 
     detalle = f"Año {ano} — " + " | ".join(lineas)
     return {"ok": n_errores == 0, "detalle": detalle, "errores": n_errores}
+
+
+def agregar_cliente_a_tabla_rcv(doc, method=None):
+    """
+    Hook after_insert de Ficha_Cliente. Suma el cliente nuevo a
+    tabla_rcv_empresas en Configuracion App con compras/ventas/honorarios
+    activados, para que el cron mensual de RCV (dispatcher_libros) lo
+    cubra automaticamente sin tener que agregarlo a mano.
+    """
+    try:
+        cfg = frappe.get_doc("Configuracion App")
+        ya_configurado = {fila.empresa for fila in cfg.get("tabla_rcv_empresas")}
+        if doc.name in ya_configurado:
+            return
+
+        cfg.append("tabla_rcv_empresas", {
+            "empresa": doc.name,
+            "descargar_compras": 1,
+            "descargar_ventas": 1,
+            "descargar_honorarios": 1,
+        })
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(str(e), f"agregar_cliente_a_tabla_rcv {doc.name}")

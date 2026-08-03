@@ -143,6 +143,7 @@ doc_events = {
 		"after_insert": [
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_cliente",
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.auto_asignar_asesor",
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.agregar_cliente_a_tabla_rcv",
 		],
 		"on_update": [
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_auth.enviar_bienvenida_portal",
