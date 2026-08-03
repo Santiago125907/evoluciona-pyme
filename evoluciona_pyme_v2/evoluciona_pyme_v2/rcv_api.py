@@ -193,6 +193,8 @@ def descargar_rcv_todos(periodo):
     for fila in empresas:
         if not fila.descargar_compras and not fila.descargar_ventas:
             continue
+        if frappe.db.get_value("Ficha_Cliente", fila.empresa, "estado_cliente") != "Activo":
+            continue
         try:
             descargar_rcv_cliente(
                 fila.empresa,
@@ -330,6 +332,9 @@ def agregar_cliente_a_tabla_rcv(doc, method=None):
     cubra automaticamente sin tener que agregarlo a mano.
     """
     try:
+        if doc.get("estado_cliente") != "Activo":
+            return
+
         cfg = frappe.get_doc("Configuracion App")
         ya_configurado = {fila.empresa for fila in cfg.get("tabla_rcv_empresas")}
         if doc.name in ya_configurado:

@@ -89,6 +89,9 @@ def dispatcher_libros():
 		rcv_api.descargar_rcv_todos(periodo)
 
 		for fila in (cfg.get("tabla_rcv_empresas") or []):
+			if frappe.db.get_value("Ficha_Cliente", fila.empresa, "estado_cliente") != "Activo":
+				continue
+
 			if fila.descargar_honorarios:
 				try:
 					bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
