@@ -50,6 +50,12 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
   procesos de supervisor (`frappe-bench-web`, los `frappe-bench-workers`) además de comitear — el código
   Python vive en memoria en los workers y no se recarga solo. `bench build` es solo para JS/CSS.
 
+## Roadmap
+
+Ver [ROADMAP.md](ROADMAP.md) para el plan de evolución hacia una plataforma multi-contador
+(multi-sitio, sitio controlador, personalización por contador, app móvil). No confundir con
+trabajo del día a día -- son etapas grandes, posteriores a lo que se está mergeando ahora.
+
 ## Convenciones
 
 - Commits en español, descriptivos, explicando el *por qué* cuando no es obvio.

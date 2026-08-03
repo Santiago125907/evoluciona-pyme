@@ -997,6 +997,45 @@ def convertir_a_pdf(html_content):
 
 
 # ──────────────────────────────────────────────────────────
+# PLAYWRIGHT — motor local, sin depender de un servicio externo.
+# Usa el mismo Chromium headless que hay detras de Gotenberg, pero
+# corriendo en este mismo servidor. Ejecuta el JS del reporte (echarts)
+# igual que Gotenberg, a diferencia de WeasyPrint u otros motores solo-CSS.
+# ──────────────────────────────────────────────────────────
+
+def convertir_a_pdf_local(html_content):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.set_content(html_content, wait_until='networkidle')
+            page.wait_for_timeout(2000)  # deja terminar de dibujar el grafico echarts
+            pdf_bytes = page.pdf(
+                width='8.27in', height='11.69in',
+                margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'},
+                print_background=True,
+                prefer_css_page_size=True,
+            )
+        finally:
+            browser.close()
+
+    return pdf_bytes
+
+
+def convertir_a_pdf_segun_config(html_content):
+    """Elige el motor de PDF configurado en Configuracion App (Gotenberg por
+    defecto, para no cambiar el comportamiento de nadie que ya lo tenía andando)."""
+    config = frappe.get_single('Configuracion App')
+    motor = getattr(config, 'motor_pdf', None) or 'Gotenberg'
+
+    if motor == 'Playwright (local)':
+        return convertir_a_pdf_local(html_content)
+    return convertir_a_pdf(html_content)
+
+
+# ──────────────────────────────────────────────────────────
 # FUNCIÓN PRINCIPAL
 # ──────────────────────────────────────────────────────────
 
@@ -1010,7 +1049,7 @@ def generar_y_subir_pdf(declaracion_name):
         config = frappe.get_single('Configuracion App')
 
         html = generar_html(payload, config)
-        pdf_bytes = convertir_a_pdf(html)
+        pdf_bytes = convertir_a_pdf_segun_config(html)
 
         decl = frappe.get_doc('Declaracion_Mensual', declaracion_name)
         cliente = frappe.get_doc('Ficha_Cliente', decl.cliente)

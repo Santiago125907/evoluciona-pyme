@@ -51,6 +51,7 @@
   "api_access_token",
   "habilitar_logs_api",
   "tab_integraciones",
+  "motor_pdf",
   "sb_gotenberg",
   "gotenberg_url",
   "gotenberg_usuario",
@@ -325,6 +326,14 @@
    "label": "Integraciones"
   },
   {
+   "fieldname": "motor_pdf",
+   "fieldtype": "Select",
+   "label": "Motor de Generacion de PDF",
+   "options": "Gotenberg\nPlaywright (local)",
+   "default": "Gotenberg",
+   "description": "Gotenberg: servicio externo (configurar abajo). Playwright (local): Chromium headless en este mismo servidor, sin depender de un servicio aparte."
+  },
+  {
    "fieldname": "sb_gotenberg",
    "fieldtype": "Section Break",
    "label": "Gotenberg (Generación de PDF)"
@@ -498,7 +507,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-02 11:41:44.175465",
+ "modified": "2026-08-03 08:13:53.022181",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion App",

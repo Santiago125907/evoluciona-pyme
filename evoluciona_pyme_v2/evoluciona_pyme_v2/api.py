@@ -977,8 +977,8 @@ def preparar_datos_pdf(**kwargs):
             }
         }
         
-        # 16. GENERAR PDF NATIVO CON GOTENBERG
-        from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf
+        # 16. GENERAR PDF (motor elegido en Configuracion App: Gotenberg o Playwright local)
+        from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf_segun_config
         from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import is_usuario_basico
 
         config = frappe.get_single('Configuracion App')
@@ -988,7 +988,7 @@ def preparar_datos_pdf(**kwargs):
             getattr(config, 'pdf_basico_ocultar_opcion_a' if _modo_basico else 'pdf_ocultar_opcion_a', 0) or 0
         ))
         html = generar_html(payload, config, modo_basico=_modo_basico, ocultar_opcion_a=_ocultar_opcion_a)
-        pdf_bytes = convertir_a_pdf(html)
+        pdf_bytes = convertir_a_pdf_segun_config(html)
 
         meses_nombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                          "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
