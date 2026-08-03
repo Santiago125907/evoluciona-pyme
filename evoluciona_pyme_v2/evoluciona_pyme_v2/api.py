@@ -495,33 +495,32 @@ def preparar_datos_pdf(**kwargs):
         except:
             pass
         
-        # 9. POSTERGACIÓN VENCIDA
+        # 9. POSTERGACIÓN VENCIDA — solo la(s) que vence(n) justo en este período
+        # (mes_f29_pagado/ano_f29_pagado), mismo criterio que usa el Panel Mensual.
+        # No suma postergaciones antiguas que ya deberían haberse mostrado en un
+        # PDF anterior.
         postergacion_vencida = 0.0
         postergaciones_detalle = []
-        
+
         try:
-            fecha_limite = frappe.utils.getdate(decl.get("fecha_vencimiento_f29")) if decl.get("fecha_vencimiento_f29") else fecha_mes_siguiente.replace(day=20)
-            
             posts_pendientes = frappe.get_all("Postergacion_IVA",
                 filters={
                     "cliente": decl.cliente,
+                    "mes_f29_pagado": mes_actual,
+                    "ano_f29_pagado": ano_actual,
                     "estado": ["in", ["Vigente", "Por Vencer", "Vencida"]]
                 },
-                fields=["monto_postergado", "fecha_vencimiento", "mes_origen", "ano_origen"],
-                order_by="fecha_vencimiento asc")
-            
+                fields=["monto_postergado", "fecha_vencimiento", "mes_origen", "ano_origen"])
+
             for post in posts_pendientes:
-                if post.get("fecha_vencimiento"):
-                    fv = frappe.utils.getdate(post.fecha_vencimiento)
-                    if fv <= fecha_limite:
-                        postergacion_vencida += frappe.utils.flt(post.monto_postergado)
-                        mes_or = post.get('mes_origen', '')
-                        ano_or = post.get('ano_origen', '')
-                        postergaciones_detalle.append({
-                            "monto": float(frappe.utils.flt(post.monto_postergado)),
-                            "periodo": f"{mes_or}/{ano_or}" if mes_or and ano_or else ""
-                        })
-            
+                postergacion_vencida += frappe.utils.flt(post.monto_postergado)
+                mes_or = post.get('mes_origen', '')
+                ano_or = post.get('ano_origen', '')
+                postergaciones_detalle.append({
+                    "monto": float(frappe.utils.flt(post.monto_postergado)),
+                    "periodo": f"{mes_or}/{ano_or}" if mes_or and ano_or else ""
+                })
+
         except Exception as e:
             frappe.log_error("ERROR en postergación", str(e))
         
