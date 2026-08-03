@@ -458,6 +458,19 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         });
     };
 
+    // Botón de la columna "Post.": alterna la postergación entre pendiente (Vigente) y Pagada.
+    window.pm_toggle_postergacion_pagada = function(post_name, estado_actual) {
+        const nuevo = estado_actual === 'Pagada' ? 'Vigente' : 'Pagada';
+        frappe.call({
+            method: 'frappe.client.set_value',
+            args: { doctype:'Postergacion_IVA', name:post_name, fieldname:'estado', value:nuevo },
+            callback() {
+                frappe.show_alert({message:`✅ Postergación ${nuevo === 'Pagada' ? 'marcada como pagada' : 'marcada como pendiente'}`, indicator:'green'}, 3);
+                cargar_panel();
+            }
+        });
+    };
+
     // valor_anterior e iva_det solo aplican a Borrador_F29 (Previred no tiene postergación).
     window.pm_set_estado_pago = function(doctype, name, valor, valor_anterior, iva_det) {
         const fieldname = doctype === 'Borrador_F29' ? 'estado_pago_f29' : 'estado_pago_previred';
@@ -505,19 +518,15 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
     window.pm_dialog_postergar_iva = function(f29_name, iva_det) {
         const MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        const mesLabel = (m, a) => `${MESES[((m-1)%12)+1]} ${m > 12 ? a+1 : a}`;
         const mes = parseInt(_mes), ano = parseInt(_ano);
-        const m1 = ((mes) % 12) + 1;   const a1 = mes === 12 ? ano+1 : ano;
         const m2 = ((mes+1) % 12) + 1; const a2 = mes >= 11 ? ano+1 : ano;
 
         const d = new frappe.ui.Dialog({
             title: '⏳ Postergar IVA — Art. 64 D.L. 825',
             fields: [
-                { fieldtype:'HTML', options:`<div style="background:#fff8ec;border-left:3px solid #b45309;border-radius:4px;padding:10px 14px;margin-bottom:4px;font-size:12px;color:#7d4e00;">Permite diferir el pago del IVA determinado por <b>1 o 2 meses</b>. Solo Pro Pyme.</div>` },
+                { fieldtype:'HTML', options:`<div style="background:#fff8ec;border-left:3px solid #b45309;border-radius:4px;padding:10px 14px;margin-bottom:4px;font-size:12px;color:#7d4e00;">Difiere el pago del IVA determinado por <b>2 meses</b> (F29 de ${MESES[m2]} ${a2}). Solo Pro Pyme.</div>` },
                 { label:'IVA Determinado del período', fieldname:'iva_det_info', fieldtype:'HTML', options:`<div style="font-size:22px;font-weight:800;color:#b45309;padding:6px 0 10px;">$${(iva_det||0).toLocaleString('es-CL')}</div>` },
-                { label:'Monto a Postergar ($)', fieldname:'monto', fieldtype:'Currency', default: iva_det||0, reqd:1, description:'Máximo: IVA determinado del período' },
-                { label:'Diferir hasta', fieldname:'meses_diferidos', fieldtype:'Select', options:'1\n2', default:'2', reqd:1,
-                  description:`1 mes → F29 de ${mesLabel(m1,a1)} | 2 meses → F29 de ${mesLabel(m2,a2)}` }
+                { label:'Monto a Postergar ($)', fieldname:'monto', fieldtype:'Currency', default: iva_det||0, reqd:1, description:'Máximo: IVA determinado del período' }
             ],
             primary_action_label: 'Registrar Postergación',
             primary_action(values) {
@@ -526,7 +535,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 d.hide();
                 frappe.call({
                     method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.registrar_postergacion_iva',
-                    args: { doc_name: f29_name, monto: values.monto, meses_diferidos: values.meses_diferidos },
+                    args: { doc_name: f29_name, monto: values.monto, meses_diferidos: 2 },
                     freeze: true, freeze_message: 'Registrando postergación...',
                     callback(r) {
                         const res = r.message;
@@ -726,10 +735,15 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación de IVA: ¿el cliente postergó el pago de este período?
+            // Clickeable: alterna entre Pagada y Vigente (pendiente), aparece siempre
+            // que exista la postergación, sin importar el estado de la declaración.
             const post = _post_map[c.name];
             const post_clase = { Vigente:'#2980b9', 'Por Vencer':'#f39c12', Vencida:'#e74c3c', Pagada:'#95a5a6' };
             const post_html = post
-                ? `<span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};" title="Postergado: $${fmt_num(post.monto_postergado||0)}">${esc(post.estado)}</span>`
+                ? `<span style="font-size:10px;font-weight:700;cursor:pointer;padding:2px 6px;border-radius:8px;
+                          background:${post_clase[post.estado]||'#888'}22;color:${post_clase[post.estado]||'#888'};"
+                        title="Postergado: $${fmt_num(post.monto_postergado||0)} — click para ${post.estado==='Pagada'?'marcar pendiente':'marcar pagada'}"
+                        onclick="pm_toggle_postergacion_pagada('${post.name}','${post.estado}')">${esc(post.estado)}</span>`
                 : '<span style="color:#ddd">—</span>';
 
             // Postergación que vence (hay que pagarla) justo este período.
