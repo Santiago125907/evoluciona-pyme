@@ -1495,6 +1495,20 @@ function facturar_cobranza(doc_name, frm) {
                                     total_taxes: 0
                                 });
                             }
+
+                            // Línea 2.6: Recargo por pago atrasado del mes anterior -- sin esto el
+                            // detalle no cuadra contra monto_total (que sí lo incluye).
+                            if (cob.recargo_por_atraso > 0) {
+                                details.push({
+                                    quantity: 1,
+                                    sku: "RECARGO-ATRASO",
+                                    line_description: "Recargo por pago atrasado (mes anterior)",
+                                    unit_measure: "UN",
+                                    unit_price: cob.recargo_por_atraso,
+                                    total_amount_line: cob.recargo_por_atraso,
+                                    total_taxes: 0
+                                });
+                            }
                             
                             if (cob.total_descuentos > 0) {
                                 
@@ -1553,6 +1567,7 @@ function facturar_cobranza(doc_name, frm) {
                                     monto_rrhh: cob.monto_rrhh || 0,
                                     numero_empleados: cob.numero_empleados || 0,
                                     total_descuentos: cob.total_descuentos || 0,
+                                    recargo_por_atraso: cob.recargo_por_atraso || 0,
                                     monto_total: cob.monto_a_cobrar,
                                     
                                     details: details,

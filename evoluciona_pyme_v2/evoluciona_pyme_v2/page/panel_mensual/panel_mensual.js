@@ -252,29 +252,42 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             args: { doctype:'Cobranza_Cliente', name:cobro },
             callback(r_cob) {
                 const venc = r_cob.message && r_cob.message.fecha_vencimiento;
-                const atrasado = venc && frappe.datetime.get_diff(frappe.datetime.nowdate(), venc) > 0;
 
-                const marcar = (aplicar_recargo) => {
-                    frappe.call({
-                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
-                        args: { cobranza_name:cobro, aplicar_recargo: aplicar_recargo ? 1 : 0 },
-                        callback() {
-                            frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3);
-                            setTimeout(cargar_panel,500);
-                        }
-                    });
-                };
+                // Se pregunta la fecha real de pago -- si se paga varios días después
+                // de que efectivamente llegó el pago, asumir "hoy" da un atraso mal
+                // calculado (para bien o para mal).
+                frappe.prompt(
+                    [{ label:'Fecha de Pago', fieldname:'fecha_pago', fieldtype:'Date',
+                       default: frappe.datetime.get_today(), reqd:1 }],
+                    (values) => {
+                        const fecha_pago = values.fecha_pago;
+                        const atrasado = venc && frappe.datetime.get_diff(fecha_pago, venc) > 0;
 
-                if (!atrasado) { marcar(false); return; }
+                        const marcar = (aplicar_recargo) => {
+                            frappe.call({
+                                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
+                                args: { cobranza_name:cobro, aplicar_recargo: aplicar_recargo ? 1 : 0, fecha_pago },
+                                callback() {
+                                    frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3);
+                                    setTimeout(cargar_panel,500);
+                                }
+                            });
+                        };
 
-                frappe.db.get_single_value('Configuracion App','monto_recargo_pago_atrasado').then(monto => {
-                    frappe.confirm(
-                        `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(venc)}).<br><br>` +
-                        `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
-                        () => marcar(true),
-                        () => marcar(false)
-                    );
-                });
+                        if (!atrasado) { marcar(false); return; }
+
+                        frappe.db.get_single_value('Configuracion App','monto_recargo_pago_atrasado').then(monto => {
+                            frappe.confirm(
+                                `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(venc)}).<br><br>` +
+                                `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
+                                () => marcar(true),
+                                () => marcar(false)
+                            );
+                        });
+                    },
+                    'Marcar como Pagado',
+                    'Confirmar'
+                );
             }
         });
     }
