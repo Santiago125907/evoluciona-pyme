@@ -49,6 +49,20 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
 - **Después de editar cualquier `.py` del backend** (hooks, tasks, api, etc.): hace falta reiniciar los
   procesos de supervisor (`frappe-bench-web`, los `frappe-bench-workers`) además de comitear — el código
   Python vive en memoria en los workers y no se recarga solo. `bench build` es solo para JS/CSS.
+- **Ojo con `evoluciona_pyme_v2/fixtures/*.json`.** `frappe.utils.fixtures.import_fixtures()` (paso "Syncing
+  fixtures..." de cada `bench migrate`) **importa TODOS los `.json` que encuentre en esa carpeta, sin mirar
+  para nada la lista `fixtures = [...]` de `hooks.py`**. Si queda un archivo viejo ahí (de un
+  `bench export-fixtures` que nadie volvió a correr), se reimporta encima del estado real en cada migrate,
+  sin importar el timestamp `modified` de la DB. Pasó en agosto 2026: había un `doctype.json` de 588KB con
+  una foto congelada del 30 de abril de 26 DocTypes completos (más `client_script.json`, `server_script.json`,
+  `web_page.json`, ninguno declarado en `hooks.py`), y cada migrate pisaba silenciosamente campos agregados
+  después — incluyendo `recargo_por_atraso`, `pago_atrasado`, `recargo_aplicado`, `estado_pago_f29`,
+  `estado_pago_previred` y la opción "PDF Generado" del estado de Declaracion_Mensual. Se detectó porque el
+  usuario reportó `Campo no permitido en consulta: recargo_por_atraso` pese a que la columna física seguía
+  en la tabla (sin pérdida de datos, solo de metadata). **Regla:** la carpeta `fixtures/` solo debe tener
+  archivos que correspondan 1:1 a algo declarado en `hooks.py`'s `fixtures = [...]`. Si aparece un `.json`
+  ahí que no está en esa lista, es peligroso — hay que borrarlo o declararlo (y mantenerlo actualizado a
+  propósito con `bench export-fixtures`). Se limpiaron los 4 archivos huérfanos en este commit.
 
 ## Testing
 
