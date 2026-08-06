@@ -89,27 +89,66 @@ def get(path, params=None, timeout=60):
         frappe.throw(f"SII Gateway: {e}")
 
 
+def pendientes_acuse(ficha, periodo):
+    """Documentos de compra en estado PENDIENTE (aún sin acuse) para un período."""
+    body = {"login": login_de(ficha), "contribuyente": ficha.rut_cliente, "periodo": periodo}
+    return post("/v1/dte/pendientes-acuse", body, timeout=60)
+
+
+def borrador_f29(ficha, periodo):
+    """Borrador informativo del F29 (débitos/créditos desde el RCV en REGISTRO)."""
+    body = {"login": login_de(ficha), "contribuyente": ficha.rut_cliente, "periodo": periodo}
+    return post("/v1/f29/borrador", body, timeout=120)
+
+
+def enviar_acuse(ficha, periodo, documentos, cod_evento="ERM", simular=True):
+    """
+    Envía el evento de acuse de recibo para una lista de documentos.
+    simular=True (default) es dry-run: no escribe nada en el SII.
+    simular=False es ESCRITURA IRREVERSIBLE en el SII.
+    """
+    body = {
+        "login": login_de(ficha),
+        "contribuyente": ficha.rut_cliente,
+        "periodo": periodo,
+        "documentos": documentos,
+        "cod_evento": cod_evento,
+        "simular": bool(simular),
+    }
+    return post("/v1/dte/acuse-recibo", body, timeout=120)
+
+
 CODIGO_REMANENTE_MES_ANTERIOR = "504"
 
 
-def actualizar_remanente_cliente(cliente, ano, mes):
+def remanente_mes(ficha, periodo):
     """
-    Consulta el F29 oficial del SII para el período y actualiza la línea del
-    código 504 (Remanente Crédito Fiscal Mes Anterior) del Borrador_F29
-    correspondiente. No toca total_a_pagar ni ningún otro código — eso lo
-    valida un humano.
-    Retorna True si actualizó la línea, False si no encontró Borrador_F29
-    para ese período o el código no vino en la respuesta.
+    Consulta el F29 oficial del SII y devuelve el monto del código 504
+    (Remanente Crédito Fiscal Mes Anterior) para el período, o None si no
+    vino en la respuesta. No depende de que exista un Borrador_F29 local
+    para ese período — sirve tanto para meses ya cerrados como para el mes
+    en curso (mientras el período anterior ya haya sido declarado).
     """
-    ficha = frappe.get_doc("Ficha_Cliente", cliente)
-    periodo = f"{ano}-{str(mes).zfill(2)}"
     body = {
         "login": login_de(ficha),
         "contribuyente": ficha.rut_cliente,
         "periodo": periodo,
     }
     respuesta = post("/v1/f29/formulario", body, timeout=180)
-    monto = (respuesta.get("todos_los_codigos") or {}).get(CODIGO_REMANENTE_MES_ANTERIOR)
+    return (respuesta.get("todos_los_codigos") or {}).get(CODIGO_REMANENTE_MES_ANTERIOR)
+
+
+def actualizar_remanente_cliente(cliente, ano, mes):
+    """
+    Actualiza la línea del código 504 (Remanente Crédito Fiscal Mes Anterior)
+    del Borrador_F29 correspondiente. No toca total_a_pagar ni ningún otro
+    código — eso lo valida un humano.
+    Retorna True si actualizó la línea, False si no encontró Borrador_F29
+    para ese período o el código no vino en la respuesta.
+    """
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    periodo = f"{ano}-{str(mes).zfill(2)}"
+    monto = remanente_mes(ficha, periodo)
     if monto is None:
         return False
 

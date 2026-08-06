@@ -124,6 +124,45 @@ def dispatcher_libros():
 		frappe.log_error("dispatcher_libros", frappe.get_traceback())
 
 
+# ── CRON 3: Acuse de recibo inteligente ─────────────────────────────────────
+def dispatcher_acuse():
+	"""
+	daily — El último día de cada mes, decide qué compras pendientes de acuse
+	conviene acusar ahora (según el IVA esperado configurado por cliente) y
+	cuáles dejar para que se registren solas el mes siguiente. Corre para el
+	período EN CURSO (no el mes anterior, a diferencia de los otros
+	dispatchers), porque la decisión hay que tomarla antes de que cierre el mes.
+	"""
+	cfg = _cargar_cfg()
+	if not cfg or not cfg.habilitar_acuse_automatico:
+		return
+
+	hoy = getdate()
+	if hoy != frappe.utils.get_last_day(hoy):
+		return
+
+	now      = _now_local()
+	hora_cfg = int((cfg.hora_acuse_automatico or "20:00").split(":")[0])
+	if now.hour != hora_cfg:
+		return
+
+	ultima = get_datetime(cfg.ultima_ejecucion_acuse) if cfg.ultima_ejecucion_acuse else None
+	if ultima and ultima.month == now.month and ultima.year == now.year:
+		return  # ya se ejecutó este mes
+
+	try:
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api
+
+		simular = bool(cfg.acuse_recibo_modo_prueba)
+		rcv_api.acusar_recibo_todos(hoy.year, hoy.month, simular=simular)
+
+		cfg.ultima_ejecucion_acuse = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_acuse", frappe.get_traceback())
+
+
 def _disparar_webhook(nombre, url, payload):
 	"""Envía un POST JSON a la URL indicada y registra el resultado."""
 	import json

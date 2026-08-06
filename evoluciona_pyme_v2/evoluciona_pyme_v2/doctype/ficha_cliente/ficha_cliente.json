@@ -35,6 +35,8 @@
   "column_break_oibf",
   "regimen_tributario",
   "usa_iva_credito",
+  "acuse_recibo_automatico",
+  "monto_iva_esperado",
   "segmento_empresa",
   "tipo_contribuyente",
   "subtipo_contribuyente",
@@ -250,6 +252,20 @@
    "fieldname": "usa_iva_credito",
    "fieldtype": "Check",
    "label": "Usa IVA Crédito Fiscal"
+  },
+  {
+   "fieldname": "acuse_recibo_automatico",
+   "fieldtype": "Check",
+   "label": "Acuse de Recibo Automático (compras SII)",
+   "description": "Si está activo, el cron de fin de mes decide y envía el acuse de recibo de las facturas de compra pendientes de este cliente."
+  },
+  {
+   "fieldname": "monto_iva_esperado",
+   "fieldtype": "Currency",
+   "label": "IVA Aproximado Esperado a Pagar",
+   "default": "0",
+   "depends_on": "eval:doc.acuse_recibo_automatico",
+   "description": "Estimado, referencial. 0 = sin límite (acusa todas las compras pendientes). Si es mayor a 0, acusa solo lo necesario para acercarse a este monto, dejando el resto para el mes siguiente."
   },
   {
    "fieldname": "segmento_empresa",
@@ -528,7 +544,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-02 13:37:18.934433",
+ "modified": "2026-08-06 07:51:33.998287",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Ficha_Cliente",

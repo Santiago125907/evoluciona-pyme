@@ -324,6 +324,116 @@ def cargar_anio_cliente(cliente, ano, compras=1, ventas=1, honorarios=0, meses_b
     return {"ok": n_errores == 0, "detalle": detalle, "errores": n_errores}
 
 
+def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
+    """
+    Decide qué facturas de compra pendientes de acuse conviene acusar este mes
+    y cuáles dejar para que se registren solas el mes siguiente (Ley 19.983:
+    a los 8 días el SII las registra igual, con o sin acuse manual).
+
+    Lógica:
+    1. Calcula el IVA determinado preliminar solo con lo que ya está en
+       REGISTRO (vía /v1/f29/borrador), menos el remanente del mes anterior
+       consultado directo al SII (código 504) — no depende de que exista un
+       Borrador_F29 local para el período en curso, porque este cron corre
+       el día 31 y ese documento recién se crea el día 1 del mes siguiente.
+    2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
+       acusa nada — no tiene sentido sumar más crédito este mes.
+    3. Si es > 0, ordena los documentos pendientes con IVA > 0 de menor a
+       mayor y va sumando mientras el IVA a pagar resultante se mantenga
+       >= monto_iva_esperado del cliente (0 = sin límite, acusa todo).
+       Los documentos exentos (monto_iva=0) se acusan siempre, ya que no
+       afectan el cálculo y solo importa no perder su plazo.
+    """
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    if not ficha.acuse_recibo_automatico:
+        return {"ok": True, "omitido": True, "motivo": "Automatización desactivada para este cliente"}
+    if not ficha.rut_cliente or not ficha.clave_sii:
+        return {"ok": False, "omitido": True, "motivo": "Sin credenciales SII"}
+
+    periodo = f"{ano}-{str(mes).zfill(2)}"
+    monto_esperado = frappe.utils.flt(ficha.monto_iva_esperado)
+
+    borrador = sii_gateway.borrador_f29(ficha, periodo)
+    iva_determinado = frappe.utils.flt((borrador.get("f29") or {}).get("iva_determinado"))
+
+    remanente_anterior = frappe.utils.flt(sii_gateway.remanente_mes(ficha, periodo))
+
+    preliminar = iva_determinado - remanente_anterior
+
+    if preliminar <= 0:
+        return {
+            "ok": True, "acusados": [], "cantidad": 0, "preliminar": preliminar,
+            "motivo": "Ya hay remanente/crédito suficiente sin necesidad de acusar más este mes",
+        }
+
+    pendientes = sii_gateway.pendientes_acuse(ficha, periodo).get("documentos") or []
+    sin_iva = [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) == 0]
+    con_iva = sorted(
+        [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) > 0],
+        key=lambda d: frappe.utils.flt(d.get("monto_iva")),
+    )
+
+    seleccionados = list(sin_iva)
+    restante = preliminar
+
+    if monto_esperado <= 0:
+        seleccionados += con_iva
+    else:
+        for doc in con_iva:
+            iva_doc = frappe.utils.flt(doc.get("monto_iva"))
+            if restante - iva_doc >= monto_esperado:
+                seleccionados.append(doc)
+                restante -= iva_doc
+            else:
+                break  # ordenados de menor a mayor: los que siguen tampoco calzan
+
+    if not seleccionados:
+        return {
+            "ok": True, "acusados": [], "cantidad": 0, "preliminar": preliminar,
+            "motivo": "Ningún documento pendiente calza dentro del monto esperado",
+        }
+
+    documentos_payload = [
+        {"tipo_dte": int(d["tipo_dte"]), "folio": str(d["folio"]), "rut_emisor": d["rut_emisor"]}
+        for d in seleccionados
+    ]
+    respuesta = sii_gateway.enviar_acuse(ficha, periodo, documentos_payload, cod_evento="ERM", simular=simular)
+
+    return {
+        "ok": True,
+        "acusados": documentos_payload,
+        "cantidad": len(documentos_payload),
+        "preliminar": preliminar,
+        "simulado": bool(simular),
+        "respuesta_gateway": respuesta,
+    }
+
+
+def acusar_recibo_todos(ano, mes, simular=True):
+    """Corre acusar_recibo_inteligente para todos los clientes activos con la automatización activada."""
+    clientes = frappe.get_all(
+        "Ficha_Cliente",
+        filters={"estado_cliente": "Activo", "acuse_recibo_automatico": 1},
+        pluck="name",
+    )
+    resumen = []
+    for cliente in clientes:
+        try:
+            r = acusar_recibo_inteligente(cliente, ano, mes, simular=simular)
+        except Exception as e:
+            r = {"ok": False, "error": str(e)}
+            frappe.log_error(str(e), f"Acuse inteligente {cliente} {ano}-{mes}")
+        resumen.append({"cliente": cliente, **r})
+        frappe.db.commit()
+    return resumen
+
+
+@frappe.whitelist()
+def probar_acuse_inteligente(cliente, ano, mes, simular=1):
+    """Trigger manual desde el Desk para revisar qué haría la automatización antes de dejarla en modo real."""
+    return acusar_recibo_inteligente(cliente, int(ano), int(mes), simular=bool(frappe.utils.cint(simular)))
+
+
 def agregar_cliente_a_tabla_rcv(doc, method=None):
     """
     Hook after_insert Y on_update de Ficha_Cliente. Suma el cliente a

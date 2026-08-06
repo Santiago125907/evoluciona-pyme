@@ -41,11 +41,17 @@
   "habilitar_tareas_mensuales",
   "dia_ejecucion_tareas",
   "hora_ejecucion_tareas",
+  "sb_acuse_recibo",
+  "habilitar_acuse_automatico",
+  "hora_acuse_automatico",
+  "col_break_acuse",
+  "acuse_recibo_modo_prueba",
   "sb_cron_info",
   "cron_expresion_calculada",
   "ultima_ejecucion_tareas",
   "ultima_ejecucion_libro_compras",
   "ultima_ejecucion_libros",
+  "ultima_ejecucion_acuse",
   "tab_sistema",
   "sb_api",
   "api_access_token",
@@ -288,6 +294,37 @@
    "read_only": 1
   },
   {
+   "fieldname": "sb_acuse_recibo",
+   "fieldtype": "Section Break",
+   "label": "Acuse de Recibo Automático (Compras Pendientes)"
+  },
+  {
+   "fieldname": "habilitar_acuse_automatico",
+   "fieldtype": "Check",
+   "label": "Habilitar Acuse de Recibo Automático",
+   "description": "Corre el último día de cada mes. Solo afecta a clientes con \"Acuse de Recibo Automático\" activo en su Ficha_Cliente."
+  },
+  {
+   "fieldname": "hora_acuse_automatico",
+   "fieldtype": "Select",
+   "label": "Hora de Ejecución",
+   "default": "20:00",
+   "depends_on": "eval:doc.habilitar_acuse_automatico",
+   "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00"
+  },
+  {
+   "fieldname": "col_break_acuse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "acuse_recibo_modo_prueba",
+   "fieldtype": "Check",
+   "label": "Modo Prueba (no escribe en el SII)",
+   "default": "1",
+   "depends_on": "eval:doc.habilitar_acuse_automatico",
+   "description": "Con esto activo, el gateway solo simula (simular=true) y no registra nada real en el SII. Desactivar cuando se haya validado el resultado."
+  },
+  {
    "fieldname": "ultima_ejecucion_libro_compras",
    "fieldtype": "Datetime",
    "hidden": 1,
@@ -298,6 +335,12 @@
    "fieldname": "ultima_ejecucion_libros",
    "fieldtype": "Datetime",
    "label": "Última Ejecución Descarga de Libros",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultima_ejecucion_acuse",
+   "fieldtype": "Datetime",
+   "label": "Última Ejecución Acuse Automático",
    "read_only": 1
   },
   {
@@ -507,7 +550,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-03 08:13:53.022181",
+ "modified": "2026-08-06 07:51:19.302040",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion App",
