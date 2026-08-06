@@ -331,11 +331,15 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
     a los 8 días el SII las registra igual, con o sin acuse manual).
 
     Lógica:
-    1. Calcula el IVA determinado preliminar solo con lo que ya está en
-       REGISTRO (vía /v1/f29/borrador), menos el remanente que dejó el mes
-       anterior — ese dato NO se pide de nuevo al SII: ya está guardado en
-       el Borrador_F29 local del mes anterior (remanente_mes_siguiente), que
-       a esta fecha ya existe y ya fue calculado por el flujo normal.
+    1. Calcula el IVA determinado preliminar como débito (IVA de ventas en
+       REGISTRO, vía /v1/rcv/resumen) menos crédito (IVA de compras en
+       REGISTRO, mismo endpoint), menos el remanente que dejó el mes
+       anterior — ese último dato NO se pide al SII: ya está guardado en el
+       Borrador_F29 local del mes anterior (remanente_mes_siguiente), que a
+       esta fecha ya existe y ya fue calculado por el flujo normal.
+       Se usa /v1/rcv/resumen y no /v1/f29/borrador porque el borrador puede
+       omitir el IVA de ventas por boleta (tipos 39/41), quedando el débito
+       en 0 y el preliminar completamente errado.
     2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
        acusa nada — no tiene sentido sumar más crédito este mes.
     3. Si es > 0, ordena los documentos pendientes con IVA > 0 de menor a
@@ -353,8 +357,11 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
     periodo = f"{ano}-{str(mes).zfill(2)}"
     monto_esperado = frappe.utils.flt(ficha.monto_iva_esperado)
 
-    borrador = sii_gateway.borrador_f29(ficha, periodo)
-    iva_determinado = frappe.utils.flt((borrador.get("f29") or {}).get("iva_determinado"))
+    usa_iva = bool(frappe.utils.cint(ficha.usa_iva_credito) if ficha.usa_iva_credito is not None else True)
+
+    debito  = frappe.utils.flt(sii_gateway.resumen_rcv(ficha, periodo, "VENTA").get("monto_iva"))
+    credito = frappe.utils.flt(sii_gateway.resumen_rcv(ficha, periodo, "COMPRA").get("monto_iva")) if usa_iva else 0
+    iva_determinado = debito - credito
 
     fecha_periodo = frappe.utils.getdate(f"{ano}-{str(mes).zfill(2)}-01")
     fecha_anterior = frappe.utils.add_months(fecha_periodo, -1)

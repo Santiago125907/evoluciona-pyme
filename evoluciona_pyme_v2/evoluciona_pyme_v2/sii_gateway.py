@@ -95,10 +95,26 @@ def pendientes_acuse(ficha, periodo):
     return post("/v1/dte/pendientes-acuse", body, timeout=60)
 
 
-def borrador_f29(ficha, periodo):
-    """Borrador informativo del F29 (débitos/créditos desde el RCV en REGISTRO)."""
-    body = {"login": login_de(ficha), "contribuyente": ficha.rut_cliente, "periodo": periodo}
-    return post("/v1/f29/borrador", body, timeout=120)
+def resumen_rcv(ficha, periodo, operacion, estados=None):
+    """
+    Resumen oficial del SII (cuadratura) por tipo de documento, para COMPRA o
+    VENTA. A diferencia de /v1/f29/borrador, este SÍ incluye correctamente
+    las boletas (39/41) del lado de ventas — el borrador puede omitirlas.
+    Devuelve el bloque total de REGISTRO: {documentos, monto_neto, monto_iva,
+    monto_exento, monto_total}, o ceros si no hay nada ese período.
+    """
+    body = {
+        "login": login_de(ficha),
+        "contribuyente": ficha.rut_cliente,
+        "operacion": operacion,
+        "periodo": periodo,
+    }
+    if estados:
+        body["estados"] = estados
+    resp = post("/v1/rcv/resumen", body)
+    return (resp.get("resumen") or {}).get("REGISTRO", {}).get("total") or {
+        "documentos": 0, "monto_neto": 0, "monto_iva": 0, "monto_exento": 0, "monto_total": 0
+    }
 
 
 def enviar_acuse(ficha, periodo, documentos, cod_evento="ERM", simular=True):
