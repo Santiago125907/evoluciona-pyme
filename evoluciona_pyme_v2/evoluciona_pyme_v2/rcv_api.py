@@ -324,6 +324,51 @@ def cargar_anio_cliente(cliente, ano, compras=1, ventas=1, honorarios=0, meses_b
     return {"ok": n_errores == 0, "detalle": detalle, "errores": n_errores}
 
 
+MARGEN_INFERIOR_ACUSE = 0.75  # 25% por debajo del monto esperado, aceptable
+MARGEN_SUPERIOR_ACUSE = 1.15  # 15% por arriba del monto esperado, aceptable
+
+
+def _elegir_subconjunto(montos, objetivo):
+    """
+    Busca, entre las combinaciones posibles de `montos` (lista de IVA por
+    documento pendiente), la que sume lo más cercano posible a `objetivo`.
+    No es un simple orden ascendente con corte: prueba combinaciones (ej.
+    un documento grande + uno chico puede calzar mejor que varios chicos).
+
+    Devuelve (indices_elegidos, suma_elegida). Usa programación dinámica
+    acotada por la suma total de los montos — para la cantidad de
+    documentos pendientes de un mes (decenas, no miles) es instantáneo.
+    """
+    montos = [int(round(m)) for m in montos]
+    total = sum(montos)
+    if total == 0 or not montos:
+        return [], 0
+
+    objetivo = max(0, min(int(round(objetivo)), total))
+
+    alcanzable = [False] * (total + 1)
+    origen     = [-1] * (total + 1)
+    suma_previa = [0] * (total + 1)
+    alcanzable[0] = True
+
+    for i, m in enumerate(montos):
+        for s in range(total - m, -1, -1):
+            if alcanzable[s] and not alcanzable[s + m]:
+                alcanzable[s + m] = True
+                origen[s + m] = i
+                suma_previa[s + m] = s
+
+    mejor_suma = min((s for s in range(total + 1) if alcanzable[s]), key=lambda s: abs(s - objetivo))
+
+    indices = []
+    s = mejor_suma
+    while origen[s] != -1:
+        indices.append(origen[s])
+        s = suma_previa[s]
+
+    return indices, mejor_suma
+
+
 def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
     """
     Decide qué facturas de compra pendientes de acuse conviene acusar este mes
@@ -340,9 +385,12 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
        esta fecha ya existe y ya fue calculado por el flujo normal.
     2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
        acusa nada — no tiene sentido sumar más crédito este mes.
-    3. Si es > 0, ordena los documentos pendientes con IVA > 0 de menor a
-       mayor y va sumando mientras el IVA a pagar resultante se mantenga
-       >= monto_iva_esperado del cliente (0 = sin límite, acusa todo).
+    3. Si es > 0, busca entre las combinaciones de documentos pendientes con
+       IVA > 0 la que, al acusarse, deje el pago resultante lo más cerca
+       posible del monto_iva_esperado del cliente (0 = sin límite, acusa
+       todo) — acepta un margen de 25% hacia abajo y 15% hacia arriba de
+       ese monto; no es un simple corte ascendente, prueba combinaciones
+       (un documento grande puede calzar mejor que varios chicos juntos).
        Los documentos exentos (monto_iva=0) se acusan siempre, ya que no
        afectan el cálculo y solo importa no perder su plazo.
     """
@@ -379,29 +427,30 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
 
     pendientes = sii_gateway.pendientes_acuse(ficha, periodo).get("documentos") or []
     sin_iva = [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) == 0]
-    con_iva = sorted(
-        [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) > 0],
-        key=lambda d: frappe.utils.flt(d.get("monto_iva")),
-    )
+    con_iva = [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) > 0]
 
     seleccionados = list(sin_iva)
-    restante = preliminar
+    pago_resultante = preliminar
+    dentro_de_margen = None
 
-    if monto_esperado <= 0:
-        seleccionados += con_iva
-    else:
-        for doc in con_iva:
-            iva_doc = frappe.utils.flt(doc.get("monto_iva"))
-            if restante - iva_doc >= monto_esperado:
-                seleccionados.append(doc)
-                restante -= iva_doc
-            else:
-                break  # ordenados de menor a mayor: los que siguen tampoco calzan
+    if con_iva:
+        if monto_esperado <= 0:
+            seleccionados += con_iva
+        else:
+            objetivo_remover = preliminar - monto_esperado
+            indices, suma_elegida = _elegir_subconjunto(
+                [frappe.utils.flt(d.get("monto_iva")) for d in con_iva], objetivo_remover
+            )
+            seleccionados += [con_iva[i] for i in indices]
+            pago_resultante = preliminar - suma_elegida
+            banda_baja = monto_esperado * MARGEN_INFERIOR_ACUSE
+            banda_alta = monto_esperado * MARGEN_SUPERIOR_ACUSE
+            dentro_de_margen = banda_baja <= pago_resultante <= banda_alta
 
     if not seleccionados:
         return {
             "ok": True, "acusados": [], "cantidad": 0, "preliminar": preliminar,
-            "motivo": "Ningún documento pendiente calza dentro del monto esperado",
+            "motivo": "Ningún documento pendiente ayuda a acercarse al monto esperado",
         }
 
     documentos_payload = [
@@ -415,6 +464,8 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
         "acusados": documentos_payload,
         "cantidad": len(documentos_payload),
         "preliminar": preliminar,
+        "pago_resultante": pago_resultante,
+        "dentro_de_margen": dentro_de_margen,
         "simulado": bool(simular),
         "respuesta_gateway": respuesta,
     }
