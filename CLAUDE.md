@@ -50,6 +50,34 @@ Se removieron esos hooks (commit `c0f7ad2`). Reglas para el futuro:
   procesos de supervisor (`frappe-bench-web`, los `frappe-bench-workers`) además de comitear — el código
   Python vive en memoria en los workers y no se recarga solo. `bench build` es solo para JS/CSS.
 
+## Testing
+
+Hay un sitio de pruebas dedicado (`test_site`) para correr tests -- **no correr
+`bench run-tests` contra `comando.evolucionapyme.cl`**: varias de nuestras funciones hacen
+`frappe.db.commit()` explicito, lo que rompe el rollback automatico que da la proteccion de
+tests de Frappe, y se podria filtrar data de prueba a produccion.
+
+```bash
+sudo -u frappe bash -c 'cd /home/frappe/frappe-bench && bench --site test_site run-tests --module "evoluciona_pyme_v2.evoluciona_pyme_v2.doctype.declaracion_mensual.test_declaracion_mensual"'
+```
+
+- Contraseña root de MariaDB (necesaria para recrear `test_site` si hace falta):
+  `/home/frappe/.config/evoluciona_pyme_v2/mariadb_root.env` (permisos 600). Se fijo manualmente
+  porque el root de MariaDB no tenia contraseña conocida (solo auth por socket).
+- `test_site` tiene `developer_mode` y `allow_tests` activados, y la app instalada. Comparte el
+  mismo codigo fuente que `comando.evolucionapyme.cl` (mismo bench), pero base de datos propia.
+- Si un test falla con `AttributeError` o `Unknown column` en un campo que sabes que existe en el
+  `.json`: es el mismo problema de metadata documentado mas abajo (campo `modified`), aplicado a
+  `test_site`. Arreglar con `frappe.reload_doc(..., force=True)` puntual para ese DocType en
+  `bench --site test_site console`, sin correr `bench --site test_site migrate` despues (se vio
+  que un migrate posterior puede revertir el reload puntual -- no se investigo la causa raiz).
+- `Cobranza_Cliente.factura_vinculada` apunta a `Sales Invoice` (ERPNext, no instalado en este
+  bench) -- cualquier test que dependa de `Cobranza_Cliente` necesita
+  `IGNORE_TEST_RECORD_DEPENDENCIES = ["Sales Invoice"]` en su propio archivo `test_*.py` (tiene
+  que ir en el modulo de test del DocType que tiene el link, no en el que lo usa indirectamente).
+- Los hooks reales de `Ficha_Cliente` (`crear_carpeta_cliente` a Google Drive, etc.) se disparan
+  igual en tests -- mockear con `unittest.mock.patch` los que llaman a servicios externos.
+
 ## Roadmap
 
 Ver [ROADMAP.md](ROADMAP.md) para el plan de evolución hacia una plataforma multi-contador
