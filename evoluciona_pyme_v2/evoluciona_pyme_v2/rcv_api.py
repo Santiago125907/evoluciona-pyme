@@ -331,9 +331,16 @@ MARGEN_SUPERIOR_ACUSE = 1.15  # 15% por arriba del monto esperado, aceptable
 def _elegir_subconjunto(montos, objetivo):
     """
     Busca, entre las combinaciones posibles de `montos` (lista de IVA por
-    documento pendiente), la que sume lo más cercano posible a `objetivo`.
-    No es un simple orden ascendente con corte: prueba combinaciones (ej.
-    un documento grande + uno chico puede calzar mejor que varios chicos).
+    documento pendiente), la más chica que iguale o supere `objetivo`. No es
+    un simple orden ascendente con corte: prueba combinaciones (ej. un
+    documento grande puede calzar mejor que varios chicos juntos).
+
+    Prioriza quedar en o por debajo del monto esperado antes que por
+    encima, sin techo hacia abajo: si la única opción posible se pasa
+    harto para abajo, se prefiere igual a no acusar nada (es mejor usar
+    el crédito disponible que dejarlo pendiente sin necesidad). Solo si
+    ninguna combinación alcanza el objetivo (ni sumando todo) se toma todo
+    lo disponible, que es lo más cerca que se puede llegar.
 
     Devuelve (indices_elegidos, suma_elegida). Usa programación dinámica
     acotada por la suma total de los montos — para la cantidad de
@@ -358,7 +365,7 @@ def _elegir_subconjunto(montos, objetivo):
                 origen[s + m] = i
                 suma_previa[s + m] = s
 
-    mejor_suma = min((s for s in range(total + 1) if alcanzable[s]), key=lambda s: abs(s - objetivo))
+    mejor_suma = next((s for s in range(objetivo, total + 1) if alcanzable[s]), total)
 
     indices = []
     s = mejor_suma
