@@ -333,13 +333,11 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
     Lógica:
     1. Calcula el IVA determinado preliminar como débito (IVA de ventas en
        REGISTRO, vía /v1/rcv/resumen) menos crédito (IVA de compras en
-       REGISTRO, mismo endpoint), menos el remanente que dejó el mes
-       anterior — ese último dato NO se pide al SII: ya está guardado en el
+       REGISTRO, mismo endpoint — ya neteado de Notas de Crédito, ver
+       sii_gateway.resumen_rcv), menos el remanente que dejó el mes anterior
+       — ese último dato NO se pide al SII: ya está guardado en el
        Borrador_F29 local del mes anterior (remanente_mes_siguiente), que a
        esta fecha ya existe y ya fue calculado por el flujo normal.
-       Se usa /v1/rcv/resumen y no /v1/f29/borrador porque el borrador puede
-       omitir el IVA de ventas por boleta (tipos 39/41), quedando el débito
-       en 0 y el preliminar completamente errado.
     2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
        acusa nada — no tiene sentido sumar más crédito este mes.
     3. Si es > 0, ordena los documentos pendientes con IVA > 0 de menor a

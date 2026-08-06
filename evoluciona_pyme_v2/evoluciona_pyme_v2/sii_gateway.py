@@ -95,13 +95,23 @@ def pendientes_acuse(ficha, periodo):
     return post("/v1/dte/pendientes-acuse", body, timeout=60)
 
 
+CODIGO_NOTA_CREDITO = "61"
+
+
 def resumen_rcv(ficha, periodo, operacion, estados=None):
     """
     Resumen oficial del SII (cuadratura) por tipo de documento, para COMPRA o
     VENTA. A diferencia de /v1/f29/borrador, este SÍ incluye correctamente
     las boletas (39/41) del lado de ventas — el borrador puede omitirlas.
-    Devuelve el bloque total de REGISTRO: {documentos, monto_neto, monto_iva,
-    monto_exento, monto_total}, o ceros si no hay nada ese período.
+
+    El SII entrega el monto de las Notas de Crédito (tipo 61) en POSITIVO,
+    tanto en el detalle como en el bloque "total" del resumen — no las resta
+    solo. Acá se recalcula el total sumando todos los tipos y restando el
+    tipo 61, para que el monto quede neto de verdad (una NC de compra reduce
+    el crédito fiscal, no lo aumenta).
+
+    Devuelve {documentos, monto_neto, monto_iva, monto_exento, monto_total}
+    ya neteado, o ceros si no hay nada ese período.
     """
     body = {
         "login": login_de(ficha),
@@ -112,9 +122,17 @@ def resumen_rcv(ficha, periodo, operacion, estados=None):
     if estados:
         body["estados"] = estados
     resp = post("/v1/rcv/resumen", body)
-    return (resp.get("resumen") or {}).get("REGISTRO", {}).get("total") or {
-        "documentos": 0, "monto_neto": 0, "monto_iva": 0, "monto_exento": 0, "monto_total": 0
-    }
+    por_tipo = (resp.get("resumen") or {}).get("REGISTRO", {}).get("por_tipo") or []
+
+    neto = {"documentos": 0, "monto_neto": 0, "monto_iva": 0, "monto_exento": 0, "monto_total": 0}
+    for item in por_tipo:
+        signo = -1 if str(item.get("tipo_dte")) == CODIGO_NOTA_CREDITO else 1
+        neto["documentos"]    += frappe.utils.cint(item.get("documentos"))
+        neto["monto_neto"]    += signo * frappe.utils.flt(item.get("monto_neto"))
+        neto["monto_iva"]     += signo * frappe.utils.flt(item.get("monto_iva"))
+        neto["monto_exento"]  += signo * frappe.utils.flt(item.get("monto_exento"))
+        neto["monto_total"]   += signo * frappe.utils.flt(item.get("monto_total"))
+    return neto
 
 
 def enviar_acuse(ficha, periodo, documentos, cod_evento="ERM", simular=True):
