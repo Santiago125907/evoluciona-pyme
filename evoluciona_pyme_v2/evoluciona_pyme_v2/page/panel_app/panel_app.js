@@ -433,6 +433,12 @@ frappe.pages['panel_app'].on_page_load = function(wrapper) {
 
             <p class="pa-section-title">Configuración</p>
             <div class="pa-shortcuts" style="margin-bottom:32px;">
+                <a class="pa-sc" style="--sc-color:#17a2b8" onclick="frappe.set_route('salud_cron')">
+                    <span class="pa-sc-icon">🩺</span>
+                    <span class="pa-sc-label">Salud del Cron</span>
+                    <span class="pa-sc-sub">Estado de los crons</span>
+                    <span class="pa-sc-dot"></span>
+                </a>
                 <a class="pa-sc" style="--sc-color:#6c757d" onclick="frappe.set_route('List','Configuracion App')">
                     <span class="pa-sc-icon">⚙️</span>
                     <span class="pa-sc-label">Configuración App</span>

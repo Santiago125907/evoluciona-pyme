@@ -2106,6 +2106,80 @@ def get_credenciales_cliente(cliente):
     }
 
 
+# ── Salud del Cron ────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_salud_cron():
+    """
+    Resumen para el panel de Salud del Cron: última ejecución de cada
+    dispatcher, si corrió este mes, últimas corridas del scheduler (con
+    estado Complete/Failed), y errores recientes relacionados.
+    """
+    cfg = frappe.get_doc("Configuracion App")
+    hoy = frappe.utils.getdate(frappe.utils.nowdate())
+
+    def _info_ejecucion(campo_fecha, dia_cfg, hora_cfg, habilitar_cfg):
+        ultima = cfg.get(campo_fecha)
+        ultima_date = frappe.utils.getdate(ultima) if ultima else None
+        corrio_este_mes = bool(
+            ultima_date and ultima_date.month == hoy.month and ultima_date.year == hoy.year
+        )
+        return {
+            "habilitado": bool(cfg.get(habilitar_cfg)),
+            "ultima_ejecucion": str(ultima) if ultima else None,
+            "corrio_este_mes": corrio_este_mes,
+            "dia_configurado": cfg.get(dia_cfg),
+            "hora_configurada": cfg.get(hora_cfg),
+        }
+
+    def _ultimas_corridas(metodo_like, limite=6):
+        return frappe.db.sql(
+            """
+            SELECT sjl.creation, sjl.status
+            FROM `tabScheduled Job Log` sjl
+            JOIN `tabScheduled Job Type` sjt ON sjl.scheduled_job_type = sjt.name
+            WHERE sjt.method LIKE %(m)s
+            ORDER BY sjl.creation DESC
+            LIMIT %(l)s
+            """,
+            {"m": f"%{metodo_like}%", "l": limite},
+            as_dict=True,
+        )
+
+    declaraciones = _info_ejecucion(
+        "ultima_ejecucion_tareas", "dia_ejecucion_tareas", "hora_ejecucion_tareas", "habilitar_tareas_mensuales"
+    )
+    declaraciones["ultimas_corridas"] = _ultimas_corridas("dispatcher_cron")
+
+    libros = _info_ejecucion(
+        "ultima_ejecucion_libros", "dia_descarga_libros", "hora_descarga_libros", "habilitar_descarga_libros"
+    )
+    libros["ultimas_corridas"] = _ultimas_corridas("dispatcher_libros")
+
+    errores_recientes = frappe.db.sql(
+        """
+        SELECT creation, method, LEFT(error, 200) as error
+        FROM `tabError Log`
+        WHERE creation > %(desde)s
+          AND (method LIKE '%%dispatcher_cron%%' OR method LIKE '%%dispatcher_libros%%'
+               OR method LIKE '%%RCV masivo%%' OR method LIKE '%%BHE masivo%%'
+               OR method LIKE '%%Remanente F29%%' OR method LIKE '%%Calculo F29%%'
+               OR method LIKE '%%Tareas%%')
+        ORDER BY creation DESC
+        LIMIT 30
+        """,
+        {"desde": frappe.utils.add_days(frappe.utils.nowdate(), -30)},
+        as_dict=True,
+    )
+
+    return {
+        "declaraciones": declaraciones,
+        "libros": libros,
+        "errores_recientes": errores_recientes,
+        "generado": frappe.utils.now_datetime().isoformat(),
+    }
+
+
 # ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
 
 @frappe.whitelist()
