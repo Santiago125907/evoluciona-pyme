@@ -332,10 +332,10 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
 
     Lógica:
     1. Calcula el IVA determinado preliminar solo con lo que ya está en
-       REGISTRO (vía /v1/f29/borrador), menos el remanente del mes anterior
-       consultado directo al SII (código 504) — no depende de que exista un
-       Borrador_F29 local para el período en curso, porque este cron corre
-       el día 31 y ese documento recién se crea el día 1 del mes siguiente.
+       REGISTRO (vía /v1/f29/borrador), menos el remanente que dejó el mes
+       anterior — ese dato NO se pide de nuevo al SII: ya está guardado en
+       el Borrador_F29 local del mes anterior (remanente_mes_siguiente), que
+       a esta fecha ya existe y ya fue calculado por el flujo normal.
     2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
        acusa nada — no tiene sentido sumar más crédito este mes.
     3. Si es > 0, ordena los documentos pendientes con IVA > 0 de menor a
@@ -356,7 +356,13 @@ def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
     borrador = sii_gateway.borrador_f29(ficha, periodo)
     iva_determinado = frappe.utils.flt((borrador.get("f29") or {}).get("iva_determinado"))
 
-    remanente_anterior = frappe.utils.flt(sii_gateway.remanente_mes(ficha, periodo))
+    fecha_periodo = frappe.utils.getdate(f"{ano}-{str(mes).zfill(2)}-01")
+    fecha_anterior = frappe.utils.add_months(fecha_periodo, -1)
+    remanente_anterior = frappe.utils.flt(frappe.db.get_value(
+        "Borrador_F29",
+        {"cliente": cliente, "ano": str(fecha_anterior.year), "mes": str(fecha_anterior.month)},
+        "remanente_mes_siguiente",
+    ))
 
     preliminar = iva_determinado - remanente_anterior
 
