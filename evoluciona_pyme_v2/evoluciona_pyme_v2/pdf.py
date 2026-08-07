@@ -451,19 +451,24 @@ def _hoja2(d, meses, logo_src, ofi=None, page_num=None, total_pages=None, modo_b
         h += '<th>{}</th>'.format(m)
     h += '<th>Total</th></tr></thead><tbody>'
 
+    n = len(meses)
+
     h += '<tr><td>Ingresos</td>'
-    for v in ingresos:
-        h += '<td>{}</td>'.format(_fmt(v, 'k'))
+    for i in range(n):
+        h += '<td>{}</td>'.format(_fmt(ingresos[i], 'k') if i < len(ingresos) else '')
     h += '<td style="font-weight:800">{}</td></tr>'.format(_fmt(d.get('acum_ing'), 'k'))
 
     h += '<tr><td>Gastos</td>'
-    for v in gastos:
-        h += '<td>({}) </td>'.format(_fmt(v, 'k'))
+    for i in range(n):
+        h += '<td>{}</td>'.format('({}) '.format(_fmt(gastos[i], 'k')) if i < len(gastos) else '')
     h += '<td style="font-weight:800">({}) </td></tr>'.format(_fmt(d.get('acum_gas'), 'k'))
 
     h += '<tr><td>Utilidad</td>'
-    for v in utilidad:
-        fv = float(v or 0)
+    for i in range(n):
+        if i >= len(utilidad):
+            h += '<td></td>'
+            continue
+        fv = float(utilidad[i] or 0)
         cls = 'positive' if fv >= 0 else 'negative'
         val = _fmt(abs(fv), 'k')
         h += '<td class="{}">{}</td>'.format(cls, val if fv >= 0 else '(' + val + ')')
