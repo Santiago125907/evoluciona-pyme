@@ -308,7 +308,7 @@
    "fieldname": "hora_acuse_automatico",
    "fieldtype": "Select",
    "label": "Hora de Ejecución",
-   "default": "20:00",
+   "default": "22:00",
    "depends_on": "eval:doc.habilitar_acuse_automatico",
    "options": "00:00\n01:00\n02:00\n03:00\n04:00\n05:00\n06:00\n07:00\n08:00\n09:00\n10:00\n11:00\n12:00\n13:00\n14:00\n15:00\n16:00\n17:00\n18:00\n19:00\n20:00\n21:00\n22:00\n23:00"
   },
@@ -550,7 +550,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-06 07:51:19.302040",
+ "modified": "2026-08-06 08:37:34.895094",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Configuracion App",

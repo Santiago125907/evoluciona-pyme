@@ -195,7 +195,7 @@ def _get_css(cp, cs, cv='#10B981', ca='#FF6F61'):
     .kpi-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
     .kpi-value { font-size: 17px; font-weight: 800; color: var(--txt); }
     .kpi-subtitle { font-size: 9px; color: var(--gray); margin-top: 2px; }
-    .bottom-section { display: flex; gap: 12px; }
+    .bottom-section { display: flex; gap: 12px; transform: translateX(-8mm); }
     .dona-container { flex: 0 0 38%; }
     .tabla-container { flex: 1; }
     .table-container { background: white; border: 1px solid var(--border); border-radius: 6px;
