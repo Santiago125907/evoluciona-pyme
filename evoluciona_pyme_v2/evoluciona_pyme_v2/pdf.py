@@ -195,7 +195,7 @@ def _get_css(cp, cs, cv='#10B981', ca='#FF6F61'):
     .kpi-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
     .kpi-value { font-size: 17px; font-weight: 800; color: var(--txt); }
     .kpi-subtitle { font-size: 9px; color: var(--gray); margin-top: 2px; }
-    .bottom-section { display: flex; gap: 12px; transform: translateX(-20mm); }
+    .bottom-section { display: flex; gap: 12px; transform: translateX(-10mm); }
     .dona-container { flex: 0 0 38%; }
     .tabla-container { flex: 1; }
     .table-container { background: white; border: 1px solid var(--border); border-radius: 6px;
@@ -916,7 +916,7 @@ def generar_html(payload, config=None, modo_basico=False, ocultar_opcion_a=False
 
     meses_nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
                      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    meses = meses_nombres[:mes]
+    meses = meses_nombres  # año completo en el eje X, aunque los meses futuros queden sin datos
 
     css = _get_css(cp, cs, cv, ca)
     chart_js = _chart_script(d, meses, cp, cs)
@@ -1009,7 +1009,11 @@ def convertir_a_pdf_local(html_content):
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            page = browser.new_page()
+            # Viewport al mismo ancho de la pagina impresa (A4, 8.27in a 96dpi ~= 794px).
+            # Si no se fija, ECharts mide el ancho del contenedor contra el viewport
+            # por defecto de Playwright (1280px) al dibujar, y ese SVG mas ancho queda
+            # apretado/recortado despues al imprimir sobre la pagina angosta real.
+            page = browser.new_page(viewport={'width': 794, 'height': 1123})
             page.set_content(html_content, wait_until='networkidle')
             page.wait_for_timeout(2000)  # deja terminar de dibujar el grafico echarts
             pdf_bytes = page.pdf(
