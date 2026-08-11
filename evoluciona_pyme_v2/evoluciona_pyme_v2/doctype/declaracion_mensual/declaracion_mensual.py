@@ -240,11 +240,15 @@ class Declaracion_Mensual(Document):
 						continue
 
 					fecha_inicio_desc = frappe.utils.getdate(desc.mes_inicio)
-					fecha_fin_desc = frappe.utils.getdate(desc.mes_fin)
 
 					periodo_num = (periodo_ano * 100) + periodo_mes
 					inicio_num = (fecha_inicio_desc.year * 100) + fecha_inicio_desc.month
-					fin_num = (fecha_fin_desc.year * 100) + fecha_fin_desc.month
+
+					if desc.get('aplica_una_vez'):
+						fin_num = inicio_num
+					else:
+						fecha_fin_desc = frappe.utils.getdate(desc.mes_fin)
+						fin_num = (fecha_fin_desc.year * 100) + fecha_fin_desc.month
 
 					if inicio_num <= periodo_num <= fin_num:
 						if desc.get('tipo_descuento') == "Porcentaje":
