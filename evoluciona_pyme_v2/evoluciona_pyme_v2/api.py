@@ -2061,9 +2061,17 @@ def marcar_cobranza_pagada(cobranza_name, aplicar_recargo=0, fecha_pago=None,
     Marca una Cobranza_Cliente como Pagado (botón "Pagar" del panel, o el
     dialog "Marcar como Pagado" de Ficha_Cliente). aplicar_recargo lo decide
     el usuario al momento de pagar (el frontend le pregunta solo si detecta
-    que ya venció) -- no se infiere solo de la fecha. Si queda marcado,
-    crear_cobranza_si_corresponde le agrega el recargo configurado a la
-    cobranza del mes siguiente.
+    que ya venció) -- no se infiere solo de la fecha.
+
+    Si queda marcado pago_atrasado=1, el recargo configurado se le suma a la
+    cobranza del mes siguiente. Normalmente esa cobranza del mes siguiente
+    todavía no existe, y la agrega crear_cobranza_si_corresponde cuando se
+    crea (busca "pago_atrasado=1, recargo_aplicado=0" del mes anterior). Pero
+    si esa cobranza YA existe al momento de marcar el pago (ej. se procesaron
+    varios meses seguidos antes de que el cliente pagara), esa búsqueda ya no
+    corre de nuevo -- se pierde el recargo en silencio. Por eso acá también
+    se revisa: si el mes siguiente ya tiene cobranza, se le aplica el recargo
+    directo en el momento.
     """
     doc = frappe.get_doc("Cobranza_Cliente", cobranza_name)
     doc.estado_cobranza = "Pagado"
@@ -2078,6 +2086,30 @@ def marcar_cobranza_pagada(cobranza_name, aplicar_recargo=0, fecha_pago=None,
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()
+
+    if doc.pago_atrasado and not doc.recargo_aplicado:
+        mes_sig = int(doc.periodo_mes) + 1
+        ano_sig = int(doc.periodo_ano)
+        if mes_sig > 12:
+            mes_sig = 1
+            ano_sig += 1
+
+        cobranza_siguiente = frappe.db.get_value(
+            "Cobranza_Cliente",
+            {"cliente": doc.cliente, "periodo_ano": ano_sig, "periodo_mes": mes_sig},
+            "name",
+        )
+        if cobranza_siguiente:
+            recargo = float(
+                frappe.db.get_single_value("Configuracion App", "monto_recargo_pago_atrasado") or 0
+            )
+            if recargo:
+                sig = frappe.get_doc("Cobranza_Cliente", cobranza_siguiente)
+                sig.recargo_por_atraso = float(sig.recargo_por_atraso or 0) + recargo
+                sig.monto_a_cobrar = float(sig.monto_a_cobrar or 0) + recargo
+                sig.save(ignore_permissions=True)
+                frappe.db.set_value("Cobranza_Cliente", cobranza_name, "recargo_aplicado", 1)
+                frappe.db.commit()
 
     return {"status": "ok", "pago_atrasado": bool(doc.pago_atrasado)}
 
