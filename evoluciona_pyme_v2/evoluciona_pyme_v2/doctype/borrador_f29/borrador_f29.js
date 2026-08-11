@@ -311,22 +311,20 @@ frappe.ui.form.on('Borrador_F29', {
         });
 
         frm.add_custom_button(__('Calcular Automático'), () => {
-            frappe.confirm('Calculará los montos desde los documentos tributarios del período. ¿Continuar?', () => {
-                frappe.call({
-                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29',
-                    args: { doc_name: frm.doc.name },
-                    freeze: true, freeze_message: __('Calculando F29…'),
-                    callback(r) {
-                        if (r.message?.status === 'ok') {
-                            frappe.show_alert({ message: r.message.message, indicator: 'green' }, 5);
-                            frm.reload_doc();
-                            // Notificar a Ficha Cliente para que refresque el panel
-                            frappe.realtime.publish('f29_calculado', { cliente: frm.doc.cliente });
-                        } else {
-                            frappe.msgprint({ title: 'Error', message: r.message?.message, indicator: 'red' });
-                        }
+            frappe.call({
+                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29',
+                args: { doc_name: frm.doc.name },
+                freeze: true, freeze_message: __('Calculando F29…'),
+                callback(r) {
+                    if (r.message?.status === 'ok') {
+                        frappe.show_alert({ message: r.message.message, indicator: 'green' }, 5);
+                        frm.reload_doc();
+                        // Notificar a Ficha Cliente para que refresque el panel
+                        frappe.realtime.publish('f29_calculado', { cliente: frm.doc.cliente });
+                    } else {
+                        frappe.msgprint({ title: 'Error', message: r.message?.message, indicator: 'red' });
                     }
-                });
+                }
             });
         }).addClass('btn-primary');
 

@@ -193,6 +193,8 @@ def descargar_rcv_todos(periodo):
     for fila in empresas:
         if not fila.descargar_compras and not fila.descargar_ventas:
             continue
+        if frappe.db.get_value("Ficha_Cliente", fila.empresa, "estado_cliente") != "Activo":
+            continue
         try:
             descargar_rcv_cliente(
                 fila.empresa,
@@ -320,3 +322,215 @@ def cargar_anio_cliente(cliente, ano, compras=1, ventas=1, honorarios=0, meses_b
 
     detalle = f"Año {ano} — " + " | ".join(lineas)
     return {"ok": n_errores == 0, "detalle": detalle, "errores": n_errores}
+
+
+MARGEN_INFERIOR_ACUSE = 0.75  # 25% por debajo del monto esperado, aceptable
+MARGEN_SUPERIOR_ACUSE = 1.15  # 15% por arriba del monto esperado, aceptable
+
+
+def _elegir_subconjunto(montos, objetivo):
+    """
+    Busca, entre las combinaciones posibles de `montos` (lista de IVA por
+    documento pendiente), la más chica que iguale o supere `objetivo`. No es
+    un simple orden ascendente con corte: prueba combinaciones (ej. un
+    documento grande puede calzar mejor que varios chicos juntos).
+
+    Prioriza quedar en o por debajo del monto esperado antes que por
+    encima, sin techo hacia abajo: si la única opción posible se pasa
+    harto para abajo, se prefiere igual a no acusar nada (es mejor usar
+    el crédito disponible que dejarlo pendiente sin necesidad). Solo si
+    ninguna combinación alcanza el objetivo (ni sumando todo) se toma todo
+    lo disponible, que es lo más cerca que se puede llegar.
+
+    Devuelve (indices_elegidos, suma_elegida). Usa programación dinámica
+    acotada por la suma total de los montos — para la cantidad de
+    documentos pendientes de un mes (decenas, no miles) es instantáneo.
+    """
+    montos = [int(round(m)) for m in montos]
+    total = sum(montos)
+    if total == 0 or not montos:
+        return [], 0
+
+    objetivo = max(0, min(int(round(objetivo)), total))
+
+    alcanzable = [False] * (total + 1)
+    origen     = [-1] * (total + 1)
+    suma_previa = [0] * (total + 1)
+    alcanzable[0] = True
+
+    for i, m in enumerate(montos):
+        for s in range(total - m, -1, -1):
+            if alcanzable[s] and not alcanzable[s + m]:
+                alcanzable[s + m] = True
+                origen[s + m] = i
+                suma_previa[s + m] = s
+
+    mejor_suma = next((s for s in range(objetivo, total + 1) if alcanzable[s]), total)
+
+    indices = []
+    s = mejor_suma
+    while origen[s] != -1:
+        indices.append(origen[s])
+        s = suma_previa[s]
+
+    return indices, mejor_suma
+
+
+def acusar_recibo_inteligente(cliente, ano, mes, simular=True):
+    """
+    Decide qué facturas de compra pendientes de acuse conviene acusar este mes
+    y cuáles dejar para que se registren solas el mes siguiente (Ley 19.983:
+    a los 8 días el SII las registra igual, con o sin acuse manual).
+
+    Lógica:
+    1. Calcula el IVA determinado preliminar como débito (IVA de ventas en
+       REGISTRO, vía /v1/rcv/resumen) menos crédito (IVA de compras en
+       REGISTRO, mismo endpoint — ya neteado de Notas de Crédito, ver
+       sii_gateway.resumen_rcv), menos el remanente que dejó el mes anterior
+       — ese último dato NO se pide al SII: ya está guardado en el
+       Borrador_F29 local del mes anterior (remanente_mes_siguiente), que a
+       esta fecha ya existe y ya fue calculado por el flujo normal.
+    2. Si ese preliminar ya es <= 0 (hay remanente/crédito suficiente), no
+       acusa nada — no tiene sentido sumar más crédito este mes.
+    3. Si es > 0, busca entre las combinaciones de documentos pendientes con
+       IVA > 0 la que, al acusarse, deje el pago resultante lo más cerca
+       posible del monto_iva_esperado del cliente (0 = sin límite, acusa
+       todo) — acepta un margen de 25% hacia abajo y 15% hacia arriba de
+       ese monto; no es un simple corte ascendente, prueba combinaciones
+       (un documento grande puede calzar mejor que varios chicos juntos).
+       Los documentos exentos (monto_iva=0) se acusan siempre, ya que no
+       afectan el cálculo y solo importa no perder su plazo.
+    """
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    if not ficha.acuse_recibo_automatico:
+        return {"ok": True, "omitido": True, "motivo": "Automatización desactivada para este cliente"}
+    if not ficha.rut_cliente or not ficha.clave_sii:
+        return {"ok": False, "omitido": True, "motivo": "Sin credenciales SII"}
+
+    periodo = f"{ano}-{str(mes).zfill(2)}"
+    monto_esperado = frappe.utils.flt(ficha.monto_iva_esperado)
+
+    usa_iva = bool(frappe.utils.cint(ficha.usa_iva_credito) if ficha.usa_iva_credito is not None else True)
+
+    debito  = frappe.utils.flt(sii_gateway.resumen_rcv(ficha, periodo, "VENTA").get("monto_iva"))
+    credito = frappe.utils.flt(sii_gateway.resumen_rcv(ficha, periodo, "COMPRA").get("monto_iva")) if usa_iva else 0
+    iva_determinado = debito - credito
+
+    fecha_periodo = frappe.utils.getdate(f"{ano}-{str(mes).zfill(2)}-01")
+    fecha_anterior = frappe.utils.add_months(fecha_periodo, -1)
+    remanente_anterior = frappe.utils.flt(frappe.db.get_value(
+        "Borrador_F29",
+        {"cliente": cliente, "ano": str(fecha_anterior.year), "mes": str(fecha_anterior.month)},
+        "remanente_mes_siguiente",
+    ))
+
+    preliminar = iva_determinado - remanente_anterior
+
+    if preliminar <= 0:
+        return {
+            "ok": True, "acusados": [], "cantidad": 0, "preliminar": preliminar,
+            "motivo": "Ya hay remanente/crédito suficiente sin necesidad de acusar más este mes",
+        }
+
+    pendientes = sii_gateway.pendientes_acuse(ficha, periodo).get("documentos") or []
+    sin_iva = [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) == 0]
+    con_iva = [d for d in pendientes if frappe.utils.flt(d.get("monto_iva")) > 0]
+
+    seleccionados = list(sin_iva)
+    pago_resultante = preliminar
+    dentro_de_margen = None
+
+    if con_iva:
+        if monto_esperado <= 0:
+            seleccionados += con_iva
+        else:
+            objetivo_remover = preliminar - monto_esperado
+            indices, suma_elegida = _elegir_subconjunto(
+                [frappe.utils.flt(d.get("monto_iva")) for d in con_iva], objetivo_remover
+            )
+            seleccionados += [con_iva[i] for i in indices]
+            pago_resultante = preliminar - suma_elegida
+            banda_baja = monto_esperado * MARGEN_INFERIOR_ACUSE
+            banda_alta = monto_esperado * MARGEN_SUPERIOR_ACUSE
+            dentro_de_margen = banda_baja <= pago_resultante <= banda_alta
+
+    if not seleccionados:
+        return {
+            "ok": True, "acusados": [], "cantidad": 0, "preliminar": preliminar,
+            "motivo": "Ningún documento pendiente ayuda a acercarse al monto esperado",
+        }
+
+    documentos_payload = [
+        {"tipo_dte": int(d["tipo_dte"]), "folio": str(d["folio"]), "rut_emisor": d["rut_emisor"]}
+        for d in seleccionados
+    ]
+    respuesta = sii_gateway.enviar_acuse(ficha, periodo, documentos_payload, cod_evento="ERM", simular=simular)
+
+    return {
+        "ok": True,
+        "acusados": documentos_payload,
+        "cantidad": len(documentos_payload),
+        "preliminar": preliminar,
+        "pago_resultante": pago_resultante,
+        "dentro_de_margen": dentro_de_margen,
+        "simulado": bool(simular),
+        "respuesta_gateway": respuesta,
+    }
+
+
+def acusar_recibo_todos(ano, mes, simular=True):
+    """Corre acusar_recibo_inteligente para todos los clientes activos con la automatización activada."""
+    clientes = frappe.get_all(
+        "Ficha_Cliente",
+        filters={"estado_cliente": "Activo", "acuse_recibo_automatico": 1},
+        pluck="name",
+    )
+    resumen = []
+    for cliente in clientes:
+        try:
+            r = acusar_recibo_inteligente(cliente, ano, mes, simular=simular)
+        except Exception as e:
+            r = {"ok": False, "error": str(e)}
+            frappe.log_error(str(e), f"Acuse inteligente {cliente} {ano}-{mes}")
+        resumen.append({"cliente": cliente, **r})
+        frappe.db.commit()
+    return resumen
+
+
+@frappe.whitelist()
+def probar_acuse_inteligente(cliente, ano, mes, simular=1):
+    """Trigger manual desde el Desk para revisar qué haría la automatización antes de dejarla en modo real."""
+    return acusar_recibo_inteligente(cliente, int(ano), int(mes), simular=bool(frappe.utils.cint(simular)))
+
+
+def agregar_cliente_a_tabla_rcv(doc, method=None):
+    """
+    Hook after_insert Y on_update de Ficha_Cliente. Suma el cliente a
+    tabla_rcv_empresas en Configuracion App con compras/ventas/honorarios
+    activados, para que el cron mensual de RCV (dispatcher_libros) lo
+    cubra automaticamente sin tener que agregarlo a mano.
+    Solo actua si el cliente esta Activo (no Inactivo/Potencial) y si
+    todavia no esta en la tabla -- cubre tanto el alta directa como el
+    caso de un cliente que nace Inactivo/Potencial y luego pasa a Activo
+    (ese nunca entra por after_insert, lo agarra este mismo chequeo en
+    on_update).
+    """
+    try:
+        if doc.get("estado_cliente") != "Activo":
+            return
+
+        cfg = frappe.get_doc("Configuracion App")
+        ya_configurado = {fila.empresa for fila in cfg.get("tabla_rcv_empresas")}
+        if doc.name in ya_configurado:
+            return
+
+        cfg.append("tabla_rcv_empresas", {
+            "empresa": doc.name,
+            "descargar_compras": 1,
+            "descargar_ventas": 1,
+            "descargar_honorarios": 1,
+        })
+        cfg.save(ignore_permissions=True)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(str(e), f"agregar_cliente_a_tabla_rcv {doc.name}")

@@ -24,14 +24,14 @@
    "fieldname": "codigo_f29",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "C\u00f3digo F29"
+   "label": "Código F29"
   },
   {
    "columns": 4,
    "fieldname": "descripcion",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Descripci\u00f3n"
+   "label": "Descripción"
   },
   {
    "columns": 1,
@@ -54,14 +54,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Tipo de Origen",
-   "options": "Calculado\nManual"
+   "options": "Calculado\nManual\nSII Oficial"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-09 12:00:57.971827",
+ "modified": "2026-08-02 07:46:59.352056",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Linea_F29_Credito",

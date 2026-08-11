@@ -1,6 +1,5 @@
 import frappe
-from frappe.utils import add_months, getdate, now_datetime
-import pytz
+from frappe.utils import add_months, getdate, now_datetime, get_datetime
 
 
 def _log(msg):
@@ -11,9 +10,12 @@ def _log(msg):
 
 
 def _now_local():
-	"""Datetime actual en zona horaria del site (America/Santiago)."""
-	tz_name = frappe.db.get_single_value("System Settings", "time_zone") or "America/Santiago"
-	return now_datetime().replace(tzinfo=pytz.utc).astimezone(pytz.timezone(tz_name))
+	"""Datetime actual en la zona horaria configurada del site.
+
+	now_datetime() ya devuelve la hora local del site (System Settings > Time Zone),
+	no UTC — no hay que volver a convertirla o el horario queda corrido.
+	"""
+	return now_datetime()
 
 
 def _cargar_cfg():
@@ -41,14 +43,17 @@ def dispatcher_cron():
 	if now.day != dia_cfg or now.hour != hora_cfg:
 		return
 
-	ultima = cfg.ultima_ejecucion_tareas
+	ultima = get_datetime(cfg.ultima_ejecucion_tareas) if cfg.ultima_ejecucion_tareas else None
 	if ultima and ultima.month == now.month and ultima.year == now.year:
 		return  # ya se ejecutó este mes
 
-	crear_tareas_mensuales()
-	cfg.ultima_ejecucion_tareas = now_datetime()
-	cfg.save(ignore_permissions=True)
-	frappe.db.commit()
+	try:
+		crear_tareas_mensuales()
+		cfg.ultima_ejecucion_tareas = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_cron", frappe.get_traceback())
 
 
 # ── CRON 2: Descarga de libros contables ────────────────────────────────────
@@ -69,30 +74,93 @@ def dispatcher_libros():
 	if now.day != dia_cfg or now.hour != hora_cfg:
 		return
 
-	ultima = cfg.ultima_ejecucion_libros
+	ultima = get_datetime(cfg.ultima_ejecucion_libros) if cfg.ultima_ejecucion_libros else None
 	if ultima and ultima.month == now.month and ultima.year == now.year:
 		return  # ya se ejecutó este mes
 
-	fecha_anterior = add_months(getdate(), -1)
-	periodo = fecha_anterior.strftime("%Y-%m")
-	ano  = fecha_anterior.year
-	mes  = fecha_anterior.month
+	try:
+		fecha_anterior = add_months(getdate(), -1)
+		periodo = fecha_anterior.strftime("%Y-%m")
+		ano  = fecha_anterior.year
+		mes  = fecha_anterior.month
 
-	from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api, bhe_api, sii_gateway, api as evo_api
 
-	rcv_api.descargar_rcv_todos(periodo)
+		rcv_api.descargar_rcv_todos(periodo)
 
-	for fila in (cfg.get("tabla_rcv_empresas") or []):
-		if fila.descargar_honorarios:
+		for fila in (cfg.get("tabla_rcv_empresas") or []):
+			if frappe.db.get_value("Ficha_Cliente", fila.empresa, "estado_cliente") != "Activo":
+				continue
+
+			if fila.descargar_honorarios:
+				try:
+					bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
+				except Exception as e:
+					frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
+				frappe.db.commit()
+
 			try:
-				bhe_api.descargar_bhe_cliente(fila.empresa, ano, mes)
+				sii_gateway.actualizar_remanente_cliente(fila.empresa, ano, mes)
 			except Exception as e:
-				frappe.log_error(str(e), f"BHE masivo {fila.empresa}")
+				frappe.log_error(str(e), f"Remanente F29 {fila.empresa}")
 			frappe.db.commit()
 
-	cfg.ultima_ejecucion_libros = now_datetime()
-	cfg.save(ignore_permissions=True)
-	frappe.db.commit()
+			# Con libros y remanente ya al día, calcular el F29 del período.
+			try:
+				f29_name = frappe.db.get_value(
+					"Borrador_F29", {"cliente": fila.empresa, "ano": str(ano), "mes": str(mes)}, "name"
+				)
+				if f29_name:
+					frappe.form_dict["doc_name"] = f29_name
+					evo_api.recalcular_asistente_f29()
+			except Exception as e:
+				frappe.log_error(str(e), f"Calculo F29 {fila.empresa}")
+			frappe.db.commit()
+
+		cfg.ultima_ejecucion_libros = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_libros", frappe.get_traceback())
+
+
+# ── CRON 3: Acuse de recibo inteligente ─────────────────────────────────────
+def dispatcher_acuse():
+	"""
+	daily — El último día de cada mes, decide qué compras pendientes de acuse
+	conviene acusar ahora (según el IVA esperado configurado por cliente) y
+	cuáles dejar para que se registren solas el mes siguiente. Corre para el
+	período EN CURSO (no el mes anterior, a diferencia de los otros
+	dispatchers), porque la decisión hay que tomarla antes de que cierre el mes.
+	"""
+	cfg = _cargar_cfg()
+	if not cfg or not cfg.habilitar_acuse_automatico:
+		return
+
+	hoy = getdate()
+	if hoy != frappe.utils.get_last_day(hoy):
+		return
+
+	now      = _now_local()
+	hora_cfg = int((cfg.hora_acuse_automatico or "20:00").split(":")[0])
+	if now.hour != hora_cfg:
+		return
+
+	ultima = get_datetime(cfg.ultima_ejecucion_acuse) if cfg.ultima_ejecucion_acuse else None
+	if ultima and ultima.month == now.month and ultima.year == now.year:
+		return  # ya se ejecutó este mes
+
+	try:
+		from evoluciona_pyme_v2.evoluciona_pyme_v2 import rcv_api
+
+		simular = bool(cfg.acuse_recibo_modo_prueba)
+		rcv_api.acusar_recibo_todos(hoy.year, hoy.month, simular=simular)
+
+		cfg.ultima_ejecucion_acuse = now_datetime()
+		cfg.save(ignore_permissions=True)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error("dispatcher_acuse", frappe.get_traceback())
 
 
 def _disparar_webhook(nombre, url, payload):

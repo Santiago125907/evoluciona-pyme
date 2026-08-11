@@ -1,0 +1,13 @@
+{
+ "creation": "2026-08-06 00:00:00.000000",
+ "doctype": "Page",
+ "modified": "2026-08-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Evoluciona Pyme V2",
+ "name": "salud_cron",
+ "owner": "Administrator",
+ "page_name": "salud_cron",
+ "roles": [{"role": "System Manager"}],
+ "system_page": 0,
+ "title": "Salud del Cron"
+}

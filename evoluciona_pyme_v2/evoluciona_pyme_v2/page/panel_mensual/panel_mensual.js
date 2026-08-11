@@ -23,14 +23,24 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         default: String(mes_def),
         change() { cargar_panel(); }
     });
-    let sel_filtro = page.add_field({
-        fieldname: 'filtro', label: 'Filtrar por', fieldtype: 'Select',
-        options: 'Todos\nSin declaración\nBorrador\nEn Validación\nListo\nPublicado\nEnviado',
-        default: 'Todos',
-        change() { aplicar_filtro(); }
-    });
 
     page.add_button('Cargar', cargar_panel, {btn_class: 'btn-primary'});
+
+    // "Crear Todas" / "Calcular Todas" — masivo para el período seleccionado arriba.
+    // Solo visibles para rol admin: escriben datos reales para todos los clientes.
+    let btn_crear_todas = page.add_button('🗓️ Crear Todas', crear_todas_periodo, {btn_class: 'btn-default'});
+    let btn_calcular_todas = page.add_button('🧮 Calcular Todas', calcular_todos_periodo, {btn_class: 'btn-default'});
+    btn_crear_todas.hide();
+    btn_calcular_todas.hide();
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_rol_usuario',
+        callback(r) {
+            if (r.message === 'admin') {
+                btn_crear_todas.show();
+                btn_calcular_todas.show();
+            }
+        }
+    });
 
     // ── HTML base ─────────────────────────────────────────────────────────────
     $(wrapper).find('.page-content').append(`
@@ -57,10 +67,39 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .pm-table td { padding:8px 7px; border-bottom:1px solid #eef0f3; vertical-align:middle; }
         .pm-table tr:hover td { background:#f7fafc; }
         .pm-table tr.pm-hidden { display:none; }
+
+        /* ── Fila expandida ─────────────────────────────────────────── */
+        .pm-expand-toggle { display:inline-flex; align-items:center; gap:3px; cursor:pointer; user-select:none;
+                             background:#e8f0f2; color:#005f6b; border:1px solid #cfe0e3; border-radius:12px;
+                             padding:2px 8px; font-size:10px; font-weight:700; margin-bottom:3px; }
+        .pm-expand-toggle:hover { background:#d7e6e9; }
+        .pm-expand-toggle .arrow { transition:transform .15s; display:inline-block; }
+        .pm-expand-toggle.open .arrow { transform:rotate(90deg); }
+        .pm-expand-toggle.open { background:#005f6b; color:#fff; border-color:#005f6b; }
+        .pm-detail-row td { background:#f4f7f9; padding:16px 20px; border-bottom:2px solid #dde3e8; }
+        .pm-detail-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+        .pm-detail-card { background:#fff; border-radius:8px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+        .pm-detail-card h5 { margin:0 0 8px; font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+                              color:#8a9bb0; font-weight:700; }
+        .pm-cred-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:12px; }
+        .pm-cred-label { color:#888; width:38px; flex-shrink:0; }
+        .pm-cred-val { font-family:monospace; background:#f0f2f5; padding:3px 8px; border-radius:4px;
+                       flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pm-copy-btn { border:none; background:#e9ecef; border-radius:4px; padding:3px 7px; cursor:pointer;
+                       font-size:11px; flex-shrink:0; }
+        .pm-copy-btn:hover { background:#dde1e5; }
+        .pm-open-btn { display:inline-block; margin-top:4px; font-size:11px; padding:4px 10px; border-radius:5px;
+                       background:#005f6b; color:#fff; text-decoration:none; }
+        .pm-open-btn:hover { background:#004a54; color:#fff; }
+        .pm-import-btn { display:block; width:100%; text-align:left; border:none; background:#f0f2f5;
+                         border-radius:6px; padding:7px 10px; margin-bottom:6px; cursor:pointer; font-size:12px; }
+        .pm-import-btn:hover { background:#e4e8ec; }
+        .pm-import-btn:last-child { margin-bottom:0; }
         .badge-est { padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; white-space:nowrap; }
         .est-borrador { background:#ffc107; color:#000; }
         .est-validar  { background:#ff9800; color:#fff; }
         .est-listo    { background:#28a745; color:#fff; }
+        .est-pdf      { background:#0984e3; color:#fff; }
         .est-publicado{ background:#6f42c1; color:#fff; }
         .est-enviado  { background:#17a2b8; color:#fff; }
         .est-sin      { background:#e9ecef; color:#888; }
@@ -71,26 +110,51 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         .cred-val    { font-family:monospace; font-size:11px; color:#555; }
         .cred-toggle { font-size:10px; color:#aaa; cursor:pointer; text-decoration:underline; margin-left:3px; }
         .pm-loading  { text-align:center; padding:40px; color:#999; }
-        .pm-f29-wrap { position:relative; display:inline-block; cursor:help; }
-        .pm-f29-total { font-size:11px; font-weight:700; }
-        .pm-f29-positivo { color:#c0392b; }
-        .pm-f29-cero     { color:#27ae60; }
-        .pm-f29-hint { font-size:10px; color:#bbb; margin-left:2px; }
-        .pm-f29-wrap:hover .pm-f29-hint { color:#005f6b; }
-        .pm-f29-wrap[title]:hover::after {
+        /* Hover-detail genérico: usado en Total F29, Postergación, Previred y Cobranza */
+        .pm-hover-wrap { position:relative; display:inline-block; cursor:help; }
+        .pm-hover-wrap:hover, .pm-hover-wrap:hover * { color:#005f6b !important; }
+        .pm-hover-wrap[title]:hover::after {
             content: attr(title); white-space:pre;
             position:absolute; left:0; top:100%; z-index:999;
-            background:#2c3e50; color:#fff; font-size:11px; line-height:1.6;
+            background:#2c3e50; color:#fff !important; font-size:11px; line-height:1.6;
             padding:6px 10px; border-radius:6px; min-width:160px;
             box-shadow:0 4px 12px rgba(0,0,0,.3); pointer-events:none;
         }
+        .pm-f29-total { font-size:11px; font-weight:700; }
+        .pm-f29-positivo { color:#c0392b; }
+        .pm-f29-cero     { color:#27ae60; }
         .cobro-monto { font-size:11px; font-weight:700; color:#005f6b; }
         .cobro-est   { font-size:10px; color:#888; }
         input.pm-chk { width:15px; height:15px; cursor:pointer; }
         .btn-bulk { padding:4px 12px; font-size:11px; border-radius:5px; border:none;
                     cursor:pointer; font-weight:600; }
+
+        /* ── Filtros ─────────────────────────────────────────────────── */
+        .pm-filtros { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+        .pm-filtro-estados-wrap { position:relative; }
+        .pm-filtro-btn { background:#fff; border:1px solid #d5dbe0; border-radius:6px; padding:6px 12px;
+                         font-size:12px; cursor:pointer; color:#333; }
+        .pm-filtro-btn:hover { background:#f4f7f9; }
+        .pm-filtro-panel { position:absolute; top:100%; left:0; margin-top:4px; background:#fff;
+                           border:1px solid #d5dbe0; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.12);
+                           padding:10px; z-index:50; min-width:190px; display:none; }
+        .pm-filtro-panel.abierto { display:block; }
+        .pm-filtro-panel label { display:flex; align-items:center; gap:6px; font-size:12px;
+                                 padding:3px 2px; cursor:pointer; }
+        .pm-filtro-panel .acciones { display:flex; gap:8px; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:8px; }
+        .pm-filtro-panel .acciones a { font-size:11px; color:#005f6b; cursor:pointer; text-decoration:underline; }
+        .pm-filtro-input, .pm-filtro-select { border:1px solid #d5dbe0; border-radius:6px; padding:6px 10px;
+                                              font-size:12px; }
     </style>
     <div class="pm-wrap">
+        <div class="pm-filtros">
+            <div class="pm-filtro-estados-wrap">
+                <button type="button" class="pm-filtro-btn" id="pm-filtro-estados-btn">Estados ▾</button>
+                <div class="pm-filtro-panel" id="pm-filtro-estados-panel"></div>
+            </div>
+            <select class="pm-filtro-select" id="pm-filtro-asesor"><option value="">Todos los asesores</option></select>
+            <input type="text" class="pm-filtro-input" id="pm-filtro-cliente" placeholder="Buscar cliente...">
+        </div>
         <div id="pm-stats"  class="pm-stats"  style="display:none;">
             <div class="pm-stat"><strong id="pm-total">—</strong><span>Clientes</span></div>
             <div class="pm-stat"><strong id="pm-con-dec">—</strong><span>Con declaración</span></div>
@@ -118,9 +182,419 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     </div>`);
 
     // ── Estado global ─────────────────────────────────────────────────────────
-    let _clientes = [], _dec_map = {}, _cobro_map = {}, _f29_map = {}, _remu_map = {}, _ano, _mes;
+    let _clientes = [], _dec_map = {}, _cobro_map = {}, _cobro_pendiente_map = {}, _f29_map = {}, _remu_map = {},
+        _post_map = {}, _post_vence_map = {}, _ano, _mes, _expandido = null;
 
     // ── Cargar datos ──────────────────────────────────────────────────────────
+    // Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos del
+    // período seleccionado (año/mes de arriba). Idempotente — no duplica lo que ya existe.
+    function crear_todas_periodo() {
+        if (!_ano || !_mes) { frappe.msgprint('Selecciona un período primero.'); return; }
+
+        frappe.confirm(
+            `Esto va a crear la Declaración Mensual y el Borrador F29 de <b>${_mes}/${_ano}</b> para ` +
+            `todos los clientes activos que todavía no lo tengan. No duplica los que ya existen. ¿Continuar?`,
+            () => {
+                frappe.dom.freeze(`Creando declaraciones de ${_mes}/${_ano}...`);
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.procesar_mes_actual',
+                    args: { mes: _mes, ano: _ano },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        frappe.msgprint({
+                            title: __('Listo'),
+                            indicator: res.errores ? 'orange' : 'green',
+                            message: res.message || 'Proceso terminado.'
+                        });
+                        cargar_panel();
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        );
+    }
+
+    // Corre "Calcular F29" para TODOS los Borrador_F29 del período seleccionado arriba.
+    function calcular_todos_periodo() {
+        if (!_ano || !_mes) { frappe.msgprint('Selecciona un período primero.'); return; }
+
+        frappe.confirm(
+            `Esto va a calcular el F29 de <b>${_mes}/${_ano}</b> para todos los clientes que ya ` +
+            `tengan declaración creada, usando los documentos tributarios ya cargados. ¿Continuar?`,
+            () => {
+                frappe.dom.freeze(`Calculando F29 de ${_mes}/${_ano}...`);
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.calcular_todos_periodo',
+                    args: { mes: _mes, ano: _ano },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        frappe.msgprint({
+                            title: __('Listo'),
+                            indicator: res.errores ? 'orange' : 'green',
+                            message: res.message || 'Proceso terminado.'
+                        });
+                        cargar_panel();
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        );
+    }
+
+    // Marca una Cobranza_Cliente como Pagada. Si llegó atrasada, pregunta si
+    // aplicar el recargo configurado a la cobranza del mes siguiente -- lo
+    // decide quien paga, no se infiere solo de la fecha.
+    function pagar_cobranza(cobro) {
+        frappe.call({
+            method: 'frappe.client.get',
+            args: { doctype:'Cobranza_Cliente', name:cobro },
+            callback(r_cob) {
+                const venc = r_cob.message && r_cob.message.fecha_vencimiento;
+
+                // Se pregunta la fecha real de pago -- si se paga varios días después
+                // de que efectivamente llegó el pago, asumir "hoy" da un atraso mal
+                // calculado (para bien o para mal).
+                frappe.prompt(
+                    [{ label:'Fecha de Pago', fieldname:'fecha_pago', fieldtype:'Date',
+                       default: frappe.datetime.get_today(), reqd:1 }],
+                    (values) => {
+                        const fecha_pago = values.fecha_pago;
+                        const atrasado = venc && frappe.datetime.get_diff(fecha_pago, venc) > 0;
+
+                        const marcar = (aplicar_recargo) => {
+                            frappe.call({
+                                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
+                                args: { cobranza_name:cobro, aplicar_recargo: aplicar_recargo ? 1 : 0, fecha_pago },
+                                callback() {
+                                    frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3);
+                                    setTimeout(cargar_panel,500);
+                                }
+                            });
+                        };
+
+                        if (!atrasado) { marcar(false); return; }
+
+                        frappe.db.get_single_value('Configuracion App','monto_recargo_pago_atrasado').then(monto => {
+                            frappe.confirm(
+                                `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(venc)}).<br><br>` +
+                                `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
+                                () => marcar(true),
+                                () => marcar(false)
+                            );
+                        });
+                    },
+                    'Marcar como Pagado',
+                    'Confirmar'
+                );
+            }
+        });
+    }
+
+    // ── Fila expandida por cliente (solo una a la vez) ──────────────────────────
+    function toggle_expand_cliente(cliente, $toggle) {
+        const fila_existente = $(`#pm-content tr.pm-detail-row[data-cliente="${cliente}"]`);
+
+        if (_expandido === cliente) {
+            fila_existente.remove();
+            $toggle.removeClass('open');
+            _expandido = null;
+            return;
+        }
+
+        // Colapsar cualquier otra fila abierta
+        $('#pm-content tr.pm-detail-row').remove();
+        $('#pm-content .pm-expand-toggle').removeClass('open');
+        _expandido = cliente;
+        $toggle.addClass('open');
+
+        const $fila_cliente = $(`#pm-content tr[data-cliente="${cliente}"]`).not('.pm-detail-row');
+        const $detalle = $(`<tr class="pm-detail-row" data-cliente="${esc(cliente)}">
+            <td colspan="11"><div class="pm-loading"><i class="fa fa-spinner fa-spin"></i> Cargando...</div></td>
+        </tr>`);
+        $fila_cliente.after($detalle);
+
+        cargar_detalle_cliente(cliente, $detalle);
+    }
+
+    function cargar_detalle_cliente(cliente, $detalle) {
+        frappe.call({
+            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_credenciales_cliente',
+            args: { cliente },
+            callback(r) {
+                const cred = r.message || {};
+                const d = _dec_map[cliente];
+                const f29_name = d ? d.borrador_f29_vinculado : null;
+
+                const fila_copiable = (label, val, id) => val
+                    ? `<div class="pm-cred-row">
+                           <span class="pm-cred-label">${label}</span>
+                           <span class="pm-cred-val" id="${id}">${esc(val)}</span>
+                           <button class="pm-copy-btn" onclick="pm_copiar('${id}')">📋</button>
+                       </div>`
+                    : `<div class="pm-cred-row"><span class="pm-cred-label">${label}</span><span style="color:#ccc;">—</span></div>`;
+
+                const sii_html = `
+                    <div class="pm-detail-card">
+                        <h5>Acceso SII</h5>
+                        ${fila_copiable('RUT', cred.rut_sii, `sii-rut-${cliente}`)}
+                        ${fila_copiable('Clave', cred.clave_sii, `sii-clave-${cliente}`)}
+                        ${cred.rut_sii ? `<a class="pm-open-btn" href="https://zeusr.sii.cl/AUT2000/InicioAutenticacion/IngresoRutClave.html" target="_blank">Abrir SII ↗</a>` : ''}
+                    </div>`;
+
+                // Solo se muestra si el cliente tiene obligación real de Previred este
+                // período (monto > 0) -- tener las credenciales guardadas no basta, puede
+                // no tener empleados ese mes.
+                const remu = _remu_map[cliente];
+                const tiene_previred_este_mes = remu && parseFloat(remu.total_previred_a_pagar || 0) > 0;
+                const previred_html = tiene_previred_este_mes
+                    ? `<div class="pm-detail-card">
+                        <h5>Acceso Previred</h5>
+                        ${fila_copiable('RUT', cred.rut_previred, `prev-rut-${cliente}`)}
+                        ${fila_copiable('Clave', cred.clave_previred, `prev-clave-${cliente}`)}
+                        ${cred.rut_previred ? `<a class="pm-open-btn" href="https://www.previred.com" target="_blank">Abrir Previred ↗</a>` : ''}
+                    </div>`
+                    : '';
+
+                const ESTADOS_PAGO = ['Pendiente de Pago','Pagado','Postergado','Vencido sin Pagar'];
+                const select_estado = (doctype, name, valor_actual, extra) => `
+                    <select class="form-control" style="font-size:12px;padding:3px 6px;height:auto;"
+                            onchange="pm_set_estado_pago('${doctype}','${name}',this.value,'${valor_actual}',${extra})">
+                        ${ESTADOS_PAGO.map(v => `<option value="${v}" ${v===valor_actual?'selected':''}>${v}</option>`).join('')}
+                    </select>`;
+
+                // El estado de pago del F29 solo tiene sentido una vez que la declaración
+                // está lista (evita marcar pagado/postergado algo que ni siquiera está calculado).
+                const f29_data = f29_name ? _f29_map[f29_name] : null;
+                const mostrar_estado_f29 = f29_name && d && ['Listo','PDF Generado','Publicado'].includes(d.estado);
+
+                // La postergación solo se muestra si existe (tiene monto) para este período,
+                // y bajo la misma regla de estado que el F29 -- son parte del mismo flujo.
+                const post_detalle = _post_map[cliente];
+                const mostrar_postergacion = mostrar_estado_f29 && post_detalle;
+                const postergacion_html = mostrar_postergacion ? `
+                    <div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Posterg.</span>
+                        <button class="form-control" style="font-size:12px;padding:3px 6px;height:auto;text-align:left;cursor:pointer;"
+                                onclick="pm_toggle_postergacion_pagada('${post_detalle.name}','${post_detalle.estado}')">
+                            ${post_detalle.estado === 'Pagada' ? '✅ Pagada' : '⏳ Pendiente'} — $${fmt_num(post_detalle.monto_postergado||0)}
+                        </button>
+                    </div>` : '';
+
+                const estado_pago_html = (mostrar_estado_f29 || tiene_previred_este_mes)
+                    ? `<div class="pm-detail-card">
+                        <h5>Estado de Pago</h5>
+                        ${mostrar_estado_f29 ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">F29</span>
+                            ${select_estado('Borrador_F29', f29_name, f29_data ? f29_data.estado_pago_f29 : 'Pendiente de Pago', f29_data ? (f29_data.impuesto_determinado||0) : 0)}</div>` : ''}
+                        ${postergacion_html}
+                        ${tiene_previred_este_mes ? `<div class="pm-cred-row"><span class="pm-cred-label" style="width:55px;">Previred</span>
+                            ${select_estado('Registro_Remuneraciones', remu.name, remu.estado_pago_previred || 'Pendiente de Pago', 0)}</div>` : ''}
+                    </div>`
+                    : '';
+
+                const import_html = `
+                    <div class="pm-detail-card">
+                        <h5>Cargar Documentos — ${_mes}/${_ano}</h5>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','compras')">📥 Compras (API SII)</button>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','ventas')">📥 Ventas (API SII)</button>
+                        <button class="pm-import-btn" ${f29_name?'':'disabled'} onclick="pm_cargar_api('${cliente}','${f29_name||''}','honorarios')">📥 Honorarios (API SII)</button>
+                        <button class="pm-import-btn" onclick="pm_importar_lre('${cliente}')">📄 Remuneraciones (CSV LRE)</button>
+                        ${f29_name?'':'<small style="color:#e67e22;">Crea la declaración primero para cargar por API.</small>'}
+                    </div>`;
+
+                const cobranza_html = `
+                    <div class="pm-detail-card">
+                        <h5>Cobranza</h5>
+                        <button class="pm-import-btn" onclick="pm_ver_cobranzas_pendientes('${cliente}')">💰 Ver cobranzas pendientes</button>
+                    </div>`;
+
+                $detalle.find('td').html(`<div class="pm-detail-grid">${sii_html}${previred_html}${estado_pago_html}${import_html}${cobranza_html}</div>`);
+            }
+        });
+    }
+
+    // Botones de importar API para una sola de las 3 fuentes a la vez
+    window.pm_cargar_api = function(cliente, f29_name, fuente) {
+        if (!f29_name) { frappe.msgprint('Este cliente no tiene declaración creada para este período.'); return; }
+        const args = { doc_name: f29_name, compras:0, ventas:0, honorarios:0 };
+        args[fuente] = 1;
+        frappe.show_alert({message:`Cargando ${fuente}...`, indicator:'blue'}, 3);
+        frappe.call({
+            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.cargar_documentos_api',
+            args,
+            callback(r) {
+                const res = r.message || {};
+                frappe.show_alert({message: res.ok!==false ? `✅ ${res.detalle||'Cargado'}` : 'Error al cargar', indicator: res.ok!==false?'green':'red'}, 5);
+            }
+        });
+    };
+
+    window.pm_importar_lre = function(cliente) {
+        const d = new frappe.ui.Dialog({
+            title: 'Importar LRE — Libro de Remuneraciones Electrónico',
+            fields: [
+                { fieldtype:'HTML', options:`<div style="margin-bottom:8px;font-size:12px;color:#555;">Sube el CSV del LRE descargado de Previred. Período <b>${_mes}/${_ano}</b>.</div>` },
+                { label:'Archivo CSV', fieldname:'archivo', fieldtype:'Attach', reqd:1, options:{restrictions:{allowed_file_types:['.csv','.CSV']}} }
+            ],
+            primary_action_label: 'Importar',
+            primary_action(values) {
+                if (!values.archivo) { frappe.msgprint('Selecciona un archivo CSV.'); return; }
+                d.hide();
+                frappe.dom.freeze('Procesando archivo...');
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.importar_lre_csv',
+                    args: { cliente, mes:_mes, ano:_ano, file_url: values.archivo },
+                    callback(r) {
+                        frappe.dom.unfreeze();
+                        const res = r.message || {};
+                        if (res.status === 'ok') {
+                            frappe.msgprint({title:'Importación exitosa', indicator:'green',
+                                message:`<b>${res.empleados}</b> trabajadores, Total Previred: <b>$${(res.total_previred||0).toLocaleString('es-CL')}</b>`});
+                            cargar_panel();
+                        } else {
+                            frappe.msgprint({title:'Error', message:res.message, indicator:'red'});
+                        }
+                    },
+                    error() { frappe.dom.unfreeze(); }
+                });
+            }
+        });
+        d.show();
+    };
+
+    window.pm_ver_cobranzas_pendientes = function(cliente) {
+        frappe.call({
+            method: 'frappe.client.get_list',
+            args: { doctype:'Cobranza_Cliente', filters:{cliente, estado_cobranza:['not in',['Pagado','Anulado']]},
+                     fields:['name','periodo_mes','periodo_ano','monto_a_cobrar','estado_cobranza','fecha_vencimiento'],
+                     order_by:'periodo_ano asc, periodo_mes asc', limit_page_length:50, ignore_permissions:1 },
+            callback(r) {
+                const filas = r.message || [];
+                if (!filas.length) { frappe.msgprint('Este cliente no tiene cobranzas pendientes.'); return; }
+
+                const html = filas.map(f => `
+                    <tr>
+                        <td>${f.periodo_mes}/${f.periodo_ano}</td>
+                        <td>$${fmt_num(f.monto_a_cobrar)}</td>
+                        <td>${esc(f.estado_cobranza)}</td>
+                        <td>${f.fecha_vencimiento||''}</td>
+                        <td><button class="btn btn-xs btn-primary" onclick="pm_pagar_desde_dialog('${f.name}')">Pagar</button></td>
+                    </tr>`).join('');
+
+                frappe.msgprint({
+                    title: `Cobranzas pendientes — ${cliente}`,
+                    message: `<table class="table table-bordered" style="font-size:12px;">
+                        <thead><tr><th>Período</th><th>Monto</th><th>Estado</th><th>Vence</th><th></th></tr></thead>
+                        <tbody>${html}</tbody></table>`,
+                    wide: true
+                });
+            }
+        });
+    };
+
+    window.pm_pagar_desde_dialog = function(cobro) {
+        if (cur_dialog) cur_dialog.hide();
+        pagar_cobranza(cobro);
+    };
+
+    window.pm_copiar = function(id) {
+        const texto = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(texto).then(() => {
+            frappe.show_alert({message:'Copiado', indicator:'green'}, 1.5);
+        });
+    };
+
+    // Botón de la columna "Post.": alterna la postergación entre pendiente (Vigente) y Pagada.
+    window.pm_toggle_postergacion_pagada = function(post_name, estado_actual) {
+        const nuevo = estado_actual === 'Pagada' ? 'Vigente' : 'Pagada';
+        frappe.call({
+            method: 'frappe.client.set_value',
+            args: { doctype:'Postergacion_IVA', name:post_name, fieldname:'estado', value:nuevo },
+            callback() {
+                frappe.show_alert({message:`✅ Postergación ${nuevo === 'Pagada' ? 'marcada como pagada' : 'marcada como pendiente'}`, indicator:'green'}, 3);
+                cargar_panel();
+            }
+        });
+    };
+
+    // valor_anterior e iva_det solo aplican a Borrador_F29 (Previred no tiene postergación).
+    window.pm_set_estado_pago = function(doctype, name, valor, valor_anterior, iva_det) {
+        const fieldname = doctype === 'Borrador_F29' ? 'estado_pago_f29' : 'estado_pago_previred';
+
+        const set_simple = () => {
+            frappe.call({
+                method: 'frappe.client.set_value',
+                args: { doctype, name, fieldname, value: valor },
+                callback() { frappe.show_alert({message:`✅ ${valor}`, indicator:'green'}, 2); }
+            });
+        };
+
+        if (doctype !== 'Borrador_F29') { set_simple(); return; }
+
+        // Pasar A Postergado: pide monto y meses, y crea la Postergacion_IVA real.
+        if (valor === 'Postergado') {
+            pm_dialog_postergar_iva(name, iva_det);
+            return;
+        }
+
+        // Salir de Postergado hacia otro estado (se corrigió un error): cancela
+        // la Postergacion_IVA asociada para que quede coordinado.
+        if (valor_anterior === 'Postergado') {
+            frappe.confirm(
+                `Este F29 tenía una postergación de IVA registrada. Cambiar a "${valor}" la va a <b>cancelar</b>. ¿Continuar?`,
+                () => {
+                    frappe.call({
+                        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.cancelar_postergacion_iva',
+                        args: { doc_name: name },
+                        callback() {
+                            // La cancelación ya deja estado_pago_f29 en "Pendiente de Pago";
+                            // si el usuario eligió otro valor distinto, lo aplicamos encima.
+                            if (valor !== 'Pendiente de Pago') set_simple();
+                            else { frappe.show_alert({message:'Postergación cancelada', indicator:'orange'}, 3); cargar_panel(); }
+                        }
+                    });
+                },
+                () => cargar_panel() // canceló el confirm -> refresca para volver a dejar el select en "Postergado"
+            );
+            return;
+        }
+
+        set_simple();
+    };
+
+    window.pm_dialog_postergar_iva = function(f29_name, iva_det) {
+        const MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const mes = parseInt(_mes), ano = parseInt(_ano);
+        const m2 = ((mes+1) % 12) + 1; const a2 = mes >= 11 ? ano+1 : ano;
+
+        const d = new frappe.ui.Dialog({
+            title: '⏳ Postergar IVA — Art. 64 D.L. 825',
+            fields: [
+                { fieldtype:'HTML', options:`<div style="background:#fff8ec;border-left:3px solid #b45309;border-radius:4px;padding:10px 14px;margin-bottom:4px;font-size:12px;color:#7d4e00;">Difiere el pago del IVA determinado por <b>2 meses</b> (F29 de ${MESES[m2]} ${a2}). Solo Pro Pyme.</div>` },
+                { label:'IVA Determinado del período', fieldname:'iva_det_info', fieldtype:'HTML', options:`<div style="font-size:22px;font-weight:800;color:#b45309;padding:6px 0 10px;">$${(iva_det||0).toLocaleString('es-CL')}</div>` },
+                { label:'Monto a Postergar ($)', fieldname:'monto', fieldtype:'Currency', default: iva_det||0, reqd:1, description:'Máximo: IVA determinado del período' }
+            ],
+            primary_action_label: 'Registrar Postergación',
+            primary_action(values) {
+                if (values.monto <= 0) { frappe.msgprint('El monto debe ser mayor a 0.'); return; }
+                if (values.monto > (iva_det||0)) { frappe.msgprint('El monto no puede superar el IVA determinado.'); return; }
+                d.hide();
+                frappe.call({
+                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.registrar_postergacion_iva',
+                    args: { doc_name: f29_name, monto: values.monto, meses_diferidos: 2 },
+                    freeze: true, freeze_message: 'Registrando postergación...',
+                    callback(r) {
+                        const res = r.message;
+                        if (res?.status === 'ok') { frappe.show_alert({message:res.message, indicator:'orange'}, 6); cargar_panel(); }
+                        else { frappe.msgprint({title:'Error', message:res?.message, indicator:'red'}); cargar_panel(); }
+                    }
+                });
+            }
+        });
+        d.onhide = () => cargar_panel(); // si cancela el dialog, refresca para no dejar el select mal seleccionado
+        d.show();
+    };
+
     function cargar_panel() {
         _ano = sel_ano.get_value();
         _mes = sel_mes.get_value();
@@ -132,7 +606,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         frappe.call({
             method: 'frappe.client.get_list',
             args: { doctype:'Ficha_Cliente', filters:{estado_cliente:'Activo'},
-                    fields:['name','razon_social','clave_sii','rut_usuario'],
+                    fields:['name','razon_social','clave_sii','rut_usuario','asesor_asignado'],
                     order_by:'razon_social asc', limit_page_length:200, ignore_permissions:1 },
             callback(r) {
                 _clientes = r.message || [];
@@ -151,27 +625,77 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                         frappe.call({
                             method: 'frappe.client.get_list',
                             args: { doctype:'Cobranza_Cliente', filters:{periodo_ano:_ano, periodo_mes:_mes},
-                                    fields:['name','cliente','monto_a_cobrar','estado_cobranza'],
+                                    fields:['name','cliente','monto_a_cobrar','estado_cobranza','monto_base',
+                                            'monto_rrhh','monto_adicionales','total_descuentos',
+                                            'recargo_por_atraso','fecha_vencimiento'],
                                     limit_page_length:300, ignore_permissions:1 },
                             callback(r3) {
                                 _cobro_map = {};
                                 (r3.message||[]).forEach(c => _cobro_map[c.cliente] = c);
 
+                                // Todas las cobranzas pendientes del cliente, no solo las de este período.
                                 frappe.call({
-                                    method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_f29_panel_data',
-                                    args: { ano:_ano, mes:_mes },
-                                    callback(r4) {
-                                        _f29_map = r4.message || {};
+                                    method: 'frappe.client.get_list',
+                                    args: { doctype:'Cobranza_Cliente',
+                                            filters:{estado_cobranza:['not in', ['Pagado','Anulado']]},
+                                            fields:['cliente','monto_a_cobrar','estado_cobranza'],
+                                            limit_page_length:1000, ignore_permissions:1 },
+                                    callback(r3b) {
+                                        _cobro_pendiente_map = {};
+                                        (r3b.message||[]).forEach(c => {
+                                            const acc = _cobro_pendiente_map[c.cliente] || {monto:0, n:0};
+                                            acc.monto += parseFloat(c.monto_a_cobrar||0);
+                                            acc.n += 1;
+                                            _cobro_pendiente_map[c.cliente] = acc;
+                                        });
+
                                         frappe.call({
-                                            method: 'frappe.client.get_list',
-                                            args: { doctype:'Registro_Remuneraciones',
-                                                    filters:{ano:_ano, mes:_mes},
-                                                    fields:['name','cliente','total_previred_a_pagar'],
-                                                    limit_page_length:300, ignore_permissions:1 },
-                                            callback(r5) {
-                                                _remu_map = {};
-                                                (r5.message||[]).forEach(r => _remu_map[r.cliente] = r);
-                                                renderizar();
+                                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.get_f29_panel_data',
+                                            args: { ano:_ano, mes:_mes },
+                                            callback(r4) {
+                                                _f29_map = r4.message || {};
+                                                frappe.call({
+                                                    method: 'frappe.client.get_list',
+                                                    args: { doctype:'Registro_Remuneraciones',
+                                                            filters:{ano:_ano, mes:_mes},
+                                                            fields:['name','cliente','total_previred_a_pagar','estado_pago_previred',
+                                                                    'total_empleados_activos','costo_total_empleador'],
+                                                            limit_page_length:300, ignore_permissions:1 },
+                                                    callback(r5) {
+                                                        _remu_map = {};
+                                                        (r5.message||[]).forEach(r => _remu_map[r.cliente] = r);
+
+                                                        frappe.call({
+                                                            method: 'frappe.client.get_list',
+                                                            args: { doctype:'Postergacion_IVA',
+                                                                    filters:{ano_origen:_ano, mes_origen:_mes},
+                                                                    fields:['name','cliente','estado','monto_postergado',
+                                                                            'fecha_vencimiento','mes_f29_pagado','ano_f29_pagado'],
+                                                                    limit_page_length:300, ignore_permissions:1 },
+                                                            callback(r6) {
+                                                                _post_map = {};
+                                                                (r6.message||[]).forEach(p => _post_map[p.cliente] = p);
+
+                                                                // Postergaciones que vencen (hay que pagarlas) justo en el período seleccionado.
+                                                                frappe.call({
+                                                                    method: 'frappe.client.get_list',
+                                                                    args: { doctype:'Postergacion_IVA',
+                                                                            filters:{ano_f29_pagado:_ano, mes_f29_pagado:_mes,
+                                                                                     estado:['not in', ['Pagada']]},
+                                                                            fields:['cliente','monto_postergado'],
+                                                                            limit_page_length:300, ignore_permissions:1 },
+                                                                    callback(r7) {
+                                                                        _post_vence_map = {};
+                                                                        (r7.message||[]).forEach(p => {
+                                                                            _post_vence_map[p.cliente] = (_post_vence_map[p.cliente]||0) + parseFloat(p.monto_postergado||0);
+                                                                        });
+                                                                        renderizar();
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+                                                });
                                             }
                                         });
                                     }
@@ -212,7 +736,18 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             const remu = _remu_map[c.name];
             const prev_monto = remu ? parseFloat(remu.total_previred_a_pagar || 0) : null;
             const prev_html = prev_monto !== null
-                ? `<div class="cobro-monto" style="color:#2980b9;">$${fmt_num(prev_monto)}</div>`
+                ? (() => {
+                    const lineas_prev = [
+                        `N° empleados:   ${remu.total_empleados_activos||0}`,
+                        `Costo empleador:$${fmt_num(remu.costo_total_empleador||0)}`,
+                        `──────────────────────`,
+                        `Total Previred: $${fmt_num(prev_monto)}`,
+                        `Estado:         ${remu.estado_pago_previred||'Pendiente de Pago'}`,
+                    ].join('\n');
+                    return `<div class="pm-hover-wrap" title="${lineas_prev}">
+                        <span class="cobro-monto" style="color:#2980b9;">$${fmt_num(prev_monto)}</span>
+                    </div>`;
+                })()
                 : '<span style="color:#ddd">—</span>';
 
             // F29 totales con tooltip
@@ -247,35 +782,81 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     `TOTAL MES:      $${fmt_num(total_mes_tt)}`,
                 ].filter(Boolean).join('\n');
                 const cls = pagar > 0 ? 'pm-f29-positivo' : 'pm-f29-cero';
-                return `<div class="pm-f29-wrap" title="${lines}">
+                return `<div class="pm-hover-wrap" title="${lines}">
                     <span class="pm-f29-total ${cls}">$${fmt_num(pagar)}</span>
-                    <span class="pm-f29-hint"> ℹ</span>
                 </div>`;
             })();
 
-            const cobro_html = co
-                ? `<div class="cobro-monto">$${fmt_num(co.monto_a_cobrar)}</div>
-                   <div class="cobro-est">${co.estado_cobranza||'Pendiente'}</div>`
+            // Cobranza: todo lo pendiente del cliente (no solo lo de este período), con
+            // detalle del cobro de ESTE período en el hover si existe.
+            const cobro_pend = _cobro_pendiente_map[c.name];
+            const co_periodo = _cobro_map[c.name];
+            const cobro_html = cobro_pend
+                ? (() => {
+                    const lineas_cob = co_periodo ? [
+                        `Base:           $${fmt_num(co_periodo.monto_base||0)}`,
+                        `RRHH:           $${fmt_num(co_periodo.monto_rrhh||0)}`,
+                        co_periodo.monto_adicionales   ? `Adicionales:    $${fmt_num(co_periodo.monto_adicionales)}` : null,
+                        co_periodo.total_descuentos     ? `Descuentos:    -$${fmt_num(co_periodo.total_descuentos)}` : null,
+                        co_periodo.recargo_por_atraso   ? `Recargo atraso: $${fmt_num(co_periodo.recargo_por_atraso)}` : null,
+                        `──────────────────────`,
+                        `Este período:   $${fmt_num(co_periodo.monto_a_cobrar||0)}`,
+                        `Vence:          ${co_periodo.fecha_vencimiento||'—'}`,
+                        `══════════════════════`,
+                        `Total pendiente:$${fmt_num(cobro_pend.monto)} (${cobro_pend.n} período${cobro_pend.n>1?'s':''})`,
+                    ].filter(Boolean).join('\n') : `Total pendiente: $${fmt_num(cobro_pend.monto)} (${cobro_pend.n} período${cobro_pend.n>1?'s':''})`;
+                    return `<div class="pm-hover-wrap" title="${lineas_cob}">
+                        <div class="cobro-monto">$${fmt_num(cobro_pend.monto)}</div>
+                        <div class="cobro-est">${cobro_pend.n>1 ? cobro_pend.n+' pendientes' : 'Pendiente'}</div>
+                    </div>`;
+                })()
                 : '<span style="color:#ddd">—</span>';
 
-            const total_mes = (f29_pagar !== null ? f29_pagar : 0) + (prev_monto !== null ? prev_monto : 0);
-            const total_html = (f29_pagar !== null || prev_monto !== null)
+            // Postergación de IVA: ¿el cliente postergó el pago de este período?
+            // Solo indicador visual acá -- el control para cambiarla vive junto a
+            // F29/Previred en la tarjeta "Estado de Pago" de la fila expandida.
+            const post = _post_map[c.name];
+            const post_clase = { Vigente:'#2980b9', 'Por Vencer':'#f39c12', Vencida:'#e74c3c', Pagada:'#95a5a6' };
+            const post_html = post
+                ? (() => {
+                    const lineas_post = [
+                        `Monto postergado:$${fmt_num(post.monto_postergado||0)}`,
+                        `Estado:          ${post.estado}`,
+                        `Se paga en F29:  ${post.mes_f29_pagado}/${post.ano_f29_pagado}`,
+                        `Vence:           ${post.fecha_vencimiento||'—'}`,
+                    ].join('\n');
+                    return `<div class="pm-hover-wrap" title="${lineas_post}">
+                        <span style="font-size:10px;font-weight:700;color:${post_clase[post.estado]||'#888'};">${esc(post.estado)}</span>
+                    </div>`;
+                })()
+                : '<span style="color:#ddd">—</span>';
+
+            // Postergación que vence (hay que pagarla) justo este período.
+            const post_vence = _post_vence_map[c.name] || 0;
+
+            const total_mes = (f29_pagar !== null ? f29_pagar : 0) + (prev_monto !== null ? prev_monto : 0)
+                             + (cobro_pend ? cobro_pend.monto : 0) + post_vence;
+            const total_html = (f29_pagar !== null || prev_monto !== null || cobro_pend || post_vence)
                 ? `<div style="font-size:12px;font-weight:800;color:#1a3a4a;">$${fmt_num(total_mes)}</div>
-                   <div style="font-size:9px;color:#aaa;">F29+Prev</div>`
+                   <div style="font-size:9px;color:#aaa;">F29+Prev+Cobr${post_vence ? '+Post' : ''}</div>`
                 : '<span style="color:#ddd">—</span>';
 
             const acciones = d ? gen_acciones(d, c, co) : gen_sin_dec(c);
 
             const estado_key = d ? (d.estado||'Borrador') : 'Sin declaración';
 
-            return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}">
+            return `<tr data-estado="${esc(estado_key)}" data-cliente="${esc(c.name)}" data-asesor="${esc(c.asesor_asignado||'')}" data-nombre="${esc((c.razon_social||c.name).toLowerCase())}">
                 <td><input class="pm-chk" type="checkbox" data-cliente="${esc(c.name)}" data-doc="${d?esc(d.name):''}" onchange="pm_chk_change()"></td>
-                <td><a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
-                    <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small></td>
+                <td>
+                    <span class="pm-expand-toggle" data-cliente="${esc(c.name)}" title="Ver más"><span class="arrow">▶</span> Ver más</span><br>
+                    <a href="#" onclick="frappe.set_route('Form','Ficha_Cliente','${esc(c.name)}');return false;" style="font-weight:600;color:#005f6b;">${esc(c.razon_social||c.name)}</a><br>
+                    <small style="color:#aaa;font-size:10px;">${esc(c.name)}</small>
+                </td>
                 <td>${cred_sii}</td>
                 <td>${estado_html}</td>
                 <td style="white-space:nowrap;font-size:13px;letter-spacing:2px;">${checks}</td>
                 <td>${f29_html}</td>
+                <td>${post_html}</td>
                 <td>${prev_html}</td>
                 <td>${cobro_html}</td>
                 <td>${total_html}</td>
@@ -307,6 +888,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                     <th style="width:7%;">Estado</th>
                     <th style="width:9%;">RRHH · F29 · Prev · PDF</th>
                     <th style="width:7%;">Total F29</th>
+                    <th style="width:6%;">Post.</th>
                     <th style="width:7%;">Previred</th>
                     <th style="width:7%;">Cobranza</th>
                     <th style="width:7%;">Total Mes</th>
@@ -321,7 +903,12 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                             $(this).data('cobro')||'');
         });
 
+        $('#pm-content').off('click','.pm-expand-toggle').on('click','.pm-expand-toggle', function() {
+            toggle_expand_cliente($(this).data('cliente'), $(this));
+        });
+
         aplicar_filtro();
+        _expandido = null;
     }
 
     // ── Generar botones de acción ─────────────────────────────────────────────
@@ -332,14 +919,14 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
         a += btn('ver-f29',  d.name, d.borrador_f29_vinculado||'', c.name, 'F29');
         a += btn('ing-rrhh', d.name, '', c.name, 'RRHH');
-        if (!d.check_f29_cuadrado && d.estado !== 'Listo' && d.estado !== 'Enviado')
+        if (!d.check_f29_cuadrado && d.estado !== 'Listo' && d.estado !== 'PDF Generado' && d.estado !== 'Enviado')
             a += btn('calc-f29', d.name, d.borrador_f29_vinculado||'', c.name, '⚡Calc', '#1a6e3c');
 
         if (!d.check_gasto_rem_cargado) a += btn('check-rrhh', d.name, '', c.name, '✓RRHH', '#e67e22');
         if (!d.check_f29_cuadrado)      a += btn('check-f29',  d.name, '', c.name, '✓F29',  '#e67e22');
         if (!d.check_previred_cuadrado) a += btn('check-prev', d.name, '', c.name, '✓Prev', '#e67e22');
 
-        if (d.estado === 'Listo') {
+        if (d.estado === 'Listo' || d.estado === 'PDF Generado') {
             if (!tiene_pdf) a += btn('gen-pdf', d.name, '', c.name, 'Gen.PDF', '#27ae60');
             else            a += btn('ver-pdf', d.name, '', c.name, 'PDF', '#0984e3');
             a += btn('publicar', d.name, '', c.name, '📱 Publicar', '#6f42c1');
@@ -396,14 +983,71 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
     }
 
     // ── Filtro ────────────────────────────────────────────────────────────────
+    // Combina 3 condiciones a la vez: estados marcados, asesor elegido, texto de cliente.
     function aplicar_filtro() {
-        const f = sel_filtro.get_value() || 'Todos';
-        $('#pm-content tbody tr').each(function() {
-            const est = $(this).data('estado') || '';
-            const show = f === 'Todos' || est === f;
-            $(this).toggleClass('pm-hidden', !show);
+        const asesor  = $('#pm-filtro-asesor').val() || '';
+        const busca   = ($('#pm-filtro-cliente').val() || '').trim().toLowerCase();
+
+        $('#pm-content tbody tr').not('.pm-detail-row').each(function() {
+            const est    = $(this).data('estado') || '';
+            const ases   = $(this).data('asesor') || '';
+            const nombre = ($(this).data('nombre') || '') + ' ' + ($(this).data('cliente') || '').toLowerCase();
+
+            const pasa_estado = _estados_visibles[est] !== false;
+            const pasa_asesor = !asesor || ases === asesor;
+            const pasa_nombre = !busca || nombre.indexOf(busca) !== -1;
+
+            $(this).toggleClass('pm-hidden', !(pasa_estado && pasa_asesor && pasa_nombre));
         });
     }
+
+    // ── Filtro de Estados (checkboxes) ──────────────────────────────────────────
+    const ESTADOS_FILTRO = ['Sin declaración','Borrador','En Validación','Listo','PDF Generado','Enviado','Publicado'];
+    let _estados_visibles = {};
+    ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = true);
+
+    function armar_panel_estados() {
+        const filas = ESTADOS_FILTRO.map(e => `
+            <label><input type="checkbox" class="pm-chk-estado" value="${esc(e)}" ${_estados_visibles[e]!==false?'checked':''}> ${esc(e)}</label>
+        `).join('');
+        $('#pm-filtro-estados-panel').html(`
+            <div class="acciones"><a id="pm-estados-todos">Mostrar todo</a><a id="pm-estados-ninguno">Ninguno</a></div>
+            ${filas}
+        `);
+    }
+    armar_panel_estados();
+
+    $('#pm-filtro-estados-btn').on('click', () => $('#pm-filtro-estados-panel').toggleClass('abierto'));
+    $(document).on('click', (e) => {
+        if (!$(e.target).closest('.pm-filtro-estados-wrap').length) $('#pm-filtro-estados-panel').removeClass('abierto');
+    });
+    $('#pm-filtro-estados-panel').on('change', '.pm-chk-estado', function() {
+        _estados_visibles[this.value] = this.checked;
+        aplicar_filtro();
+    });
+    $('#pm-filtro-estados-panel').on('click', '#pm-estados-todos', () => {
+        ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = true);
+        armar_panel_estados();
+        aplicar_filtro();
+    });
+    $('#pm-filtro-estados-panel').on('click', '#pm-estados-ninguno', () => {
+        ESTADOS_FILTRO.forEach(e => _estados_visibles[e] = false);
+        armar_panel_estados();
+        aplicar_filtro();
+    });
+
+    $('#pm-filtro-asesor').on('change', aplicar_filtro);
+    $('#pm-filtro-cliente').on('input', aplicar_filtro);
+
+    // Lista de asesores para el select -- se carga una vez.
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.get_asesores',
+        callback(r) {
+            (r.message||[]).forEach(a => {
+                $('#pm-filtro-asesor').append(`<option value="${esc(a.name)}">${esc(a.full_name||a.name)}</option>`);
+            });
+        }
+    });
 
     // ── Checkboxes y acciones masivas ─────────────────────────────────────────
     window.pm_chk_all = function(el) {
@@ -477,16 +1121,15 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             case 'calc-f29':
                 if (!f29) { frappe.msgprint('Sin F29 vinculado.'); break; }
-                frappe.confirm('¿Calcular F29 automáticamente desde documentos tributarios?', () => {
-                    frappe.show_alert({message:'Calculando...', indicator:'blue'}, 3);
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29', args:{doc_name:f29},
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
-                                               indicator: res.status==='ok'?'green':'red'}, 4);
-                        }
-                    });
+                frappe.show_alert({message:'Calculando...', indicator:'blue'}, 3);
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.recalcular_asistente_f29', args:{doc_name:f29},
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message: res.status==='ok'?'✅ F29 calculado':'Error al calcular',
+                                           indicator: res.status==='ok'?'green':'red'}, 4);
+                        if (res.status==='ok') setTimeout(cargar_panel, 600);
+                    }
                 }); break;
 
             case 'check-rrhh': set_check(doc,'check_gasto_rem_cargado'); break;
@@ -494,18 +1137,16 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
             case 'check-prev': set_check(doc,'check_previred_cuadrado'); break;
 
             case 'gen-pdf':
-                frappe.confirm('¿Generar PDF del informe mensual?', () => {
-                    frappe.show_alert({message:'Generando PDF...', indicator:'blue'}, 5);
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf', args:{declaracion_name:doc},
-                        freeze:true, freeze_message:'Generando PDF... puede tomar 30-60 segundos',
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message:res.status==='success'?'✅ PDF generado':'Error al generar PDF',
-                                               indicator:res.status==='success'?'green':'red'}, 4);
-                            if (res.status==='success') setTimeout(cargar_panel, 1200);
-                        }
-                    });
+                frappe.show_alert({message:'Generando PDF...', indicator:'blue'}, 5);
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf', args:{declaracion_name:doc},
+                    freeze:true, freeze_message:'Generando PDF... puede tomar 30-60 segundos',
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message:res.status==='success'?'✅ PDF generado':'Error al generar PDF',
+                                           indicator:res.status==='success'?'green':'red'}, 4);
+                        if (res.status==='success') setTimeout(cargar_panel, 1200);
+                    }
                 }); break;
 
             case 'ver-pdf':
@@ -520,43 +1161,38 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
 
             case 'enviar':
             case 'reenviar':
-                const es_reenvio = action==='reenviar';
-                frappe.confirm(es_reenvio?'¿Reenviar al cliente?':'¿Enviar declaración al cliente?', () => {
-                    frappe.call({
-                        method:'frappe.client.get', args:{doctype:'Declaracion_Mensual',name:doc},
-                        callback(r_dm) {
-                            frappe.call({
-                                method:'frappe.client.get', args:{doctype:'Ficha_Cliente',name:cliente},
-                                callback(r_cli) {
-                                    frappe.db.get_single_value('Configuracion App','webhook_envio_declaracion').then(wh => {
-                                        if (!wh) { frappe.msgprint('Webhook no configurado.'); return; }
-                                        frappe.show_alert({message:'Enviando...',indicator:'blue'},5);
-                                        fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
-                                            body:JSON.stringify({declaracion:doc,cliente:r_cli.message,
-                                                                 declaracion_data:r_dm.message,es_reenvio})
-                                        }).then(()=>{frappe.show_alert({message:'✅ Enviado',indicator:'green'},4);setTimeout(cargar_panel,1000);})
-                                          .catch(e=>frappe.msgprint({message:'Error: '+e,indicator:'red'}));
-                                    });
-                                }
-                            });
-                        }
-                    });
+                frappe.call({
+                    method:'frappe.client.get', args:{doctype:'Declaracion_Mensual',name:doc},
+                    callback(r_dm) {
+                        frappe.call({
+                            method:'frappe.client.get', args:{doctype:'Ficha_Cliente',name:cliente},
+                            callback(r_cli) {
+                                frappe.db.get_single_value('Configuracion App','webhook_envio_declaracion').then(wh => {
+                                    if (!wh) { frappe.msgprint('Webhook no configurado.'); return; }
+                                    frappe.show_alert({message:'Enviando...',indicator:'blue'},5);
+                                    fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},
+                                        body:JSON.stringify({declaracion:doc,cliente:r_cli.message,
+                                                             declaracion_data:r_dm.message,es_reenvio:action==='reenviar'})
+                                    }).then(()=>{frappe.show_alert({message:'✅ Enviado',indicator:'green'},4);setTimeout(cargar_panel,1000);})
+                                      .catch(e=>frappe.msgprint({message:'Error: '+e,indicator:'red'}));
+                                });
+                            }
+                        });
+                    }
                 }); break;
 
             case 'publicar': {
                 const dec_actual = _dec_map[cliente];
                 const ya_publicado = dec_actual && dec_actual.estado === 'Publicado';
-                frappe.confirm(ya_publicado ? '¿Despublicar esta declaración del portal?' : '¿Publicar en la App del cliente? Se enviará notificación push.', () => {
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
-                        args:{doc_name:doc},
-                        callback(res) {
-                            const ok = res.message && res.message.status === 'ok';
-                            frappe.show_alert({message: ok ? (ya_publicado?'🔒 Despublicado':'📱 Publicado en App') : 'Error al publicar',
-                                               indicator: ok ? (ya_publicado?'orange':'green') : 'red'}, 4);
-                            if (ok) setTimeout(cargar_panel, 600);
-                        }
-                    });
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+                    args:{doc_name:doc},
+                    callback(res) {
+                        const ok = res.message && res.message.status === 'ok';
+                        frappe.show_alert({message: ok ? (ya_publicado?'🔒 Despublicado':'📱 Publicado en App') : 'Error al publicar',
+                                           indicator: ok ? (ya_publicado?'orange':'green') : 'red'}, 4);
+                        if (ok) setTimeout(cargar_panel, 600);
+                    }
                 }); break;
             }
 
@@ -575,38 +1211,28 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
                 }); break;
 
             case 'crear-dec':
-                frappe.confirm(`¿Crear Declaración Mensual + F29 para este cliente en ${_mes}/${_ano}?`, () => {
-                    frappe.call({
-                        method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.crear_declaraciones_periodo',
-                        args:{cliente, mes:_mes, ano:_ano},
-                        callback(r) {
-                            const res = r.message||{};
-                            frappe.show_alert({message:res.status==='exists'?'Ya existe para este período.':'✅ Creado.',
-                                               indicator:res.status==='exists'?'orange':'green'}, 4);
-                            setTimeout(cargar_panel, 800);
-                        }
-                    });
+                frappe.call({
+                    method:'evoluciona_pyme_v2.evoluciona_pyme_v2.api.crear_declaraciones_periodo',
+                    args:{cliente, mes:_mes, ano:_ano},
+                    callback(r) {
+                        const res = r.message||{};
+                        frappe.show_alert({message:res.status==='exists'?'Ya existe para este período.':'✅ Creado.',
+                                           indicator:res.status==='exists'?'orange':'green'}, 4);
+                        setTimeout(cargar_panel, 800);
+                    }
                 }); break;
 
             case 'facturar':
                 if (!cobro) { frappe.msgprint('Sin cobranza vinculada.'); break; }
-                frappe.confirm('¿Marcar cobranza como <b>Facturada</b>?', () => {
-                    frappe.call({
-                        method:'frappe.client.set_value',
-                        args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Facturado'},
-                        callback() { frappe.show_alert({message:'🧾 Marcado como Facturado',indicator:'purple'},3); setTimeout(cargar_panel,500); }
-                    });
+                frappe.call({
+                    method:'frappe.client.set_value',
+                    args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Facturado'},
+                    callback() { frappe.show_alert({message:'🧾 Marcado como Facturado',indicator:'purple'},3); setTimeout(cargar_panel,500); }
                 }); break;
 
             case 'pagar':
                 if (!cobro) { frappe.msgprint('Sin cobranza vinculada.'); break; }
-                frappe.confirm('¿Marcar cobranza como <b>Pagada</b>?', () => {
-                    frappe.call({
-                        method:'frappe.client.set_value',
-                        args:{doctype:'Cobranza_Cliente', name:cobro, fieldname:'estado_cobranza', value:'Pagado'},
-                        callback() { frappe.show_alert({message:'💰 Marcado como Pagado',indicator:'green'},3); setTimeout(cargar_panel,500); }
-                    });
-                }); break;
+                pagar_cobranza(cobro); break;
         }
     }
 
@@ -634,6 +1260,7 @@ frappe.pages['panel_mensual'].on_page_load = function(wrapper) {
         if (!e||e==='Borrador')      return 'est-borrador';
         if (e==='En Validación')     return 'est-validar';
         if (e==='Listo')             return 'est-listo';
+        if (e==='PDF Generado')      return 'est-pdf';
         if (e==='Publicado')         return 'est-publicado';
         if (e==='Enviado')           return 'est-enviado';
         return 'est-borrador';

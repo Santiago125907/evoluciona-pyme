@@ -495,33 +495,32 @@ def preparar_datos_pdf(**kwargs):
         except:
             pass
         
-        # 9. POSTERGACIÓN VENCIDA
+        # 9. POSTERGACIÓN VENCIDA — solo la(s) que vence(n) justo en este período
+        # (mes_f29_pagado/ano_f29_pagado), mismo criterio que usa el Panel Mensual.
+        # No suma postergaciones antiguas que ya deberían haberse mostrado en un
+        # PDF anterior.
         postergacion_vencida = 0.0
         postergaciones_detalle = []
-        
+
         try:
-            fecha_limite = frappe.utils.getdate(decl.get("fecha_vencimiento_f29")) if decl.get("fecha_vencimiento_f29") else fecha_mes_siguiente.replace(day=20)
-            
             posts_pendientes = frappe.get_all("Postergacion_IVA",
                 filters={
                     "cliente": decl.cliente,
+                    "mes_f29_pagado": mes_actual,
+                    "ano_f29_pagado": ano_actual,
                     "estado": ["in", ["Vigente", "Por Vencer", "Vencida"]]
                 },
-                fields=["monto_postergado", "fecha_vencimiento", "mes_origen", "ano_origen"],
-                order_by="fecha_vencimiento asc")
-            
+                fields=["monto_postergado", "fecha_vencimiento", "mes_origen", "ano_origen"])
+
             for post in posts_pendientes:
-                if post.get("fecha_vencimiento"):
-                    fv = frappe.utils.getdate(post.fecha_vencimiento)
-                    if fv <= fecha_limite:
-                        postergacion_vencida += frappe.utils.flt(post.monto_postergado)
-                        mes_or = post.get('mes_origen', '')
-                        ano_or = post.get('ano_origen', '')
-                        postergaciones_detalle.append({
-                            "monto": float(frappe.utils.flt(post.monto_postergado)),
-                            "periodo": f"{mes_or}/{ano_or}" if mes_or and ano_or else ""
-                        })
-            
+                postergacion_vencida += frappe.utils.flt(post.monto_postergado)
+                mes_or = post.get('mes_origen', '')
+                ano_or = post.get('ano_origen', '')
+                postergaciones_detalle.append({
+                    "monto": float(frappe.utils.flt(post.monto_postergado)),
+                    "periodo": f"{mes_or}/{ano_or}" if mes_or and ano_or else ""
+                })
+
         except Exception as e:
             frappe.log_error("ERROR en postergación", str(e))
         
@@ -978,8 +977,8 @@ def preparar_datos_pdf(**kwargs):
             }
         }
         
-        # 16. GENERAR PDF NATIVO CON GOTENBERG
-        from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf
+        # 16. GENERAR PDF (motor elegido en Configuracion App: Gotenberg o Playwright local)
+        from evoluciona_pyme_v2.evoluciona_pyme_v2.pdf import generar_html, convertir_a_pdf_segun_config
         from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import is_usuario_basico
 
         config = frappe.get_single('Configuracion App')
@@ -989,7 +988,7 @@ def preparar_datos_pdf(**kwargs):
             getattr(config, 'pdf_basico_ocultar_opcion_a' if _modo_basico else 'pdf_ocultar_opcion_a', 0) or 0
         ))
         html = generar_html(payload, config, modo_basico=_modo_basico, ocultar_opcion_a=_ocultar_opcion_a)
-        pdf_bytes = convertir_a_pdf(html)
+        pdf_bytes = convertir_a_pdf_segun_config(html)
 
         meses_nombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                          "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
@@ -1013,6 +1012,12 @@ def preparar_datos_pdf(**kwargs):
         decl.pdf_generado_flag = 1
         decl.fecha_pdf_generado = frappe.utils.now_datetime()
         decl.save(ignore_permissions=True)
+
+        # Avanzar el estado a "PDF Generado" (a menos que ya esté más adelante en
+        # el flujo, ej. si se regenera el PDF de una declaración ya publicada/enviada).
+        if decl.estado not in ("Publicado", "Enviado"):
+            frappe.db.set_value("Declaracion_Mensual", declaracion_name, "estado", "PDF Generado")
+
         frappe.db.commit()
 
         frappe.response['message'] = {
@@ -1822,6 +1827,7 @@ def registrar_postergacion_iva(doc_name, monto, meses_diferidos=2):
     # Actualizar Borrador_F29
     doc_f29.postergar_iva_periodo    = 1
     doc_f29.postergacion_del_periodo = monto
+    doc_f29.estado_pago_f29          = "Postergado"
     doc_f29.save(ignore_permissions=True)
     frappe.db.commit()
 
@@ -1851,6 +1857,8 @@ def cancelar_postergacion_iva(doc_name):
 
     doc_f29.postergar_iva_periodo    = 0
     doc_f29.postergacion_del_periodo = 0
+    if doc_f29.estado_pago_f29 == "Postergado":
+        doc_f29.estado_pago_f29 = "Pendiente de Pago"
     doc_f29.save(ignore_permissions=True)
     frappe.db.commit()
 
@@ -1942,19 +1950,26 @@ def crear_declaraciones_periodo(cliente, mes, ano):
 
 
 @frappe.whitelist()
-def procesar_mes_actual():
+def procesar_mes_actual(mes=None, ano=None):
     """
     Crea Declaracion_Mensual + Borrador_F29 para TODOS los clientes activos
-    en el período del mes anterior (misma lógica que el cron mensual).
-    Idempotente — omite los que ya existen.
-    Llamado manualmente desde el Workspace para procesar clientes nuevos.
+    en el período indicado (por defecto, el mes anterior — misma lógica que
+    el cron mensual). Idempotente — omite los que ya existen.
+    Llamado manualmente desde el botón "Crear Todas" del Panel Mensual, o
+    para el período que se le pase (ej: para ponerse al día con un mes
+    que el cron automático no haya generado).
     """
-    from frappe.utils import add_months, getdate, nowdate
+    from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import _get_rol_usuario
+    if _get_rol_usuario() != "admin":
+        frappe.throw("Sin permiso para ejecutar esta acción.")
 
-    hoy           = getdate(nowdate())
-    fecha_periodo = add_months(hoy, -1)
-    mes           = str(fecha_periodo.month)
-    ano           = str(fecha_periodo.year)
+    if not mes or not ano:
+        from frappe.utils import add_months, getdate, nowdate
+        fecha_periodo = add_months(getdate(nowdate()), -1)
+        mes = str(fecha_periodo.month)
+        ano = str(fecha_periodo.year)
+    else:
+        mes, ano = str(mes), str(ano)
 
     clientes = frappe.get_all(
         "Ficha_Cliente",
@@ -1994,6 +2009,209 @@ def procesar_mes_actual():
     }
 
 
+@frappe.whitelist()
+def calcular_todos_periodo(mes, ano):
+    """
+    Corre recalcular_asistente_f29 para TODOS los Borrador_F29 del período
+    indicado. Botón "Calcular Todas" del Panel Mensual.
+    """
+    from evoluciona_pyme_v2.evoluciona_pyme_v2.asesores import _get_rol_usuario
+    if _get_rol_usuario() != "admin":
+        frappe.throw("Sin permiso para ejecutar esta acción.")
+
+    mes, ano = str(mes), str(ano)
+    f29s = frappe.get_all("Borrador_F29", filters={"ano": ano, "mes": mes}, fields=["name"])
+
+    calculados = errores = 0
+    detalle_errores = []
+
+    for f in f29s:
+        try:
+            frappe.form_dict["doc_name"] = f.name
+            recalcular_asistente_f29()
+            res = frappe.response.get("message") or {}
+            if res.get("status") == "ok":
+                calculados += 1
+            else:
+                errores += 1
+                detalle_errores.append(f"{f.name}: {str(res.get('message',''))[:80]}")
+        except Exception as e:
+            errores += 1
+            detalle_errores.append(f"{f.name}: {str(e)[:80]}")
+        finally:
+            # recalcular_asistente_f29 hace frappe.msgprint por cliente -- lo
+            # limpiamos en cada vuelta para no acumular popups del lote entero.
+            frappe.local.message_log = []
+
+    frappe.response["message"] = {
+        "status":     "ok",
+        "periodo":    f"{mes}/{ano}",
+        "calculados": calculados,
+        "errores":    errores,
+        "detalle_errores": detalle_errores[:10],
+        "message":    f"Período {mes}/{ano} — {calculados} calculados"
+                      + (f", {errores} con errores." if errores else "."),
+    }
+
+
+@frappe.whitelist()
+def marcar_cobranza_pagada(cobranza_name, aplicar_recargo=0, fecha_pago=None,
+                            monto_pagado=None, metodo_pago=None, comprobante_pago=None):
+    """
+    Marca una Cobranza_Cliente como Pagado (botón "Pagar" del panel, o el
+    dialog "Marcar como Pagado" de Ficha_Cliente). aplicar_recargo lo decide
+    el usuario al momento de pagar (el frontend le pregunta solo si detecta
+    que ya venció) -- no se infiere solo de la fecha.
+
+    Si queda marcado pago_atrasado=1, el recargo configurado se le suma a la
+    cobranza del mes siguiente. Normalmente esa cobranza del mes siguiente
+    todavía no existe, y la agrega crear_cobranza_si_corresponde cuando se
+    crea (busca "pago_atrasado=1, recargo_aplicado=0" del mes anterior). Pero
+    si esa cobranza YA existe al momento de marcar el pago (ej. se procesaron
+    varios meses seguidos antes de que el cliente pagara), esa búsqueda ya no
+    corre de nuevo -- se pierde el recargo en silencio. Por eso acá también
+    se revisa: si el mes siguiente ya tiene cobranza, se le aplica el recargo
+    directo en el momento.
+    """
+    doc = frappe.get_doc("Cobranza_Cliente", cobranza_name)
+    doc.estado_cobranza = "Pagado"
+    doc.fecha_pago = fecha_pago or frappe.utils.nowdate()
+    if monto_pagado is not None:
+        doc.monto_pagado = monto_pagado
+    if metodo_pago:
+        doc.metodo_pago = metodo_pago
+    if comprobante_pago:
+        doc.comprobante_pago = comprobante_pago
+    doc.pago_atrasado = 1 if frappe.utils.cint(aplicar_recargo) else 0
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    if doc.pago_atrasado and not doc.recargo_aplicado:
+        mes_sig = int(doc.periodo_mes) + 1
+        ano_sig = int(doc.periodo_ano)
+        if mes_sig > 12:
+            mes_sig = 1
+            ano_sig += 1
+
+        cobranza_siguiente = frappe.db.get_value(
+            "Cobranza_Cliente",
+            {"cliente": doc.cliente, "periodo_ano": ano_sig, "periodo_mes": mes_sig},
+            "name",
+        )
+        if cobranza_siguiente:
+            recargo = float(
+                frappe.db.get_single_value("Configuracion App", "monto_recargo_pago_atrasado") or 0
+            )
+            if recargo:
+                sig = frappe.get_doc("Cobranza_Cliente", cobranza_siguiente)
+                sig.recargo_por_atraso = float(sig.recargo_por_atraso or 0) + recargo
+                sig.monto_a_cobrar = float(sig.monto_a_cobrar or 0) + recargo
+                sig.save(ignore_permissions=True)
+                frappe.db.set_value("Cobranza_Cliente", cobranza_name, "recargo_aplicado", 1)
+                frappe.db.commit()
+
+    return {"status": "ok", "pago_atrasado": bool(doc.pago_atrasado)}
+
+
+@frappe.whitelist()
+def get_credenciales_cliente(cliente):
+    """
+    Credenciales de acceso del cliente para la fila expandida del Panel Mensual.
+    clave_previred es tipo Password -- hay que desencriptarla explícitamente,
+    a diferencia de clave_sii que es Data y viene directo en el doc.
+    """
+    from frappe.utils.password import get_decrypted_password
+
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    clave_previred = None
+    if ficha.rut_usuario:
+        clave_previred = get_decrypted_password(
+            "Ficha_Cliente", cliente, "clave_previred", raise_exception=False
+        )
+
+    return {
+        "rut_sii": ficha.rut_cliente,
+        "clave_sii": ficha.clave_sii,
+        "rut_previred": ficha.rut_usuario,
+        "clave_previred": clave_previred,
+    }
+
+
+# ── Salud del Cron ────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_salud_cron():
+    """
+    Resumen para el panel de Salud del Cron: última ejecución de cada
+    dispatcher, si corrió este mes, últimas corridas del scheduler (con
+    estado Complete/Failed), y errores recientes relacionados.
+    """
+    cfg = frappe.get_doc("Configuracion App")
+    hoy = frappe.utils.getdate(frappe.utils.nowdate())
+
+    def _info_ejecucion(campo_fecha, dia_cfg, hora_cfg, habilitar_cfg):
+        ultima = cfg.get(campo_fecha)
+        ultima_date = frappe.utils.getdate(ultima) if ultima else None
+        corrio_este_mes = bool(
+            ultima_date and ultima_date.month == hoy.month and ultima_date.year == hoy.year
+        )
+        return {
+            "habilitado": bool(cfg.get(habilitar_cfg)),
+            "ultima_ejecucion": str(ultima) if ultima else None,
+            "corrio_este_mes": corrio_este_mes,
+            "dia_configurado": cfg.get(dia_cfg),
+            "hora_configurada": cfg.get(hora_cfg),
+        }
+
+    def _ultimas_corridas(metodo_like, limite=6):
+        return frappe.db.sql(
+            """
+            SELECT sjl.creation, sjl.status
+            FROM `tabScheduled Job Log` sjl
+            JOIN `tabScheduled Job Type` sjt ON sjl.scheduled_job_type = sjt.name
+            WHERE sjt.method LIKE %(m)s
+            ORDER BY sjl.creation DESC
+            LIMIT %(l)s
+            """,
+            {"m": f"%{metodo_like}%", "l": limite},
+            as_dict=True,
+        )
+
+    declaraciones = _info_ejecucion(
+        "ultima_ejecucion_tareas", "dia_ejecucion_tareas", "hora_ejecucion_tareas", "habilitar_tareas_mensuales"
+    )
+    declaraciones["ultimas_corridas"] = _ultimas_corridas("dispatcher_cron")
+
+    libros = _info_ejecucion(
+        "ultima_ejecucion_libros", "dia_descarga_libros", "hora_descarga_libros", "habilitar_descarga_libros"
+    )
+    libros["ultimas_corridas"] = _ultimas_corridas("dispatcher_libros")
+
+    errores_recientes = frappe.db.sql(
+        """
+        SELECT creation, method, LEFT(error, 200) as error
+        FROM `tabError Log`
+        WHERE creation > %(desde)s
+          AND (method LIKE '%%dispatcher_cron%%' OR method LIKE '%%dispatcher_libros%%'
+               OR method LIKE '%%RCV masivo%%' OR method LIKE '%%BHE masivo%%'
+               OR method LIKE '%%Remanente F29%%' OR method LIKE '%%Calculo F29%%'
+               OR method LIKE '%%Tareas%%')
+        ORDER BY creation DESC
+        LIMIT 30
+        """,
+        {"desde": frappe.utils.add_days(frappe.utils.nowdate(), -30)},
+        as_dict=True,
+    )
+
+    return {
+        "declaraciones": declaraciones,
+        "libros": libros,
+        "errores_recientes": errores_recientes,
+        "generado": frappe.utils.now_datetime().isoformat(),
+    }
+
+
 # ── Datos F29 para Panel Mensual ─────────────────────────────────────────────
 
 @frappe.whitelist()
@@ -2009,6 +2227,7 @@ def get_f29_panel_data(ano, mes):
             f.subtotal_otros_impuestos,
             f.impuesto_determinado,
             f.total_a_pagar_f29,
+            f.estado_pago_f29,
             SUM(CASE WHEN i.codigo_f29 = '151' THEN i.monto ELSE 0 END) AS honorarios_a_pagar,
             SUM(CASE WHEN i.codigo_f29 = '62'  THEN i.monto ELSE 0 END) AS ppm_a_pagar
         FROM `tabBorrador_F29` f

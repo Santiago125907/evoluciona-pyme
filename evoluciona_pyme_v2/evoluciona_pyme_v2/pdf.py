@@ -195,7 +195,7 @@ def _get_css(cp, cs, cv='#10B981', ca='#FF6F61'):
     .kpi-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
     .kpi-value { font-size: 17px; font-weight: 800; color: var(--txt); }
     .kpi-subtitle { font-size: 9px; color: var(--gray); margin-top: 2px; }
-    .bottom-section { display: flex; gap: 12px; }
+    .bottom-section { display: flex; gap: 12px; transform: translateX(-10mm); }
     .dona-container { flex: 0 0 38%; }
     .tabla-container { flex: 1; }
     .table-container { background: white; border: 1px solid var(--border); border-radius: 6px;
@@ -451,19 +451,24 @@ def _hoja2(d, meses, logo_src, ofi=None, page_num=None, total_pages=None, modo_b
         h += '<th>{}</th>'.format(m)
     h += '<th>Total</th></tr></thead><tbody>'
 
+    n = len(meses)
+
     h += '<tr><td>Ingresos</td>'
-    for v in ingresos:
-        h += '<td>{}</td>'.format(_fmt(v, 'k'))
+    for i in range(n):
+        h += '<td>{}</td>'.format(_fmt(ingresos[i], 'k') if i < len(ingresos) else '')
     h += '<td style="font-weight:800">{}</td></tr>'.format(_fmt(d.get('acum_ing'), 'k'))
 
     h += '<tr><td>Gastos</td>'
-    for v in gastos:
-        h += '<td>({}) </td>'.format(_fmt(v, 'k'))
+    for i in range(n):
+        h += '<td>{}</td>'.format('({}) '.format(_fmt(gastos[i], 'k')) if i < len(gastos) else '')
     h += '<td style="font-weight:800">({}) </td></tr>'.format(_fmt(d.get('acum_gas'), 'k'))
 
     h += '<tr><td>Utilidad</td>'
-    for v in utilidad:
-        fv = float(v or 0)
+    for i in range(n):
+        if i >= len(utilidad):
+            h += '<td></td>'
+            continue
+        fv = float(utilidad[i] or 0)
         cls = 'positive' if fv >= 0 else 'negative'
         val = _fmt(abs(fv), 'k')
         h += '<td class="{}">{}</td>'.format(cls, val if fv >= 0 else '(' + val + ')')
@@ -916,7 +921,7 @@ def generar_html(payload, config=None, modo_basico=False, ocultar_opcion_a=False
 
     meses_nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
                      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    meses = meses_nombres[:mes]
+    meses = meses_nombres  # año completo en el eje X, aunque los meses futuros queden sin datos
 
     css = _get_css(cp, cs, cv, ca)
     chart_js = _chart_script(d, meses, cp, cs)
@@ -997,6 +1002,49 @@ def convertir_a_pdf(html_content):
 
 
 # ──────────────────────────────────────────────────────────
+# PLAYWRIGHT — motor local, sin depender de un servicio externo.
+# Usa el mismo Chromium headless que hay detras de Gotenberg, pero
+# corriendo en este mismo servidor. Ejecuta el JS del reporte (echarts)
+# igual que Gotenberg, a diferencia de WeasyPrint u otros motores solo-CSS.
+# ──────────────────────────────────────────────────────────
+
+def convertir_a_pdf_local(html_content):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            # Viewport al mismo ancho de la pagina impresa (A4, 8.27in a 96dpi ~= 794px).
+            # Si no se fija, ECharts mide el ancho del contenedor contra el viewport
+            # por defecto de Playwright (1280px) al dibujar, y ese SVG mas ancho queda
+            # apretado/recortado despues al imprimir sobre la pagina angosta real.
+            page = browser.new_page(viewport={'width': 794, 'height': 1123})
+            page.set_content(html_content, wait_until='networkidle')
+            page.wait_for_timeout(2000)  # deja terminar de dibujar el grafico echarts
+            pdf_bytes = page.pdf(
+                width='8.27in', height='11.69in',
+                margin={'top': '0', 'bottom': '0', 'left': '0', 'right': '0'},
+                print_background=True,
+                prefer_css_page_size=True,
+            )
+        finally:
+            browser.close()
+
+    return pdf_bytes
+
+
+def convertir_a_pdf_segun_config(html_content):
+    """Elige el motor de PDF configurado en Configuracion App (Gotenberg por
+    defecto, para no cambiar el comportamiento de nadie que ya lo tenía andando)."""
+    config = frappe.get_single('Configuracion App')
+    motor = getattr(config, 'motor_pdf', None) or 'Gotenberg'
+
+    if motor == 'Playwright (local)':
+        return convertir_a_pdf_local(html_content)
+    return convertir_a_pdf(html_content)
+
+
+# ──────────────────────────────────────────────────────────
 # FUNCIÓN PRINCIPAL
 # ──────────────────────────────────────────────────────────
 
@@ -1010,7 +1058,7 @@ def generar_y_subir_pdf(declaracion_name):
         config = frappe.get_single('Configuracion App')
 
         html = generar_html(payload, config)
-        pdf_bytes = convertir_a_pdf(html)
+        pdf_bytes = convertir_a_pdf_segun_config(html)
 
         decl = frappe.get_doc('Declaracion_Mensual', declaracion_name)
         cliente = frappe.get_doc('Ficha_Cliente', decl.cliente)

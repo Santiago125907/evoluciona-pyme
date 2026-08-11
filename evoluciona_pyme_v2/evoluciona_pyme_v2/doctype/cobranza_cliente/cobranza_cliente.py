@@ -20,5 +20,8 @@ class Cobranza_Cliente(Document):
 		diferencia = frappe.utils.date_diff(fecha_venc, hoy)
 		self.dias_para_vencer = int(diferencia)
 
-		if diferencia < 0 and self.estado_cobranza not in ["Pagado", "Anulado"]:
+		# "Facturado" tambien queda protegido: si ya se genero una factura real
+		# (factura_generada=1), no hay que pisar ese estado solo porque paso la
+		# fecha -- se perderia la senal de que ya existe una factura de verdad.
+		if diferencia < 0 and self.estado_cobranza not in ["Pagado", "Anulado", "Facturado"]:
 			self.estado_cobranza = "Vencido"

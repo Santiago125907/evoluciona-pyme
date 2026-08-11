@@ -87,3 +87,125 @@ def get(path, params=None, timeout=60):
         frappe.throw(f"SII Gateway error {resp.status_code} en {path}: {resp.text[:300]}")
     except Exception as e:
         frappe.throw(f"SII Gateway: {e}")
+
+
+def pendientes_acuse(ficha, periodo):
+    """Documentos de compra en estado PENDIENTE (aún sin acuse) para un período."""
+    body = {"login": login_de(ficha), "contribuyente": ficha.rut_cliente, "periodo": periodo}
+    return post("/v1/dte/pendientes-acuse", body, timeout=60)
+
+
+CODIGO_NOTA_CREDITO = "61"
+
+
+def resumen_rcv(ficha, periodo, operacion, estados=None):
+    """
+    Resumen oficial del SII (cuadratura) por tipo de documento, para COMPRA o
+    VENTA. A diferencia de /v1/f29/borrador, este SÍ incluye correctamente
+    las boletas (39/41) del lado de ventas — el borrador puede omitirlas.
+
+    El SII entrega el monto de las Notas de Crédito (tipo 61) en POSITIVO,
+    tanto en el detalle como en el bloque "total" del resumen — no las resta
+    solo. Acá se recalcula el total sumando todos los tipos y restando el
+    tipo 61, para que el monto quede neto de verdad (una NC de compra reduce
+    el crédito fiscal, no lo aumenta).
+
+    Devuelve {documentos, monto_neto, monto_iva, monto_exento, monto_total}
+    ya neteado, o ceros si no hay nada ese período.
+    """
+    body = {
+        "login": login_de(ficha),
+        "contribuyente": ficha.rut_cliente,
+        "operacion": operacion,
+        "periodo": periodo,
+    }
+    if estados:
+        body["estados"] = estados
+    resp = post("/v1/rcv/resumen", body)
+    por_tipo = (resp.get("resumen") or {}).get("REGISTRO", {}).get("por_tipo") or []
+
+    neto = {"documentos": 0, "monto_neto": 0, "monto_iva": 0, "monto_exento": 0, "monto_total": 0}
+    for item in por_tipo:
+        signo = -1 if str(item.get("tipo_dte")) == CODIGO_NOTA_CREDITO else 1
+        neto["documentos"]    += frappe.utils.cint(item.get("documentos"))
+        neto["monto_neto"]    += signo * frappe.utils.flt(item.get("monto_neto"))
+        neto["monto_iva"]     += signo * frappe.utils.flt(item.get("monto_iva"))
+        neto["monto_exento"]  += signo * frappe.utils.flt(item.get("monto_exento"))
+        neto["monto_total"]   += signo * frappe.utils.flt(item.get("monto_total"))
+    return neto
+
+
+def enviar_acuse(ficha, periodo, documentos, cod_evento="ERM", simular=True):
+    """
+    Envía el evento de acuse de recibo para una lista de documentos.
+    simular=True (default) es dry-run: no escribe nada en el SII.
+    simular=False es ESCRITURA IRREVERSIBLE en el SII.
+    """
+    body = {
+        "login": login_de(ficha),
+        "contribuyente": ficha.rut_cliente,
+        "periodo": periodo,
+        "documentos": documentos,
+        "cod_evento": cod_evento,
+        "simular": bool(simular),
+    }
+    return post("/v1/dte/acuse-recibo", body, timeout=120)
+
+
+CODIGO_REMANENTE_MES_ANTERIOR = "504"
+
+
+def remanente_mes(ficha, periodo):
+    """
+    Consulta el F29 oficial del SII y devuelve el monto del código 504
+    (Remanente Crédito Fiscal Mes Anterior) para el período, o None si no
+    vino en la respuesta. No depende de que exista un Borrador_F29 local
+    para ese período — sirve tanto para meses ya cerrados como para el mes
+    en curso (mientras el período anterior ya haya sido declarado).
+    """
+    body = {
+        "login": login_de(ficha),
+        "contribuyente": ficha.rut_cliente,
+        "periodo": periodo,
+    }
+    respuesta = post("/v1/f29/formulario", body, timeout=180)
+    return (respuesta.get("todos_los_codigos") or {}).get(CODIGO_REMANENTE_MES_ANTERIOR)
+
+
+def actualizar_remanente_cliente(cliente, ano, mes):
+    """
+    Actualiza la línea del código 504 (Remanente Crédito Fiscal Mes Anterior)
+    del Borrador_F29 correspondiente. No toca total_a_pagar ni ningún otro
+    código — eso lo valida un humano.
+    Retorna True si actualizó la línea, False si no encontró Borrador_F29
+    para ese período o el código no vino en la respuesta.
+    """
+    ficha = frappe.get_doc("Ficha_Cliente", cliente)
+    periodo = f"{ano}-{str(mes).zfill(2)}"
+    monto = remanente_mes(ficha, periodo)
+    if monto is None:
+        return False
+
+    f29_name = frappe.db.get_value(
+        "Borrador_F29", {"cliente": cliente, "ano": str(ano), "mes": str(mes)}, "name"
+    )
+    if not f29_name:
+        return False
+
+    doc = frappe.get_doc("Borrador_F29", f29_name)
+    for linea in doc.tabla_creditos:
+        if str(linea.codigo_f29) == CODIGO_REMANENTE_MES_ANTERIOR:
+            linea.monto = monto
+            linea.tipo_origen = "SII Oficial"
+            break
+    else:
+        doc.append("tabla_creditos", {
+            "codigo_f29": CODIGO_REMANENTE_MES_ANTERIOR,
+            "descripcion": "Remanente Crédito Fiscal Mes Anterior",
+            "monto": monto,
+            "tipo_operacion_subtotal": "Suma",
+            "tipo_origen": "SII Oficial",
+        })
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return True

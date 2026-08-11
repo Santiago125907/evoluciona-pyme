@@ -26,6 +26,7 @@
   "impuesto_determinado",
   "remanente_mes_siguiente",
   "total_a_pagar_f29",
+  "estado_pago_f29",
   "subtotal_postergacion_iva",
   "postergacion_vencida",
   "seccion_datos_backend",
@@ -80,7 +81,7 @@
    "fieldname": "ano",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "A\u00d1O",
+   "label": "AÑO",
    "options": "2023\n2024\n2025\n2026\n2027",
    "reqd": 1
   },
@@ -112,7 +113,7 @@
    "description": "Marcar para postergar el IVA determinado por 2 meses",
    "fieldname": "postergar_iva_periodo",
    "fieldtype": "Check",
-   "label": "Postergar IVA de este Per\u00edodo"
+   "label": "Postergar IVA de este Período"
   },
   {
    "fieldname": "subtotal_debitos",
@@ -156,6 +157,15 @@
    "read_only": 1
   },
   {
+   "fieldname": "estado_pago_f29",
+   "fieldtype": "Select",
+   "label": "Estado de Pago F29",
+   "options": "Pendiente de Pago\nPagado\nPostergado\nVencido sin Pagar",
+   "default": "Pendiente de Pago",
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
    "fieldname": "subtotal_postergacion_iva",
    "fieldtype": "Currency",
    "label": "postergacion iva",
@@ -184,7 +194,7 @@
   {
    "fieldname": "tabla_creditos",
    "fieldtype": "Table",
-   "label": "Tabla de Cr\u00e9ditos",
+   "label": "Tabla de Créditos",
    "options": "Linea_F29_Credito"
   },
   {
@@ -197,7 +207,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-09 12:00:56.105675",
+ "modified": "2026-08-02 11:41:07.371880",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Borrador_F29",

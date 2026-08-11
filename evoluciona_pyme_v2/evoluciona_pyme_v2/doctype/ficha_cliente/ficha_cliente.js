@@ -328,6 +328,7 @@ function renderizar_panel_declaraciones(frm) {
                     .estado-borrador { background: #ffc107; color: #000; }
                     .estado-validar { background: #ff9800; color: #fff; }
                     .estado-listo { background: #28a745; color: #fff; }
+                    .estado-pdf { background: #0984e3; color: #fff; }
                     .estado-publicado { background: #6f42c1; color: #fff; }
                     .estado-enviado { background: #17a2b8; color: #fff; }
                     .btn-accion {
@@ -384,6 +385,7 @@ function renderizar_panel_declaraciones(frm) {
                 if (estado_texto === 'Borrador') estado_class = 'estado-borrador';
                 else if (estado_texto === 'En Validación') estado_class = 'estado-validar';
                 else if (estado_texto === 'Listo') estado_class = 'estado-listo';
+                else if (estado_texto === 'PDF Generado') estado_class = 'estado-pdf';
                 else if (estado_texto === 'Publicado') estado_class = 'estado-publicado';
                 else if (estado_texto === 'Enviado') estado_class = 'estado-enviado';
                 
@@ -455,8 +457,8 @@ function generar_acciones_declaracion(d, frm) {
         acciones += `<button class="btn-accion btn-declaracion" data-action="ver-pdf" data-doc="${d.name}" data-pdf="${pdf_url}">Ver PDF</button>`;
     }
 
-    // Si está listo: gen PDF si no tiene, y siempre botón Publicar
-    if (d.estado === 'Listo') {
+    // Si está listo (o el PDF ya se generó automático): gen PDF si no tiene, y siempre botón Publicar
+    if (d.estado === 'Listo' || d.estado === 'PDF Generado') {
         if (!tiene_pdf) {
             acciones += `<button class="btn-accion btn-declaracion" data-action="gen-pdf" data-doc="${d.name}" style="background:#28a745; color:white;">Gen.PDF</button>`;
         }
@@ -681,77 +683,56 @@ function marcar_check(doc_name, field_name, frm) {
 // FUNCIÓN: GENERAR PDF
 // ===================================================================
 function generar_pdf_declaracion(doc_name, frm) {
-    
-    // Confirmación
-    frappe.confirm(
-        '¿Generar el Informe Mensual en PDF?<br><br>' +
-        '<small>Este proceso creará un PDF profesional con:<br>' +
-        '• Resumen de pagos (2 opciones)<br>' +
-        '• Análisis financiero del mes<br>' +
-        '• Desglose de ventas y gastos<br>' +
-        '• Detalle tributario (F29 + RRHH)<br>' +
-        '• Programa de socios</small>',
-        function() {
-            
-            // Mostrar progreso
-            frappe.show_alert({
-                message: 'Generando PDF en Google Drive...',
-                indicator: 'blue'
-            }, 5);
-            
-            // Llamar API para generar PDF
-            frappe.call({
-                method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
-                args: {
-                    declaracion_name: doc_name
-                },
-                freeze: true,
-                freeze_message: __('Generando PDF... Por favor espera (puede tomar 30-60 segundos)'),
-                callback: function(r) {
-                    
-                    if (r.message && r.message.status === 'success') {
-                        
-                        frappe.show_alert({
-                            message: '✅ PDF generado exitosamente en Google Drive',
-                            indicator: 'green'
-                        }, 5);
-                        
-                        // Refrescar panel
-                        setTimeout(function() {
-                            renderizar_panel_declaraciones(frm);
-                        }, 1000);
-                        
-                        // Si hay URL del PDF, ofrecer abrirlo
-                        if (r.message.pdf_url) {
-                            frappe.confirm(
-                                '¿Deseas abrir el PDF en Google Drive?',
-                                function() {
-                                    window.open(r.message.pdf_url, '_blank');
-                                }
-                            );
-                        }
-                        
-                    } else if (r.message && r.message.status === 'error') {
-                        
-                        frappe.msgprint({
-                            title: 'Error al generar PDF',
-                            message: r.message.message || 'Error desconocido',
-                            indicator: 'red'
-                        });
-                        
-                    }
-                },
-                error: function(err) {
-                    console.error('Error en generar_pdf_declaracion:', err);
-                    frappe.msgprint({
-                        title: 'Error',
-                        message: 'Ocurrió un error al generar el PDF. Revisa la consola.',
-                        indicator: 'red'
-                    });
+
+    frappe.show_alert({
+        message: 'Generando PDF en Google Drive...',
+        indicator: 'blue'
+    }, 5);
+
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.preparar_datos_pdf',
+        args: {
+            declaracion_name: doc_name
+        },
+        freeze: true,
+        freeze_message: __('Generando PDF... Por favor espera (puede tomar 30-60 segundos)'),
+        callback: function(r) {
+
+            if (r.message && r.message.status === 'success') {
+
+                frappe.show_alert({
+                    message: '✅ PDF generado exitosamente en Google Drive',
+                    indicator: 'green'
+                }, 5);
+
+                // Refrescar panel
+                setTimeout(function() {
+                    renderizar_panel_declaraciones(frm);
+                }, 1000);
+
+                if (r.message.pdf_url) {
+                    window.open(r.message.pdf_url, '_blank');
                 }
+
+            } else if (r.message && r.message.status === 'error') {
+
+                frappe.msgprint({
+                    title: 'Error al generar PDF',
+                    message: r.message.message || 'Error desconocido',
+                    indicator: 'red'
+                });
+
+            }
+        },
+        error: function(err) {
+            console.error('Error en generar_pdf_declaracion:', err);
+            frappe.msgprint({
+                title: 'Error',
+                message: 'Ocurrió un error al generar el PDF. Revisa la consola.',
+                indicator: 'red'
             });
         }
-    );
+    });
 }
 
 // ===================================================================
@@ -761,13 +742,6 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
     
     
     
-    // Mensaje de confirmación
-    let mensaje_confirmacion = es_reenvio 
-        ? '¿Reenviar declaración al cliente por Email y WhatsApp?<br><br><small>Se enviará nuevamente el PDF con el resumen del mes.</small>'
-        : '¿Enviar declaración al cliente por Email y WhatsApp?<br><br><small>Se enviará el PDF con el resumen financiero del mes.<br>Este proceso puede tomar 10-20 segundos.</small>';
-    
-    frappe.confirm(mensaje_confirmacion, function() {
-        
         // PASO 1: Obtener datos de la Declaracion_Mensual
         frappe.call({
             method: 'frappe.client.get',
@@ -986,7 +960,6 @@ function enviar_declaracion(doc_name, frm, es_reenvio = false) {
                 });
             }
         });
-    });
 }
 
 // ===================================================================
@@ -1031,27 +1004,22 @@ function reenviar_declaracion(doc_name, frm) {
 // ===================================================================
 function publicar_declaracion(doc_name, estado, frm) {
     const ya_publicado = estado === 'Publicado';
-    const msg = ya_publicado
-        ? '¿Despublicar esta declaración del portal del cliente?'
-        : '¿Publicar esta declaración en el portal del cliente? Se enviará notificación push.';
 
-    frappe.confirm(msg, function() {
-        frappe.show_alert({ message: 'Procesando...', indicator: 'blue' }, 2);
-        frappe.call({
-            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
-            args: { doc_name: doc_name },
-            callback: function(res) {
-                if (res.message && res.message.status === 'ok') {
-                    frappe.show_alert({
-                        message: ya_publicado ? '🔒 Declaración despublicada' : '📱 Declaración publicada en App',
-                        indicator: ya_publicado ? 'orange' : 'green'
-                    }, 4);
-                    setTimeout(function() { renderizar_panel_declaraciones(frm); }, 500);
-                } else {
-                    frappe.msgprint({ title: 'Error', message: (res.message && res.message.error) || 'No se pudo procesar.', indicator: 'red' });
-                }
+    frappe.show_alert({ message: 'Procesando...', indicator: 'blue' }, 2);
+    frappe.call({
+        method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.publicar_en_portal',
+        args: { doc_name: doc_name },
+        callback: function(res) {
+            if (res.message && res.message.status === 'ok') {
+                frappe.show_alert({
+                    message: ya_publicado ? '🔒 Declaración despublicada' : '📱 Declaración publicada en App',
+                    indicator: ya_publicado ? 'orange' : 'green'
+                }, 4);
+                setTimeout(function() { renderizar_panel_declaraciones(frm); }, 500);
+            } else {
+                frappe.msgprint({ title: 'Error', message: (res.message && res.message.error) || 'No se pudo procesar.', indicator: 'red' });
             }
-        });
+        }
     });
 }
 
@@ -1330,67 +1298,90 @@ function ejecutar_accion_cobranza(action, doc_name, factura_name, frm, pdf_url) 
 // FUNCIÓN: MARCAR COMO PAGADO
 // ===================================================================
 function marcar_como_pagado(doc_name, frm) {
-    
-    let d = new frappe.ui.Dialog({
-        title: 'Marcar como Pagado',
-        fields: [
-            {
-                label: 'Fecha de Pago',
-                fieldname: 'fecha_pago',
-                fieldtype: 'Date',
-                reqd: 1,
-                default: frappe.datetime.get_today()
-            },
-            {
-                label: 'Monto Pagado',
-                fieldname: 'monto_pagado',
-                fieldtype: 'Currency',
-                reqd: 1
-            },
-            {
-                label: 'Método de Pago',
-                fieldname: 'metodo_pago',
-                fieldtype: 'Select',
-                options: 'Transferencia\nEfectivo\nCheque\nTarjeta\nOtro',
-                reqd: 1
-            },
-            {
-                label: 'Comprobante',
-                fieldname: 'comprobante_pago',
-                fieldtype: 'Attach'
-            }
-        ],
-        primary_action_label: 'Marcar Pagado',
-        primary_action: function(values) {
-            
-            frappe.call({
-                method: 'frappe.client.set_value',
-                args: {
-                    doctype: 'Cobranza_Cliente',
-                    name: doc_name,
-                    fieldname: {
-                        'estado_cobranza': 'Pagado',
-                        'fecha_pago': values.fecha_pago,
-                        'monto_pagado': values.monto_pagado,
-                        'metodo_pago': values.metodo_pago,
-                        'comprobante_pago': values.comprobante_pago || ''
+
+    frappe.call({
+        method: 'frappe.client.get',
+        args: { doctype: 'Cobranza_Cliente', name: doc_name },
+        callback: function(r_cob) {
+            const cob = r_cob.message || {};
+            const fecha_vencimiento = cob.fecha_vencimiento;
+
+            let d = new frappe.ui.Dialog({
+                title: 'Marcar como Pagado',
+                fields: [
+                    {
+                        label: 'Fecha de Pago',
+                        fieldname: 'fecha_pago',
+                        fieldtype: 'Date',
+                        reqd: 1,
+                        default: frappe.datetime.get_today()
+                    },
+                    {
+                        label: 'Monto Pagado',
+                        fieldname: 'monto_pagado',
+                        fieldtype: 'Currency',
+                        reqd: 1,
+                        default: cob.monto_a_cobrar || 0
+                    },
+                    {
+                        label: 'Método de Pago',
+                        fieldname: 'metodo_pago',
+                        fieldtype: 'Select',
+                        options: 'Transferencia\nEfectivo\nCheque\nTarjeta\nOtro',
+                        reqd: 1
+                    },
+                    {
+                        label: 'Comprobante',
+                        fieldname: 'comprobante_pago',
+                        fieldtype: 'Attach'
                     }
-                },
-                callback: function() {
-                    frappe.show_alert({
-                        message: '✅ Marcado como pagado',
-                        indicator: 'green'
-                    }, 3);
-                    
-                    d.hide();
-                    renderizar_panel_cobranza(frm);
+                ],
+                primary_action_label: 'Marcar Pagado',
+                primary_action: function(values) {
+
+                    const guardar = (aplicar_recargo) => {
+                        frappe.call({
+                            method: 'evoluciona_pyme_v2.evoluciona_pyme_v2.api.marcar_cobranza_pagada',
+                            args: {
+                                cobranza_name: doc_name,
+                                aplicar_recargo: aplicar_recargo ? 1 : 0,
+                                fecha_pago: values.fecha_pago,
+                                monto_pagado: values.monto_pagado,
+                                metodo_pago: values.metodo_pago,
+                                comprobante_pago: values.comprobante_pago || ''
+                            },
+                            callback: function() {
+                                frappe.show_alert({
+                                    message: '✅ Marcado como pagado',
+                                    indicator: 'green'
+                                }, 3);
+
+                                d.hide();
+                                renderizar_panel_cobranza(frm);
+                            }
+                        });
+                    };
+
+                    // ¿La fecha de pago ingresada es posterior al vencimiento?
+                    const atrasado = fecha_vencimiento &&
+                        frappe.datetime.get_diff(values.fecha_pago, fecha_vencimiento) > 0;
+
+                    if (!atrasado) { guardar(false); return; }
+
+                    frappe.db.get_single_value('Configuracion App', 'monto_recargo_pago_atrasado').then(monto => {
+                        frappe.confirm(
+                            `Este pago llegó atrasado (vencía el ${frappe.datetime.str_to_user(fecha_vencimiento)}).<br><br>` +
+                            `¿Agregar recargo de <b>$${(monto||0).toLocaleString('es-CL')}</b> a la cobranza del próximo mes?`,
+                            () => guardar(true),
+                            () => guardar(false)
+                        );
+                    });
                 }
             });
+
+            d.show();
         }
     });
-    
-    d.show();
-            d.set_value('monto_pagado', monto_sugerido);
 }
 
 // ===================================================================
@@ -1504,6 +1495,20 @@ function facturar_cobranza(doc_name, frm) {
                                     total_taxes: 0
                                 });
                             }
+
+                            // Línea 2.6: Recargo por pago atrasado del mes anterior -- sin esto el
+                            // detalle no cuadra contra monto_total (que sí lo incluye).
+                            if (cob.recargo_por_atraso > 0) {
+                                details.push({
+                                    quantity: 1,
+                                    sku: "RECARGO-ATRASO",
+                                    line_description: "Recargo por pago atrasado (mes anterior)",
+                                    unit_measure: "UN",
+                                    unit_price: cob.recargo_por_atraso,
+                                    total_amount_line: cob.recargo_por_atraso,
+                                    total_taxes: 0
+                                });
+                            }
                             
                             if (cob.total_descuentos > 0) {
                                 
@@ -1562,6 +1567,7 @@ function facturar_cobranza(doc_name, frm) {
                                     monto_rrhh: cob.monto_rrhh || 0,
                                     numero_empleados: cob.numero_empleados || 0,
                                     total_descuentos: cob.total_descuentos || 0,
+                                    recargo_por_atraso: cob.recargo_por_atraso || 0,
                                     monto_total: cob.monto_a_cobrar,
                                     
                                     details: details,

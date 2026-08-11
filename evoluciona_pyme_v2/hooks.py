@@ -143,9 +143,11 @@ doc_events = {
 		"after_insert": [
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.drive.crear_carpeta_cliente",
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.asesores.auto_asignar_asesor",
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.agregar_cliente_a_tabla_rcv",
 		],
 		"on_update": [
 			"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_auth.enviar_bienvenida_portal",
+			"evoluciona_pyme_v2.evoluciona_pyme_v2.rcv_api.agregar_cliente_a_tabla_rcv",
 		]
 	},
 	"Declaracion_Mensual": {
@@ -168,8 +170,10 @@ scheduler_events = {
 		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.dispatcher_libros"
 	],
 	# Cron 3: recordatorio de vencimiento — corre cada día a las 9am
+	# Cron 4: acuse de recibo inteligente — corre solo el último día del mes, hora configurable
 	"daily": [
-		"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_notif.recordatorio_vencimiento"
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.portal_notif.recordatorio_vencimiento",
+		"evoluciona_pyme_v2.evoluciona_pyme_v2.tasks.dispatcher_acuse"
 	],
 }
 

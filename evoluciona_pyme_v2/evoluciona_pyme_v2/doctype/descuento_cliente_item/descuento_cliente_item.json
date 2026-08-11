@@ -8,6 +8,7 @@
   "descripcion",
   "tipo_descuento",
   "valor",
+  "aplica_una_vez",
   "mes_inicio",
   "mes_fin",
   "activo"
@@ -32,6 +33,13 @@
    "label": "valor"
   },
   {
+   "default": "0",
+   "fieldname": "aplica_una_vez",
+   "fieldtype": "Check",
+   "label": "Aplica una sola vez",
+   "description": "Si esta activo, solo se aplica en el mes de \"Mes inicio\" (Mes fin se ignora)."
+  },
+  {
    "fieldname": "mes_inicio",
    "fieldtype": "Date",
    "label": "Mes inicio"
@@ -39,7 +47,9 @@
   {
    "fieldname": "mes_fin",
    "fieldtype": "Date",
-   "label": "Mes fin"
+   "label": "Mes fin",
+   "depends_on": "eval:!doc.aplica_una_vez",
+   "mandatory_depends_on": "eval:!doc.aplica_una_vez"
   },
   {
    "default": "0",
@@ -52,7 +62,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-09 12:00:56.924092",
+ "modified": "2026-08-11 08:36:47.032404",
  "modified_by": "Administrator",
  "module": "Evoluciona Pyme V2",
  "name": "Descuento_Cliente_Item",
