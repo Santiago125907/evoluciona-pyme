@@ -163,11 +163,18 @@ class Declaracion_Mensual(Document):
 				frappe.logger().info("Cliente no tiene Plan por Tramos. Usando Monto Base antiguo.")
 
 			# 3. RRHH
+			# Ojo: cliente_doc.get('monto_rrhh') y .get('cobra_rrhh_variable') no son campos
+			# reales de Ficha_Cliente (ver tipo_cobro_rrhh / monto_por_empleado) -- .get()
+			# sobre un campo inexistente devuelve None sin error, asi que esta rama NUNCA
+			# se disparaba para ningun cliente. Corregido para usar los campos reales.
 			monto_rrhh = 0
-			if float(cliente_doc.get('monto_rrhh') or 0) > 0:
-				monto_rrhh = float(cliente_doc.monto_rrhh)
+			tipo_rrhh = cliente_doc.get('tipo_cobro_rrhh') or 'Variable'
+			tarifa = float(cliente_doc.get('monto_por_empleado') or 0)
+
+			if tipo_rrhh == 'Fijo':
+				monto_rrhh = tarifa
 				frappe.logger().info(f"RRHH (Fijo): ${monto_rrhh:,.0f}")
-			elif cliente_doc.get('cobra_rrhh_variable'):
+			elif tipo_rrhh == 'Variable':
 				registro_rrhh = frappe.db.get_value(
 					"Registro_Remuneraciones",
 					{"cliente": self.cliente, "ano": int(self.ano), "mes": int(self.mes)},
@@ -175,7 +182,6 @@ class Declaracion_Mensual(Document):
 				)
 				if registro_rrhh:
 					numero_empleados = int(registro_rrhh or 0)
-					tarifa = float(cliente_doc.get('monto_por_empleado') or 0)
 					monto_rrhh = numero_empleados * tarifa
 					frappe.logger().info(f"RRHH Variable: {numero_empleados} x ${tarifa} = ${monto_rrhh:,.0f}")
 
