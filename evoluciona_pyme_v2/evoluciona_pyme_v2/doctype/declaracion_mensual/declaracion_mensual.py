@@ -333,7 +333,6 @@ class Declaracion_Mensual(Document):
 				"doctype": "Cobranza_Cliente",
 				"id_cobranza": id_cob,
 				"cliente": self.cliente,
-				"declaracion_mensual": self.name,
 				"periodo_mes": int(self.mes),
 				"periodo_ano": int(self.ano),
 				"monto_base": monto_contable,
