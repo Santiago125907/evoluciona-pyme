@@ -260,7 +260,7 @@ class Declaracion_Mensual(Document):
 							"monto_descuento": monto_desc
 						})
 
-			monto_a_cobrar = subtotal - total_descuentos
+			monto_a_cobrar = max(0, subtotal - total_descuentos)
 
 			# 6. Fecha de vencimiento
 			fecha_emision = frappe.utils.nowdate()
